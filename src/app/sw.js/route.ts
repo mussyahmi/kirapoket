@@ -35,17 +35,34 @@ self.addEventListener("fetch", (e) => {
   const { hostname } = new URL(e.request.url);
   if (hostname.includes("firebase") || hostname.includes("google") || hostname.includes("googleapis")) return;
 
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const networkFetch = fetch(e.request)
+  if (e.request.mode === "navigate") {
+    // Navigation: network first, fall back to cache
+    e.respondWith(
+      fetch(e.request)
         .then((res) => {
-          if (res.ok) caches.open(CACHE).then((c) => c.put(e.request, res.clone()));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(e.request, clone));
+          }
           return res;
         })
-        .catch(() => cached ?? Response.error());
-      return e.request.mode === "navigate" ? networkFetch : cached ?? networkFetch;
-    })
-  );
+        .catch(() => caches.match(e.request).then((cached) => cached ?? Response.error()))
+    );
+  } else {
+    // Assets: cache first, update in background
+    e.respondWith(
+      caches.match(e.request).then((cached) => {
+        const networkFetch = fetch(e.request).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(e.request, clone));
+          }
+          return res;
+        });
+        return cached ?? networkFetch;
+      })
+    );
+  }
 });
 `;
 
