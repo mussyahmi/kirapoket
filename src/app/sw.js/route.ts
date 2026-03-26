@@ -1,8 +1,11 @@
-// KiraPoket Service Worker
-const CACHE = "kirapoket-v1";
+import { NextResponse } from "next/server";
+
+const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "1";
+
+const SW_CONTENT = `// KiraPoket Service Worker v${version}
+const CACHE = "kirapoket-${version}";
 
 self.addEventListener("install", (e) => {
-  // Do NOT skipWaiting here — wait for user to confirm update
   e.waitUntil(
     caches
       .open(CACHE)
@@ -21,7 +24,6 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Allow the page to trigger activation (after user confirms update)
 self.addEventListener("message", (e) => {
   if (e.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
@@ -43,3 +45,14 @@ self.addEventListener("fetch", (e) => {
     })
   );
 });
+`;
+
+export async function GET() {
+  return new NextResponse(SW_CONTENT, {
+    headers: {
+      "Content-Type": "application/javascript",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Service-Worker-Allowed": "/",
+    },
+  });
+}
