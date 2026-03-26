@@ -35,25 +35,38 @@ function GoogleIcon() {
 }
 
 // ─── Mock dashboard preview ───────────────────────────────────────────────────
+const MOCK_ACCOUNTS = [
+  { name: "Maybank", balance: "RM 2,840.00" },
+  { name: "Touch 'n Go", balance: "RM 150.00" },
+];
+
 const MOCK_L1 = [
   {
-    label: "Needs", spent: 630, dot: "#4ade80", border: "#4ade8066",
+    label: "Needs", spent: "RM 630.00", dot: "#4ade80", border: "#4ade8066",
     l2: [
-      { name: "Food & Drinks", spent: 420 },
-      { name: "Transport", spent: 210 },
+      { name: "Food & Drinks", spent: "RM 420.00", l3: [
+        { name: "Groceries", spent: "RM 260.00" },
+        { name: "Work Meals", spent: "RM 160.00" },
+      ]},
+      { name: "Transport", spent: "RM 210.00", l3: [
+        { name: "Fuel", spent: "RM 150.00" },
+        { name: "Parking & Toll", spent: "RM 60.00" },
+      ]},
     ],
   },
   {
-    label: "Wants", spent: 225, dot: "#fb923c", border: "#fb923c66",
+    label: "Wants", spent: "RM 225.00", dot: "#fb923c", border: "#fb923c66",
     l2: [
-      { name: "Dining Out", spent: 180 },
-      { name: "Subscriptions", spent: 45 },
+      { name: "Dining Out", spent: "RM 180.00", l3: [] },
+      { name: "Subscriptions", spent: "RM 45.00", l3: [
+        { name: "Spotify", spent: "RM 17.90" },
+      ]},
     ],
   },
   {
-    label: "Savings", spent: 300, dot: "#60a5fa", border: "#60a5fa66",
+    label: "Savings", spent: "RM 300.00", dot: "#60a5fa", border: "#60a5fa66",
     l2: [
-      { name: "Goals", spent: 300 },
+      { name: "Goals", spent: "RM 300.00", l3: [] },
     ],
   },
 ];
@@ -89,24 +102,46 @@ function MockDashboard() {
         ))}
       </div>
 
-      {/* by category — L1 / L2 hierarchy */}
+      {/* accounts */}
+      <div className="px-3 pb-2 border-b border-border space-y-1">
+        <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Accounts</p>
+        {MOCK_ACCOUNTS.map(({ name, balance }) => (
+          <div key={name} className="flex items-center justify-between">
+            <span className="text-[9px] text-foreground">{name}</span>
+            <span className="text-[9px] font-medium text-foreground">{balance}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* by category — L1 / L2 / L3 hierarchy */}
       <div className="px-3 pb-3 space-y-3">
+        <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">Spending by Category</p>
         {MOCK_L1.map(({ label, spent, dot, border, l2 }) => (
           <div key={label}>
-            {/* L1 row */}
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
                 <span className="text-[10px] font-bold text-foreground">{label}</span>
               </div>
-              <span className="text-[9px] text-muted-foreground">RM {spent}</span>
+              <span className="text-[9px] text-foreground">{spent}</span>
             </div>
-            {/* L2 rows with tinted left border */}
             <div className="space-y-1 pl-3 border-l-2" style={{ borderColor: border }}>
-              {l2.map(({ name, spent: l2spent }) => (
-                <div key={name} className="flex items-center justify-between">
-                  <span className="text-[9px] text-foreground/70">{name}</span>
-                  <span className="text-[9px] text-muted-foreground">RM {l2spent}</span>
+              {l2.map(({ name, spent: l2spent, l3 }) => (
+                <div key={name} className="space-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-muted-foreground">{name}</span>
+                    <span className="text-[9px] text-muted-foreground">{l2spent}</span>
+                  </div>
+                  {l3.length > 0 && (
+                    <div className="pl-2 border-l border-border/40 space-y-0.5">
+                      {l3.map(({ name: l3name, spent: l3spent }) => (
+                        <div key={l3name} className="flex items-center justify-between">
+                          <span className="text-[8px] text-muted-foreground/60">{l3name}</span>
+                          <span className="text-[8px] text-muted-foreground/60">{l3spent}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
