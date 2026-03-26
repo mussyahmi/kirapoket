@@ -507,7 +507,7 @@ export default function BudgetPage() {
                                     <div key={l3.id} className="space-y-0.5">
                                       <div className="flex items-center justify-between text-xs">
                                         <span className="text-muted-foreground">{l3.name}</span>
-                                        <span className={cn("amt tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "")}>
+                                        <span className={cn("amt tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "text-muted-foreground")}>
                                           {fmtAmt(l3spent)}
                                           {l3budget > 0 && <span className="amt text-muted-foreground/60"> / {fmtAmt(l3budget)}</span>}
                                         </span>
