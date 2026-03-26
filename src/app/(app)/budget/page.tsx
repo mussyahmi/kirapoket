@@ -274,7 +274,7 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div ref={captureRef} className={cn("space-y-6 bg-background rounded-xl p-1", censored && "[&_.tabular-nums]:!text-muted-foreground [&_.tabular-nums]:!dark:text-muted-foreground")}>
+      <div ref={captureRef} className={cn("space-y-6 bg-background rounded-xl p-1", censored && "[&_.amt]:!text-muted-foreground")}>
 
         {/* Forecast Summary */}
         <Card>
@@ -304,7 +304,7 @@ export default function BudgetPage() {
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmtAmt(actualIncome)}</span>
+                <span className="font-medium amt tabular-nums text-green-600 dark:text-green-400">{fmtAmt(actualIncome)}</span>
               </div>
             ) : (
               <div className="space-y-3">
@@ -349,7 +349,7 @@ export default function BudgetPage() {
                             <button
                               type="button"
                               onClick={() => startEdit(item)}
-                              className="tabular-nums text-green-600 dark:text-green-400 hover:underline"
+                              className="amt tabular-nums text-green-600 dark:text-green-400 hover:underline"
                             >
                               {fmtAmt(item.amount)}
                             </button>
@@ -393,11 +393,11 @@ export default function BudgetPage() {
 
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total budgeted</span>
-              <span className="font-medium tabular-nums">− {fmtAmt(totalBudgeted)}</span>
+              <span className="font-medium amt tabular-nums">− {fmtAmt(totalBudgeted)}</span>
             </div>
             <div className="flex justify-between text-sm pt-2 border-t font-semibold">
               <span>Unallocated</span>
-              <span className={cn("tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
+              <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
                 {fmtAmt(unallocated)}
               </span>
             </div>
@@ -405,11 +405,11 @@ export default function BudgetPage() {
             <div className="pt-2 border-t space-y-2.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Spent so far</span>
-                <span className="font-medium tabular-nums text-red-600 dark:text-red-400">{fmtAmt(totalSpent)}</span>
+                <span className="font-medium amt tabular-nums text-red-600 dark:text-red-400">{fmtAmt(totalSpent)}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold">
                 <span>Remaining</span>
-                <span className={cn("tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
+                <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
                   {fmtAmt(actualRemaining)}
                 </span>
               </div>
@@ -448,10 +448,10 @@ export default function BudgetPage() {
                   <div key={l1.id} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold">{l1.name}</p>
-                      <span className={cn("text-xs tabular-nums", l1Over ? "text-red-500" : "text-muted-foreground")}>
+                      <span className={cn("text-xs amt tabular-nums", l1Over ? "text-red-500" : "text-muted-foreground")}>
                         {fmtAmt(l1TotalSpent)}
                         {l1TotalBudget > 0 && (
-                          <span className="text-muted-foreground/60"> / {fmtAmt(l1TotalBudget)}</span>
+                          <span className="amt text-muted-foreground/60"> / {fmtAmt(l1TotalBudget)}</span>
                         )}
                       </span>
                     </div>
@@ -475,9 +475,9 @@ export default function BudgetPage() {
                             <div className="space-y-1">
                               <div className="flex items-center justify-between text-sm">
                                 <span className="font-medium">{l2.name}</span>
-                                <span className={cn("tabular-nums shrink-0 ml-2 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
+                                <span className={cn("amt tabular-nums shrink-0 ml-2 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
                                   {fmtAmt(l2spent)}
-                                  {l2budget > 0 && <span className="text-muted-foreground/60"> / {fmtAmt(l2budget)}</span>}
+                                  {l2budget > 0 && <span className="amt text-muted-foreground/60"> / {fmtAmt(l2budget)}</span>}
                                 </span>
                               </div>
                               {l2pct !== null && (
@@ -507,9 +507,9 @@ export default function BudgetPage() {
                                     <div key={l3.id} className="space-y-0.5">
                                       <div className="flex items-center justify-between text-xs">
                                         <span className="text-muted-foreground">{l3.name}</span>
-                                        <span className={cn("tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "")}>
+                                        <span className={cn("amt tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "")}>
                                           {fmtAmt(l3spent)}
-                                          {l3budget > 0 && <span className="text-muted-foreground/60"> / {fmtAmt(l3budget)}</span>}
+                                          {l3budget > 0 && <span className="amt text-muted-foreground/60"> / {fmtAmt(l3budget)}</span>}
                                         </span>
                                       </div>
                                       {l3pct !== null && (
