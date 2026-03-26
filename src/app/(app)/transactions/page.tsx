@@ -10,6 +10,7 @@ import {
   ArrowLeftRightIcon,
   TrashIcon,
   PencilIcon,
+  CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
@@ -150,20 +151,34 @@ export default function TransactionsPage() {
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          placeholder="From"
-          className="text-sm"
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          placeholder="To"
-          className="text-sm"
-        />
+        <label className="relative flex items-center">
+          <CalendarIcon className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="text-sm pl-8 w-full"
+          />
+          {!dateFrom && (
+            <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
+              From
+            </span>
+          )}
+        </label>
+        <label className="relative flex items-center">
+          <CalendarIcon className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="text-sm pl-8 w-full"
+          />
+          {!dateTo && (
+            <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
+              To
+            </span>
+          )}
+        </label>
       </div>
 
       {/* List */}
