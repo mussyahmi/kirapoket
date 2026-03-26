@@ -35,6 +35,29 @@ function GoogleIcon() {
 }
 
 // ─── Mock dashboard preview ───────────────────────────────────────────────────
+const MOCK_L1 = [
+  {
+    label: "Needs", dot: "#4ade80", border: "#4ade8066",
+    l2: [
+      { name: "Food & Drinks", used: 420, budget: 600, left: 180, color: "#4ade80" },
+      { name: "Transport", used: 210, budget: 300, left: 90, color: "#4ade80" },
+    ],
+  },
+  {
+    label: "Wants", dot: "#fb923c", border: "#fb923c66",
+    l2: [
+      { name: "Subscriptions", used: 45, budget: 60, left: 15, color: "#fb923c" },
+      { name: "Dining Out", used: 180, budget: 200, left: 20, color: "#fb923c" },
+    ],
+  },
+  {
+    label: "Savings", dot: "#60a5fa", border: "#60a5fa66",
+    l2: [
+      { name: "Goals", used: 300, budget: 500, left: 200, color: "#60a5fa" },
+    ],
+  },
+];
+
 function MockDashboard() {
   return (
     <div className="w-full rounded-2xl border border-border bg-card shadow-2xl overflow-hidden text-xs select-none">
@@ -66,23 +89,34 @@ function MockDashboard() {
         ))}
       </div>
 
-      {/* category breakdown */}
-      <div className="px-3 pb-3 space-y-2">
-        {[
-          { label: "Needs", used: 1100, budget: 1800, color: "bg-green-400" },
-          { label: "Wants", used: 800, budget: 1000, color: "bg-orange-400" },
-          { label: "Savings", used: 410, budget: 500, color: "bg-blue-400" },
-        ].map(({ label, used, budget, color }) => (
+      {/* by category — L1 / L2 hierarchy */}
+      <div className="px-3 pb-3 space-y-3">
+        {MOCK_L1.map(({ label, dot, border, l2 }) => (
           <div key={label}>
-            <div className="flex justify-between mb-1 text-[9px]">
-              <span className="text-muted-foreground">{label}</span>
-              <span className="text-foreground/60">RM {used} / {budget}</span>
+            {/* L1 row */}
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
+              <span className="text-[10px] font-bold text-foreground">{label}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full ${color}`}
-                style={{ width: `${(used / budget) * 100}%` }}
-              />
+            {/* L2 rows with tinted left border */}
+            <div className="space-y-2 pl-3 border-l-2" style={{ borderColor: border }}>
+              {l2.map(({ name, used, budget, left, color }) => (
+                <div key={name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-medium text-foreground">{name}</span>
+                    <span className="text-[9px] text-muted-foreground">RM {used} / {budget}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${(used / budget) * 100}%`, backgroundColor: color }}
+                      />
+                    </div>
+                    <span className="text-[8px] text-muted-foreground shrink-0">RM {left} left</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
