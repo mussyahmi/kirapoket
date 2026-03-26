@@ -113,12 +113,12 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="grid grid-cols-2 gap-2">
         <Select
           value={filterType}
           onValueChange={(v) => setFilterType((v ?? "all") as FilterType)}
         >
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="w-full">
             <SelectValue>
               {{ all: "All types", expense: "Expense", income: "Income", transfer: "Transfer" }[filterType]}
             </SelectValue>
@@ -135,7 +135,7 @@ export default function TransactionsPage() {
           value={filterAccount}
           onValueChange={(v) => setFilterAccount(v ?? "all")}
         >
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full">
             <SelectValue>
               {filterAccount === "all" ? "All accounts" : accounts.find((a) => a.id === filterAccount)?.name ?? "Account"}
             </SelectValue>
@@ -150,26 +150,24 @@ export default function TransactionsPage() {
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-2 sm:flex-1">
-          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-10 bg-background flex-1">
-            <span className="text-xs text-muted-foreground shrink-0">From</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-            />
-          </label>
-          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-10 bg-background flex-1">
-            <span className="text-xs text-muted-foreground shrink-0">To</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-            />
-          </label>
-        </div>
+        <label className="flex h-8 items-center gap-1.5 border border-input rounded-lg px-2.5 bg-background">
+          <span className="text-xs text-muted-foreground shrink-0">From</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+          />
+        </label>
+        <label className="flex h-8 items-center gap-1.5 border border-input rounded-lg px-2.5 bg-background">
+          <span className="text-xs text-muted-foreground shrink-0">To</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+          />
+        </label>
       </div>
 
       {/* List */}
