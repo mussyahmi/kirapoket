@@ -6,10 +6,10 @@
     "kira-poket": {
       "hosting": {
         "main": [
-          "kira-poket"
+          "kirapoket"
         ],
         "redirect": [
-          "kirapoket"
+          "kira-poket"
         ]
       }
     }

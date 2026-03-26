@@ -23,7 +23,7 @@
       "redirects": [
         {
           "source": "**",
-          "destination": "https://kira-poket.web.app",
+          "destination": "https://kirapoket.web.app",
           "type": 301
         }
       ]
