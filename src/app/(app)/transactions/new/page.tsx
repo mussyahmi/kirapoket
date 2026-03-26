@@ -8,6 +8,7 @@ import { ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -130,7 +131,8 @@ export default function NewTransactionPage() {
     if (txType === "expense") {
       if (!l1Id) return "Please select a category.";
       if (l2Categories.length > 0 && !l2Id) return "Please select a subcategory.";
-      if (l3Categories.length > 0 && !l3Id) return "Please select an item.";
+      if (l2Id && l3Categories.length === 0) return "This subcategory has no items. Please add items first.";
+      if (l2Id && !l3Id) return "Please select an item.";
     }
     return null;
   };
@@ -391,10 +393,10 @@ export default function NewTransactionPage() {
         {/* Note */}
         <div className="space-y-1.5">
           <Label htmlFor="note">Note (optional)</Label>
-          <Input
+          <Textarea
             id="note"
-            type="text"
             placeholder="Add a note..."
+            rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />

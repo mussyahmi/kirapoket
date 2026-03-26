@@ -15,7 +15,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress, ProgressTrack, ProgressIndicator } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -162,15 +161,15 @@ export default function DashboardPage() {
     return result;
   }, [cycleTransactions, categoryMap]);
 
-  const effectiveCatBudget = (c: { budget?: number; budgetType?: string; budgetDays?: number }) => {
-    if (c.budget === undefined) return 0;
-    if (c.budgetType === "daily") return c.budget * ((c.budgetDays as number) ?? 30);
-    return c.budget;
-  };
-
-  const l2BudgetTotal = (l2Id: string) =>
-    categories.filter((c) => c.level === 3 && c.parentId === l2Id)
-      .reduce((s, c) => s + effectiveCatBudget(c), 0);
+  const l3Spending = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const t of cycleTransactions) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      const cat = categoryMap[t.categoryId];
+      if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [cycleTransactions, categoryMap]);
 
 
   const pieData = useMemo(
@@ -371,75 +370,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Spending by Category */}
-      {l1Categories.length > 0 && totalExpenses > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Spending by Category</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {l1Categories.map((l1) => {
-              const l1Spent = l1Spending[l1.id] ?? 0;
-              if (l1Spent === 0) return null;
-              const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
-
-              const l2s = categories
-                .filter((c) => c.level === 2 && c.parentId === l1.id)
-                .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
-              const l2sWithActivity = l2s.filter(
-                (c) => (l2Spending[c.id] ?? 0) > 0 || l2BudgetTotal(c.id) > 0
-              );
-
-              return (
-                <div key={l1.id} className="space-y-2">
-                  {/* L1 header — total spending only, no budget (mixing budgeted + unbudgeted L2s makes it meaningless) */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold capitalize">{l1.name}</span>
-                    <span className="text-muted-foreground tabular-nums">{formatMoney(l1Spent)}</span>
-                  </div>
-
-                  {/* L2 breakdown */}
-                  {l2sWithActivity.length > 0 && (
-                    <div className="space-y-1.5 pl-3 border-l-2 border-border">
-                      {l2sWithActivity.map((l2) => {
-                        const l2Spent = l2Spending[l2.id] ?? 0;
-                        const l2Budget = l2BudgetTotal(l2.id);
-                        const l2Pct = l2Budget > 0 ? Math.min((l2Spent / l2Budget) * 100, 100) : null;
-                        const overBudget = l2Budget > 0 && l2Spent > l2Budget;
-                        return (
-                          <div key={l2.id} className="space-y-0.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground truncate">{l2.name}</span>
-                              <span className={cn("tabular-nums shrink-0 ml-2", overBudget ? "text-red-500" : "text-muted-foreground")}>
-                                {formatMoney(l2Spent)}
-                                {l2Budget > 0 && (
-                                  <span className="text-muted-foreground/50"> / {formatMoney(l2Budget)}</span>
-                                )}
-                              </span>
-                            </div>
-                            {l2Pct !== null && (
-                              <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: `${l2Pct}%`,
-                                    backgroundColor: overBudget ? "#ef4444" : color,
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Pie Chart */}
       {pieData.length > 0 && (
@@ -479,6 +409,68 @@ export default function DashboardPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Spending by Category */}
+      {l1Categories.length > 0 && totalExpenses > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Spending by Category</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {l1Categories.map((l1) => {
+              const l1Spent = l1Spending[l1.id] ?? 0;
+              if (l1Spent === 0) return null;
+
+              const l2s = categories
+                .filter((c) => c.level === 2 && c.parentId === l1.id)
+                .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+                .filter((c) => (l2Spending[c.id] ?? 0) > 0);
+
+              return (
+                <div key={l1.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold">{l1.name}</span>
+                    <span className="tabular-nums">{formatMoney(l1Spent)}</span>
+                  </div>
+                  {l2s.length > 0 && (
+                    <div className="space-y-2 pl-3 border-l-2 border-border">
+                      {l2s.map((l2) => {
+                        const l3s = categories
+                          .filter((c) => c.level === 3 && c.parentId === l2.id)
+                          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+                          .filter((c) => (l3Spending[c.id] ?? 0) > 0);
+
+                        return (
+                          <div key={l2.id} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground truncate">{l2.name}</span>
+                              <span className="tabular-nums text-muted-foreground shrink-0 ml-2">
+                                {formatMoney(l2Spending[l2.id] ?? 0)}
+                              </span>
+                            </div>
+                            {l3s.length > 0 && (
+                              <div className="space-y-0.5 pl-3 border-l border-border/50">
+                                {l3s.map((l3) => (
+                                  <div key={l3.id} className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground/70 truncate">{l3.name}</span>
+                                    <span className="tabular-nums text-muted-foreground/70 shrink-0 ml-2">
+                                      {formatMoney(l3Spending[l3.id] ?? 0)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}

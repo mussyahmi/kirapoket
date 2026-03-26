@@ -1,5 +1,11 @@
 import { Timestamp } from "firebase/firestore";
 
+export interface ForecastIncomeItem {
+  id: string;
+  label: string;
+  amount: number;
+}
+
 export interface UserProfile {
   uid: string;
   email: string | null;
@@ -9,6 +15,7 @@ export interface UserProfile {
   salaryGraceDays?: number;
   manualCycleStart?: string;
   hideBalance: boolean;
+  forecastIncomeItems?: ForecastIncomeItem[];
 }
 
 export interface Account {
@@ -30,7 +37,9 @@ export interface Category {
   budget?: number;
   budgetType?: "cycle" | "daily";
   budgetDays?: number;
+  budgetSelectedDates?: string[];
   note?: string;
+  links?: string[];
   color?: string;
   sortOrder?: number;
 }

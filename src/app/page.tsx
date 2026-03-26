@@ -203,7 +203,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col gap-3 w-full">
                 <Link
-                  href="/dashboard"
+                  href="/home"
                   className="inline-flex items-center justify-center gap-2 h-12 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-6 w-full"
                 >
                   <LayoutDashboardIcon className="size-5" />

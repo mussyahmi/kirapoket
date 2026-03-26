@@ -8,6 +8,7 @@ import {
   ArrowLeftRightIcon,
   WalletIcon,
   TagIcon,
+  BarChart3Icon,
   SettingsIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -15,8 +16,9 @@ import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: HomeIcon, requiresSetup: false },
+  { href: "/home", label: "Home", icon: HomeIcon, requiresSetup: false },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRightIcon, requiresSetup: true },
+  { href: "/budget", label: "Budget", icon: BarChart3Icon, requiresSetup: false },
   { href: "/accounts", label: "Accounts", icon: WalletIcon, requiresSetup: false },
   { href: "/categories", label: "Categories", icon: TagIcon, requiresSetup: false },
   { href: "/settings", label: "Settings", icon: SettingsIcon, requiresSetup: false },

@@ -1,0 +1,461 @@
+"use client";
+
+import { useMemo, useState, useRef } from "react";
+import { format } from "date-fns";
+import { toPng } from "html-to-image";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
+import { useApp } from "@/contexts/AppContext";
+import { getSalaryCycleRange } from "@/lib/firestore";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import type { Category, ForecastIncomeItem } from "@/lib/types";
+
+const L1_COLORS: Record<string, string> = {
+  needs: "#4ade80",
+  wants: "#f97316",
+  savings: "#60a5fa",
+};
+
+function effectiveCatBudget(c: Pick<Category, "budget" | "budgetType" | "budgetDays">) {
+  if (c.budget === undefined) return 0;
+  if (c.budgetType === "daily") return c.budget * (c.budgetDays ?? 30);
+  return c.budget;
+}
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat("ms-MY", {
+    style: "currency",
+    currency: "MYR",
+    minimumFractionDigits: 2,
+  }).format(n);
+
+export default function BudgetPage() {
+  const {
+    userProfile,
+    categories,
+    transactions,
+    loadingTransactions,
+    loadingProfile,
+    saveUserProfile,
+  } = useApp();
+
+  const [mode, setMode] = useState<"actual" | "forecast">("actual");
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
+
+  // Forecast income items (local draft, saved on change)
+  const savedItems: ForecastIncomeItem[] = userProfile?.forecastIncomeItems ?? [];
+  const [newLabel, setNewLabel] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleAddItem = async () => {
+    const amount = parseFloat(newAmount);
+    if (!newLabel.trim() || isNaN(amount) || amount <= 0) return;
+    setSaving(true);
+    try {
+      const item: ForecastIncomeItem = {
+        id: Date.now().toString(),
+        label: newLabel.trim(),
+        amount,
+      };
+      await saveUserProfile({ forecastIncomeItems: [...savedItems, item] });
+      setNewLabel("");
+      setNewAmount("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    await saveUserProfile({ forecastIncomeItems: savedItems.filter((i) => i.id !== id) });
+  };
+
+  const handleCopy = async () => {
+    if (!captureRef.current) return;
+    setCopying(true);
+    try {
+      const dataUrl = await toPng(captureRef.current, {
+        cacheBust: true,
+        backgroundColor: "hsl(var(--background))",
+        pixelRatio: 2,
+      });
+      const blob = await (await fetch(dataUrl)).blob();
+      if (navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        setCopied(true);
+        toast.success("Copied! Paste anywhere to share.");
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        const link = document.createElement("a");
+        link.download = `kirapoket-budget.png`;
+        link.href = dataUrl;
+        link.click();
+        toast.success("Downloaded.");
+      }
+    } catch {
+      toast.error("Failed to copy image.");
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const salaryDay = userProfile?.salaryDay ?? 25;
+  const graceDays = userProfile?.salaryGraceDays ?? 0;
+  const manualCycleStart = userProfile?.manualCycleStart;
+  const cycleOptions = { graceDays, manualCycleStart };
+
+  const { start, end } = getSalaryCycleRange(salaryDay, new Date(), cycleOptions);
+  const cycleLabel = `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;
+
+  const startStr = format(start, "yyyy-MM-dd");
+  const endStr = format(end, "yyyy-MM-dd");
+
+  const cycleTransactions = useMemo(
+    () => transactions.filter((t) => t.date >= startStr && t.date <= endStr),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [transactions, startStr, endStr]
+  );
+
+  const categoryMap = useMemo(
+    () => Object.fromEntries(categories.map((c) => [c.id, c])),
+    [categories]
+  );
+
+  const l2BudgetMap = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const c of categories) {
+      if (c.level === 2) {
+        result[c.id] = categories
+          .filter((ch) => ch.level === 3 && ch.parentId === c.id)
+          .reduce((s, ch) => s + effectiveCatBudget(ch), 0);
+      }
+    }
+    return result;
+  }, [categories]);
+
+  const l3SpendingMap = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const t of cycleTransactions) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      const cat = categoryMap[t.categoryId];
+      if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [cycleTransactions, categoryMap]);
+
+  const l2SpendingMap = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const t of cycleTransactions) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      let cat = categoryMap[t.categoryId];
+      while (cat && cat.level !== 2 && cat.parentId) cat = categoryMap[cat.parentId];
+      if (cat?.level === 2) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [cycleTransactions, categoryMap]);
+
+  const actualIncome = useMemo(
+    () => cycleTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0),
+    [cycleTransactions]
+  );
+
+  const forecastIncome = useMemo(
+    () => savedItems.reduce((s, i) => s + i.amount, 0),
+    [savedItems]
+  );
+
+  const effectiveIncome = mode === "forecast" ? forecastIncome : actualIncome;
+
+  const totalSpent = useMemo(
+    () => cycleTransactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    [cycleTransactions]
+  );
+
+  const totalBudgeted = useMemo(
+    () => Object.values(l2BudgetMap).reduce((s, v) => s + v, 0),
+    [l2BudgetMap]
+  );
+
+  const unallocated = effectiveIncome - totalBudgeted;
+  const actualRemaining = effectiveIncome - totalSpent;
+
+  const l1Categories = useMemo(() => {
+    const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
+    return categories
+      .filter((c) => c.level === 1)
+      .sort((a, b) => (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9));
+  }, [categories]);
+
+  const hasBudgets = useMemo(
+    () => Object.values(l2BudgetMap).some((v) => v > 0),
+    [l2BudgetMap]
+  );
+
+  const loading = loadingTransactions || loadingProfile;
+
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Budget</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleCopy} disabled={copying} aria-label="Copy as image">
+          {copied
+            ? <CheckIcon className="size-4 text-green-500" />
+            : <CopyIcon className={cn("size-4", copying && "animate-pulse")} />}
+        </Button>
+      </div>
+
+      <div ref={captureRef} className="space-y-6 bg-background rounded-xl p-1">
+
+        {/* Forecast Summary */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Income</CardTitle>
+              {/* Toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+                {(["actual", "forecast"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={cn(
+                      "px-3 py-1.5 capitalize transition-colors",
+                      mode === m ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2.5">
+            {/* Income display */}
+            {mode === "actual" ? (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Income</span>
+                <span className="font-medium text-green-600 dark:text-green-400">{fmt(actualIncome)}</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Expected income</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">{fmt(forecastIncome)}</span>
+                </div>
+                {/* Saved items */}
+                {savedItems.length > 0 && (
+                  <div className="space-y-1.5 pl-3 border-l-2 border-border">
+                    {savedItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="tabular-nums text-green-600 dark:text-green-400">{fmt(item.amount)}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2Icon className="size-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Add new item */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. Salary, KWSP"
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    className="flex-1 h-8 text-xs"
+                    onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
+                  />
+                  <Input
+                    placeholder="Amount"
+                    type="number"
+                    inputMode="decimal"
+                    value={newAmount}
+                    onChange={(e) => setNewAmount(e.target.value)}
+                    className="w-28 h-8 text-xs"
+                    onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
+                  />
+                  <Button size="sm" variant="outline" className="h-8 px-2" onClick={handleAddItem} disabled={saving}>
+                    <PlusIcon className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Total budgeted</span>
+              <span className="font-medium">− {fmt(totalBudgeted)}</span>
+            </div>
+            <div className="flex justify-between text-sm pt-2 border-t font-semibold">
+              <span>Unallocated</span>
+              <span className={cn(unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
+                {fmt(unallocated)}
+              </span>
+            </div>
+
+            <div className="pt-2 border-t space-y-2.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Spent so far</span>
+                <span className="font-medium text-red-600 dark:text-red-400">{fmt(totalSpent)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-semibold">
+                <span>Remaining</span>
+                <span className={cn(actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
+                  {fmt(actualRemaining)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Category Budgets */}
+        <Card>
+          <CardHeader>
+            <CardTitle>By Category</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!hasBudgets ? (
+              <p className="text-sm text-muted-foreground">
+                No budgets set. Add budgets from the{" "}
+                <a href="/categories" className="underline text-foreground">Categories</a> page.
+              </p>
+            ) : (
+              l1Categories.map((l1) => {
+                const l2s = categories
+                  .filter((c) => c.level === 2 && c.parentId === l1.id)
+                  .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+                const l2sVisible = l2s.filter(
+                  (l2) => (l2BudgetMap[l2.id] ?? 0) > 0 || (l2SpendingMap[l2.id] ?? 0) > 0
+                );
+                if (l2sVisible.length === 0) return null;
+
+                const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
+                const l1TotalBudget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
+                const l1TotalSpent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
+                const l1Over = l1TotalBudget > 0 && l1TotalSpent > l1TotalBudget;
+
+                return (
+                  <div key={l1.id} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold">{l1.name}</p>
+                      <span className={cn("text-xs tabular-nums", l1Over ? "text-red-500" : "text-muted-foreground")}>
+                        {fmt(l1TotalSpent)}
+                        {l1TotalBudget > 0 && (
+                          <span className="text-muted-foreground/60"> / {fmt(l1TotalBudget)}</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="space-y-4 pl-3 border-l-2 border-border">
+                      {l2sVisible.map((l2) => {
+                        const l2budget = l2BudgetMap[l2.id] ?? 0;
+                        const l2spent = l2SpendingMap[l2.id] ?? 0;
+                        const l2remaining = l2budget - l2spent;
+                        const l2pct = l2budget > 0 ? Math.min((l2spent / l2budget) * 100, 100) : null;
+                        const l2over = l2budget > 0 && l2spent > l2budget;
+
+                        const l3s = categories
+                          .filter((c) => c.level === 3 && c.parentId === l2.id)
+                          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                        const l3sVisible = l3s.filter(
+                          (l3) => effectiveCatBudget(l3) > 0 || (l3SpendingMap[l3.id] ?? 0) > 0
+                        );
+
+                        return (
+                          <div key={l2.id} className="space-y-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{l2.name}</span>
+                                <span className={cn("tabular-nums shrink-0 ml-2 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
+                                  {fmt(l2spent)}
+                                  {l2budget > 0 && <span className="text-muted-foreground/60"> / {fmt(l2budget)}</span>}
+                                </span>
+                              </div>
+                              {l2pct !== null && (
+                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{ width: `${l2pct}%`, backgroundColor: l2over ? "#ef4444" : color }}
+                                  />
+                                </div>
+                              )}
+                              {l2budget > 0 && (
+                                <p className={cn("text-xs", l2remaining < 0 ? "text-red-500" : "text-muted-foreground")}>
+                                  {l2remaining < 0 ? `Over by ${fmt(Math.abs(l2remaining))}` : `${fmt(l2remaining)} left`}
+                                </p>
+                              )}
+                            </div>
+                            {l3sVisible.length > 0 && (
+                              <div className="space-y-2 pl-3 border-l border-border/50">
+                                {l3sVisible.map((l3) => {
+                                  const l3budget = effectiveCatBudget(l3);
+                                  const l3spent = l3SpendingMap[l3.id] ?? 0;
+                                  const l3remaining = l3budget - l3spent;
+                                  const l3pct = l3budget > 0 ? Math.min((l3spent / l3budget) * 100, 100) : null;
+                                  const l3over = l3budget > 0 && l3spent > l3budget;
+
+                                  return (
+                                    <div key={l3.id} className="space-y-0.5">
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground">{l3.name}</span>
+                                        <span className={cn("tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "")}>
+                                          {fmt(l3spent)}
+                                          {l3budget > 0 && <span className="text-muted-foreground/60"> / {fmt(l3budget)}</span>}
+                                        </span>
+                                      </div>
+                                      {l3pct !== null && (
+                                        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full rounded-full transition-all"
+                                            style={{ width: `${l3pct}%`, backgroundColor: l3over ? "#ef4444" : color }}
+                                          />
+                                        </div>
+                                      )}
+                                      {l3budget > 0 && (
+                                        <p className={cn("text-xs", l3remaining < 0 ? "text-red-500" : "text-muted-foreground/70")}>
+                                          {l3remaining < 0 ? `Over by ${fmt(Math.abs(l3remaining))}` : `${fmt(l3remaining)} left`}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

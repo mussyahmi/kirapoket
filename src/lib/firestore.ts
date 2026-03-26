@@ -37,7 +37,7 @@ const DEFAULT_CATEGORIES: {
       { name: "Education", items: ["Tuition", "School Fees", "Books"] },
       { name: "Personal Care", items: ["Haircut", "Toiletries", "Laundry"] },
       { name: "Baby & Kids", items: ["Diapers & Formula", "Childcare", "School Supplies"] },
-      { name: "Zakat & Fitrah" },
+      { name: "Zakat & Sedekah", items: ["Zakat Pendapatan", "Zakat Fitrah", "Zakat Harta", "Sedekah"] },
     ],
   },
   {
@@ -58,9 +58,9 @@ const DEFAULT_CATEGORIES: {
     name: "Savings",
     type: "savings",
     children: [
-      { name: "Emergency Fund" },
+      { name: "Emergency Fund", items: ["Contribution", "Top Up"] },
       { name: "Investments", items: ["ASB", "Unit Trust", "Stocks"] },
-      { name: "Goals" },
+      { name: "Goals", items: ["House", "Car", "Travel", "Education", "Wedding"] },
     ],
   },
 ];
@@ -183,7 +183,7 @@ export async function updateCategory(
 ): Promise<void> {
   // Replace undefined optional fields with deleteField() so Firestore doesn't reject them
   const payload: Record<string, unknown> = { ...data };
-  for (const key of ["budget", "budgetType", "budgetDays", "note", "color"] as const) {
+  for (const key of ["budget", "budgetType", "budgetDays", "budgetSelectedDates", "note", "links", "color"] as const) {
     if (payload[key] === undefined) payload[key] = deleteField();
   }
   await updateDoc(doc(db, "categories", id), payload);

@@ -29,7 +29,9 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -68,8 +70,9 @@ interface CategoryFormData {
   name: string;
   budgetType: "cycle" | "daily";
   budget: string;
-  budgetDays: string;
+  budgetSelectedDates: Date[];
   note: string;
+  links: string[];
   color: string;
 }
 
@@ -77,8 +80,9 @@ const DEFAULT_FORM: CategoryFormData = {
   name: "",
   budgetType: "cycle",
   budget: "",
-  budgetDays: "30",
+  budgetSelectedDates: [],
   note: "",
+  links: [],
   color: "",
 };
 
@@ -92,16 +96,17 @@ interface L3ItemProps {
 
 function fmtItemBudget(c: Category): string | null {
   if (c.budget === undefined) return null;
-  const amt = c.budget.toLocaleString("ms-MY", { minimumFractionDigits: 2 });
   if (c.budgetType === "daily") {
     const days = c.budgetDays ?? 30;
     const total = (c.budget * days).toLocaleString("ms-MY", { minimumFractionDigits: 2 });
-    return `· RM ${amt}/day × ${days}d = RM ${total}`;
+    return `· RM ${total}`;
   }
+  const amt = c.budget.toLocaleString("ms-MY", { minimumFractionDigits: 2 });
   return `· RM ${amt}`;
 }
 
 function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const {
     attributes,
     listeners,
@@ -111,52 +116,114 @@ function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
     isDragging,
   } = useSortable({ id: item.id });
 
+  const hasDetails = item.budget !== undefined || item.note || (item.links && item.links.length > 0);
+
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-      }}
-      className="flex items-center gap-1 py-1.5 pr-2 hover:bg-muted/50 rounded-lg group"
-    >
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        tabIndex={-1}
-        aria-label="Drag to reorder"
-        className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+    <>
+      <div
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.4 : 1,
+        }}
+        className="flex items-center gap-1 py-1.5 pr-2 hover:bg-muted/50 rounded-lg group"
       >
-        <GripVerticalIcon className="size-3.5" />
-      </button>
-      <span className="flex-1 text-sm text-muted-foreground truncate flex items-center gap-1.5 min-w-0">
-        <span className="truncate">{item.name}</span>
-        {fmtItemBudget(item) && (
-          <span className="text-xs shrink-0 text-muted-foreground/60">
-            {fmtItemBudget(item)}
-          </span>
-        )}
-      </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
-          <MoreHorizontalIcon className="size-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={() => openEdit(item)}>
-            <PencilIcon className="size-3.5 mr-2" /> Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => setDeleteTarget(item)}
-          >
-            <TrashIcon className="size-3.5 mr-2" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          tabIndex={-1}
+          aria-label="Drag to reorder"
+          className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+        >
+          <GripVerticalIcon className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="flex-1 text-sm text-muted-foreground truncate flex items-center gap-1.5 min-w-0 text-left"
+        >
+          <span className="truncate">{item.name}</span>
+          {fmtItemBudget(item) && (
+            <span className="text-xs shrink-0 text-muted-foreground/60">
+              {fmtItemBudget(item)}
+            </span>
+          )}
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
+            <MoreHorizontalIcon className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={() => openEdit(item)}>
+              <PencilIcon className="size-3.5 mr-2" /> Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => setDeleteTarget(item)}
+            >
+              <TrashIcon className="size-3.5 mr-2" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{item.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!hasDetails && (
+              <p className="text-sm text-muted-foreground">No details added yet.</p>
+            )}
+            {item.budget !== undefined && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Budget</p>
+                <p className="text-sm">{fmtItemBudget(item)?.replace("· ", "")}</p>
+                {item.budgetType === "daily" && item.budgetDays && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
+                  </p>
+                )}
+              </div>
+            )}
+            {item.note && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Note</p>
+                <p className="text-sm whitespace-pre-wrap">{item.note}</p>
+              </div>
+            )}
+            {item.links && item.links.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Links</p>
+                <div className="space-y-1">
+                  {item.links.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm text-primary truncate underline underline-offset-2"
+                    >
+                      {link}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => { setPreviewOpen(false); openEdit(item); }}
+            >
+              <PencilIcon className="size-4 mr-2" /> Edit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -254,7 +321,7 @@ function L2Row({
               <PlusIcon className="size-3.5 mr-2" /> Add item
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openEdit(cat)}>
-              <PencilIcon className="size-3.5 mr-2" /> Edit
+              <PencilIcon className="size-3.5 mr-2" /> Rename
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -391,8 +458,11 @@ export default function CategoriesPage() {
       name: cat.name,
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
-      budgetDays: cat.budgetDays !== undefined ? String(cat.budgetDays) : "30",
+      budgetSelectedDates: cat.budgetSelectedDates
+        ? cat.budgetSelectedDates.map(s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); })
+        : [],
       note: cat.note ?? "",
+      links: cat.links ?? [],
       color: cat.color ?? "",
     });
     setDialogContext({
@@ -416,14 +486,12 @@ export default function CategoriesPage() {
       toast.error("Please enter a valid budget amount.");
       return;
     }
-    const budgetDays = form.budgetDays.trim() ? parseInt(form.budgetDays) : undefined;
-    if (form.budgetType === "daily" && form.budgetDays.trim() && (isNaN(budgetDays!) || budgetDays! < 1)) {
-      toast.error("Please enter a valid number of days.");
-      return;
-    }
 
     const effectiveBudgetType = form.budget.trim() ? form.budgetType : undefined;
-    const effectiveBudgetDays = effectiveBudgetType === "daily" ? budgetDays : undefined;
+    const effectiveBudgetDays = effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
+      ? form.budgetSelectedDates.length : undefined;
+    const effectiveSelectedDates = effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
+      ? form.budgetSelectedDates.map(d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`) : undefined;
 
     setSaving(true);
     try {
@@ -435,7 +503,9 @@ export default function CategoriesPage() {
         budget,
         budgetType: effectiveBudgetType,
         budgetDays: effectiveBudgetDays,
+        budgetSelectedDates: effectiveSelectedDates,
         note: form.note.trim() || undefined,
+        links: form.links.filter(l => l.trim()).length > 0 ? form.links.filter(l => l.trim()) : undefined,
         color: form.color.trim() || undefined,
       };
 
@@ -445,7 +515,9 @@ export default function CategoriesPage() {
           budget: payload.budget,
           budgetType: payload.budgetType,
           budgetDays: payload.budgetDays,
+          budgetSelectedDates: payload.budgetSelectedDates,
           note: payload.note,
+          links: payload.links,
           color: payload.color,
         });
         toast.success("Category updated.");
@@ -476,7 +548,11 @@ export default function CategoriesPage() {
   };
 
   const dialogTitle = () => {
-    if (editTarget) return "Edit Category";
+    if (editTarget) {
+      if (editTarget.level === 2) return "Edit Subcategory";
+      if (editTarget.level === 3) return "Edit Item";
+      return "Edit Category";
+    }
     if (!dialogContext) return "Add Category";
     if (dialogContext.level === 1) return "Add L1 Category";
     if (dialogContext.level === 2) return "Add Subcategory";
@@ -542,21 +618,13 @@ export default function CategoriesPage() {
                         ) : null;
                       })()}
                     </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:bg-accent transition-colors shrink-0">
-                        <MoreHorizontalIcon className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem
-                          onClick={() => openCreate(2, l1.id, l1Type)}
-                        >
-                          <PlusIcon className="size-3.5 mr-2" /> Add subcategory
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEdit(l1)}>
-                          <PencilIcon className="size-3.5 mr-2" /> Edit
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <button
+                      type="button"
+                      onClick={() => openCreate(2, l1.id, l1Type)}
+                      className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:bg-accent transition-colors shrink-0"
+                    >
+                      <PlusIcon className="size-4" />
+                    </button>
                   </div>
 
                   {/* L2 + L3 */}
@@ -700,40 +768,37 @@ export default function CategoriesPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="cat-budget-daily">Amount / day (MYR)</Label>
-                        <Input
-                          id="cat-budget-daily"
-                          type="number"
-                          inputMode="decimal"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={form.budget}
-                          onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="cat-budget-days">Days</Label>
-                        <Input
-                          id="cat-budget-days"
-                          type="number"
-                          inputMode="numeric"
-                          step="1"
-                          min="1"
-                          max="31"
-                          placeholder="30"
-                          value={form.budgetDays}
-                          onChange={(e) => setForm({ ...form, budgetDays: e.target.value })}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="cat-budget-daily">Amount / day (MYR)</Label>
+                      <Input
+                        id="cat-budget-daily"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={form.budget}
+                        onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Select days this cycle</Label>
+                      <div className="rounded-xl border border-border overflow-hidden">
+                        <Calendar
+                          mode="multiple"
+                          selected={form.budgetSelectedDates}
+                          onSelect={(dates: Date[] | undefined) => setForm({ ...form, budgetSelectedDates: dates ?? [] })}
+                          className="w-full"
                         />
                       </div>
                     </div>
-                    {form.budget && parseFloat(form.budget) > 0 && (
+                    {form.budget && parseFloat(form.budget) > 0 && form.budgetSelectedDates.length > 0 && (
                       <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                        <span className="text-xs text-muted-foreground">Total per cycle</span>
+                        <span className="text-xs text-muted-foreground">
+                          {form.budgetSelectedDates.length} days selected
+                        </span>
                         <span className="text-sm font-semibold">
-                          RM {(parseFloat(form.budget) * (parseInt(form.budgetDays) || 30)).toLocaleString("ms-MY", { minimumFractionDigits: 2 })}
+                          RM {(parseFloat(form.budget) * form.budgetSelectedDates.length).toLocaleString("ms-MY", { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     )}
@@ -741,15 +806,57 @@ export default function CategoriesPage() {
                 )}
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="cat-note">Note (optional)</Label>
-              <Input
-                id="cat-note"
-                placeholder="Add a note..."
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-              />
-            </div>
+            {dialogContext?.level === 3 && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cat-note">Note (optional)</Label>
+                  <Textarea
+                    id="cat-note"
+                    placeholder="Add a note..."
+                    rows={3}
+                    value={form.note}
+                    onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Links (optional)</Label>
+                  <div className="space-y-2">
+                    {form.links.map((link, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input
+                          type="url"
+                          placeholder="https://..."
+                          value={link}
+                          onChange={(e) => {
+                            const updated = [...form.links];
+                            updated[i] = e.target.value;
+                            setForm({ ...form, links: updated });
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setForm({ ...form, links: form.links.filter((_, j) => j !== i) })}
+                        >
+                          <TrashIcon className="size-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setForm({ ...form, links: [...form.links, ""] })}
+                    >
+                      <PlusIcon className="size-4 mr-1.5" />
+                      Add link
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
             <DialogFooter>
               <Button
                 type="button"
