@@ -474,7 +474,7 @@ export default function BudgetPage() {
       {/* Image preview modal (iOS long-press to copy/save) */}
       {previewUrl && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
+          className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
           onClick={() => setPreviewUrl(null)}
         >
           <p className="text-white text-sm font-medium">Long-press the image to copy or save</p>
