@@ -424,19 +424,23 @@ export default function DashboardPage() {
               const l1Spent = l1Spending[l1.id] ?? 0;
               if (l1Spent === 0) return null;
 
+              const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
               const l2s = categories
                 .filter((c) => c.level === 2 && c.parentId === l1.id)
                 .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
                 .filter((c) => (l2Spending[c.id] ?? 0) > 0);
 
               return (
-                <div key={l1.id} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold">{l1.name}</span>
-                    <span className="tabular-nums">{formatMoney(l1Spent)}</span>
+                <div key={l1.id} className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <span className="text-sm font-bold">{l1.name}</span>
+                    </div>
+                    <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
                   </div>
                   {l2s.length > 0 && (
-                    <div className="space-y-2 pl-3 border-l-2 border-border">
+                    <div className="space-y-1.5 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
                       {l2s.map((l2) => {
                         const l3s = categories
                           .filter((c) => c.level === 3 && c.parentId === l2.id)
@@ -445,18 +449,18 @@ export default function DashboardPage() {
 
                         return (
                           <div key={l2.id} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-xs gap-2">
                               <span className="text-muted-foreground truncate">{l2.name}</span>
-                              <span className="tabular-nums text-muted-foreground shrink-0 ml-2">
+                              <span className="tabular-nums text-muted-foreground shrink-0">
                                 {formatMoney(l2Spending[l2.id] ?? 0)}
                               </span>
                             </div>
                             {l3s.length > 0 && (
-                              <div className="space-y-0.5 pl-3 border-l border-border/50">
+                              <div className="space-y-0.5 pl-3 border-l border-border/40">
                                 {l3s.map((l3) => (
-                                  <div key={l3.id} className="flex items-center justify-between text-xs">
+                                  <div key={l3.id} className="flex items-center justify-between text-xs gap-2">
                                     <span className="text-muted-foreground/70 truncate">{l3.name}</span>
-                                    <span className="tabular-nums text-muted-foreground/70 shrink-0 ml-2">
+                                    <span className="tabular-nums text-muted-foreground/60 shrink-0">
                                       {formatMoney(l3Spending[l3.id] ?? 0)}
                                     </span>
                                   </div>
