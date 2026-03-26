@@ -54,6 +54,9 @@ export default function BudgetPage() {
   const [newLabel, setNewLabel] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editAmount, setEditAmount] = useState("");
 
   const handleAddItem = async () => {
     const amount = parseFloat(newAmount);
@@ -75,6 +78,23 @@ export default function BudgetPage() {
 
   const handleDeleteItem = async (id: string) => {
     await saveUserProfile({ forecastIncomeItems: savedItems.filter((i) => i.id !== id) });
+  };
+
+  const startEdit = (item: ForecastIncomeItem) => {
+    setEditingId(item.id);
+    setEditLabel(item.label);
+    setEditAmount(String(item.amount));
+  };
+
+  const handleSaveEdit = async () => {
+    const amount = parseFloat(editAmount);
+    if (!editLabel.trim() || isNaN(amount) || amount <= 0) return;
+    await saveUserProfile({
+      forecastIncomeItems: savedItems.map((i) =>
+        i.id === editingId ? { ...i, label: editLabel.trim(), amount } : i
+      ),
+    });
+    setEditingId(null);
   };
 
   const handleCopy = async () => {
@@ -278,21 +298,55 @@ export default function BudgetPage() {
                 {/* Saved items */}
                 {savedItems.length > 0 && (
                   <div className="space-y-1.5 pl-3 border-l-2 border-border">
-                    {savedItems.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{item.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="tabular-nums text-green-600 dark:text-green-400">{fmt(item.amount)}</span>
+                    {savedItems.map((item) =>
+                      editingId === item.id ? (
+                        <div key={item.id} className="flex gap-1.5 items-center">
+                          <Input
+                            autoFocus
+                            value={editLabel}
+                            onChange={(e) => setEditLabel(e.target.value)}
+                            className="flex-1 h-7 text-xs"
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                          />
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            className="w-24 h-7 text-xs"
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                          />
+                          <button type="button" onClick={handleSaveEdit} className="text-xs font-medium text-primary shrink-0">Save</button>
+                          <button type="button" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground shrink-0">Cancel</button>
+                        </div>
+                      ) : (
+                        <div key={item.id} className="flex items-center justify-between text-xs group">
                           <button
                             type="button"
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                            onClick={() => startEdit(item)}
+                            className="text-muted-foreground hover:text-foreground transition-colors text-left"
                           >
-                            <Trash2Icon className="size-3" />
+                            {item.label}
                           </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(item)}
+                              className="tabular-nums text-green-600 dark:text-green-400 hover:underline"
+                            >
+                              {fmt(item.amount)}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2Icon className="size-3" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 )}
                 {/* Add new item */}
