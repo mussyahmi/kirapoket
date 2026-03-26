@@ -157,7 +157,7 @@ export default function TransactionsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="text-sm pl-8 w-full"
+            className="text-sm pl-8 w-full [&::-webkit-calendar-picker-indicator]:hidden"
           />
           {!dateFrom && (
             <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
@@ -171,7 +171,7 @@ export default function TransactionsPage() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="text-sm pl-8 w-full"
+            className="text-sm pl-8 w-full [&::-webkit-calendar-picker-indicator]:hidden"
           />
           {!dateTo && (
             <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
