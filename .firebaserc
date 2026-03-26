@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "kira-poket"
-  }
+  },
+  "targets": {
+    "kira-poket": {
+      "hosting": {
+        "main": [
+          "kira-poket"
+        ],
+        "redirect": [
+          "kirapoket"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
