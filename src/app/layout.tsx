@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaRegister } from "@/components/PwaRegister";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
             <AppProvider>
               {children}
               <Toaster richColors position="top-center" />
+              <PwaRegister />
             </AppProvider>
           </AuthProvider>
         </ThemeProvider>
