@@ -269,7 +269,7 @@ export default function BudgetPage() {
           <Button variant="ghost" size="icon" onClick={handleCopy} disabled={copying} aria-label="Copy as image">
             {copied
               ? <CheckIcon className="size-4 text-green-500" />
-              : <CopyIcon className={cn("size-4", copying && "animate-pulse")} />}
+              : <CopyIcon className={cn("size-4 text-muted-foreground", copying && "animate-pulse")} />}
           </Button>
         </div>
       </div>
