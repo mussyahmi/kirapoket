@@ -10,7 +10,6 @@ import {
   ArrowLeftRightIcon,
   TrashIcon,
   PencilIcon,
-  CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
@@ -151,33 +150,23 @@ export default function TransactionsPage() {
           </SelectContent>
         </Select>
 
-        <label className="relative flex items-center">
-          <CalendarIcon className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
-          <Input
+        <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-9 bg-background">
+          <span className="text-xs text-muted-foreground shrink-0">From</span>
+          <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="text-sm pl-8 w-full [&::-webkit-calendar-picker-indicator]:hidden"
+            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
-          {!dateFrom && (
-            <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
-              From
-            </span>
-          )}
         </label>
-        <label className="relative flex items-center">
-          <CalendarIcon className="absolute left-3 size-3.5 text-muted-foreground pointer-events-none" />
-          <Input
+        <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-9 bg-background">
+          <span className="text-xs text-muted-foreground shrink-0">To</span>
+          <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="text-sm pl-8 w-full [&::-webkit-calendar-picker-indicator]:hidden"
+            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
-          {!dateTo && (
-            <span className="absolute left-8 text-sm text-muted-foreground pointer-events-none select-none">
-              To
-            </span>
-          )}
         </label>
       </div>
 
