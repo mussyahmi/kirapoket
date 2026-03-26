@@ -446,16 +446,22 @@ export default function BudgetPage() {
 
                 return (
                   <div key={l1.id} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">{l1.name}</p>
+                    {/* L1 header */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <p className="text-sm font-bold">{l1.name}</p>
+                      </div>
                       <span className={cn("text-xs amt tabular-nums", l1Over ? "text-red-500" : "text-muted-foreground")}>
                         {fmtAmt(l1TotalSpent)}
                         {l1TotalBudget > 0 && (
-                          <span className="amt text-muted-foreground/60"> / {fmtAmt(l1TotalBudget)}</span>
+                          <span className="amt text-muted-foreground/50"> / {fmtAmt(l1TotalBudget)}</span>
                         )}
                       </span>
                     </div>
-                    <div className="space-y-4 pl-3 border-l-2 border-border">
+
+                    {/* L2 rows */}
+                    <div className="space-y-3 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
                       {l2sVisible.map((l2) => {
                         const l2budget = l2BudgetMap[l2.id] ?? 0;
                         const l2spent = l2SpendingMap[l2.id] ?? 0;
@@ -471,60 +477,52 @@ export default function BudgetPage() {
                         );
 
                         return (
-                          <div key={l2.id} className="space-y-2">
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{l2.name}</span>
-                                <span className={cn("amt tabular-nums shrink-0 ml-2 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
-                                  {fmtAmt(l2spent)}
-                                  {l2budget > 0 && <span className="amt text-muted-foreground/60"> / {fmtAmt(l2budget)}</span>}
-                                </span>
-                              </div>
-                              {l2pct !== null && (
-                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div key={l2.id} className="space-y-1.5">
+                            {/* L2 name + amounts */}
+                            <div className="flex items-center justify-between gap-2 text-sm">
+                              <span className="font-medium">{l2.name}</span>
+                              <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
+                                {fmtAmt(l2spent)}
+                                {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l2budget)}</span>}
+                              </span>
+                            </div>
+                            {/* Progress bar + remaining inline */}
+                            {l2pct !== null && (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all"
                                     style={{ width: `${l2pct}%`, backgroundColor: l2over ? "#ef4444" : color }}
                                   />
                                 </div>
-                              )}
-                              {l2budget > 0 && (
-                                <p className={cn("text-xs", l2remaining < 0 ? "text-red-500" : "text-muted-foreground")}>
-                                  {l2remaining < 0 ? `Over by ${fmtAmt(Math.abs(l2remaining))}` : `${fmtAmt(l2remaining)} left`}
-                                </p>
-                              )}
-                            </div>
+                                <span className={cn("text-[10px] tabular-nums amt shrink-0 w-20 text-right", l2over ? "text-red-500" : "text-muted-foreground/60")}>
+                                  {l2over ? `Over ${fmtAmt(Math.abs(l2remaining))}` : `${fmtAmt(l2remaining)} left`}
+                                </span>
+                              </div>
+                            )}
+                            {/* L3 rows */}
                             {l3sVisible.length > 0 && (
-                              <div className="space-y-2 pl-3 border-l border-border/50">
+                              <div className="space-y-1 pt-0.5 pl-3 border-l border-border/40">
                                 {l3sVisible.map((l3) => {
                                   const l3budget = effectiveCatBudget(l3);
                                   const l3spent = l3SpendingMap[l3.id] ?? 0;
                                   const l3remaining = l3budget - l3spent;
-                                  const l3pct = l3budget > 0 ? Math.min((l3spent / l3budget) * 100, 100) : null;
                                   const l3over = l3budget > 0 && l3spent > l3budget;
 
                                   return (
-                                    <div key={l3.id} className="space-y-0.5">
-                                      <div className="flex items-center justify-between text-xs">
-                                        <span className="text-muted-foreground">{l3.name}</span>
-                                        <span className={cn("amt tabular-nums shrink-0 ml-2", l3over ? "text-red-500" : "text-muted-foreground")}>
+                                    <div key={l3.id} className="flex items-center justify-between gap-2 text-xs">
+                                      <span className="text-muted-foreground/80">{l3.name}</span>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
                                           {fmtAmt(l3spent)}
-                                          {l3budget > 0 && <span className="amt text-muted-foreground/60"> / {fmtAmt(l3budget)}</span>}
+                                          {l3budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l3budget)}</span>}
                                         </span>
+                                        {l3budget > 0 && (
+                                          <span className={cn("text-[10px] amt tabular-nums", l3over ? "text-red-400" : "text-muted-foreground/50")}>
+                                            ({l3over ? `-${fmtAmt(Math.abs(l3remaining))}` : `${fmtAmt(l3remaining)} left`})
+                                          </span>
+                                        )}
                                       </div>
-                                      {l3pct !== null && (
-                                        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-                                          <div
-                                            className="h-full rounded-full transition-all"
-                                            style={{ width: `${l3pct}%`, backgroundColor: l3over ? "#ef4444" : color }}
-                                          />
-                                        </div>
-                                      )}
-                                      {l3budget > 0 && (
-                                        <p className={cn("text-xs", l3remaining < 0 ? "text-red-500" : "text-muted-foreground/70")}>
-                                          {l3remaining < 0 ? `Over by ${fmtAmt(Math.abs(l3remaining))}` : `${fmtAmt(l3remaining)} left`}
-                                        </p>
-                                      )}
                                     </div>
                                   );
                                 })}
