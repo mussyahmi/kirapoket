@@ -118,7 +118,7 @@ export default function TransactionsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType((v ?? "all") as FilterType)}
         >
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="w-full sm:w-36 h-9">
             <SelectValue>
               {{ all: "All types", expense: "Expense", income: "Income", transfer: "Transfer" }[filterType]}
             </SelectValue>
@@ -135,7 +135,7 @@ export default function TransactionsPage() {
           value={filterAccount}
           onValueChange={(v) => setFilterAccount(v ?? "all")}
         >
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full sm:w-40 h-9">
             <SelectValue>
               {filterAccount === "all" ? "All accounts" : accounts.find((a) => a.id === filterAccount)?.name ?? "Account"}
             </SelectValue>
