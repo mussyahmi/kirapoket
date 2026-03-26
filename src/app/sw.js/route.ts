@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-static";
+
 const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "1";
 
 const SW_CONTENT = `// KiraPoket Service Worker v${version}
