@@ -66,6 +66,12 @@ const L1_DOT: Record<L1Type, string> = {
   savings: "bg-blue-400 dark:bg-blue-500",
 };
 
+const L1_HEX: Record<L1Type, string> = {
+  needs: "#4ade80",
+  wants: "#fb923c",
+  savings: "#60a5fa",
+};
+
 interface CategoryFormData {
   name: string;
   budgetType: "cycle" | "daily";
@@ -344,7 +350,10 @@ function L2Row({
             items={l3.map((i) => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="pl-8 space-y-0.5">
+            <div
+              className="ml-8 pl-3 space-y-0.5 border-l-2 my-1"
+              style={{ borderColor: (L1_HEX[l1Type] ?? "#94a3b8") + "66" }}
+            >
               {l3.map((item) => (
                 <L3Item
                   key={item.id}
