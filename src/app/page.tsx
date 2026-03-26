@@ -37,23 +37,23 @@ function GoogleIcon() {
 // ─── Mock dashboard preview ───────────────────────────────────────────────────
 const MOCK_L1 = [
   {
-    label: "Needs", dot: "#4ade80", border: "#4ade8066",
+    label: "Needs", spent: 630, dot: "#4ade80", border: "#4ade8066",
     l2: [
-      { name: "Food & Drinks", used: 420, budget: 600, left: 180, color: "#4ade80" },
-      { name: "Transport", used: 210, budget: 300, left: 90, color: "#4ade80" },
+      { name: "Food & Drinks", spent: 420 },
+      { name: "Transport", spent: 210 },
     ],
   },
   {
-    label: "Wants", dot: "#fb923c", border: "#fb923c66",
+    label: "Wants", spent: 225, dot: "#fb923c", border: "#fb923c66",
     l2: [
-      { name: "Subscriptions", used: 45, budget: 60, left: 15, color: "#fb923c" },
-      { name: "Dining Out", used: 180, budget: 200, left: 20, color: "#fb923c" },
+      { name: "Dining Out", spent: 180 },
+      { name: "Subscriptions", spent: 45 },
     ],
   },
   {
-    label: "Savings", dot: "#60a5fa", border: "#60a5fa66",
+    label: "Savings", spent: 300, dot: "#60a5fa", border: "#60a5fa66",
     l2: [
-      { name: "Goals", used: 300, budget: 500, left: 200, color: "#60a5fa" },
+      { name: "Goals", spent: 300 },
     ],
   },
 ];
@@ -91,30 +91,22 @@ function MockDashboard() {
 
       {/* by category — L1 / L2 hierarchy */}
       <div className="px-3 pb-3 space-y-3">
-        {MOCK_L1.map(({ label, dot, border, l2 }) => (
+        {MOCK_L1.map(({ label, spent, dot, border, l2 }) => (
           <div key={label}>
             {/* L1 row */}
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
-              <span className="text-[10px] font-bold text-foreground">{label}</span>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
+                <span className="text-[10px] font-bold text-foreground">{label}</span>
+              </div>
+              <span className="text-[9px] text-muted-foreground">RM {spent}</span>
             </div>
             {/* L2 rows with tinted left border */}
-            <div className="space-y-2 pl-3 border-l-2" style={{ borderColor: border }}>
-              {l2.map(({ name, used, budget, left, color }) => (
-                <div key={name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-medium text-foreground">{name}</span>
-                    <span className="text-[9px] text-muted-foreground">RM {used} / {budget}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${(used / budget) * 100}%`, backgroundColor: color }}
-                      />
-                    </div>
-                    <span className="text-[8px] text-muted-foreground shrink-0">RM {left} left</span>
-                  </div>
+            <div className="space-y-1 pl-3 border-l-2" style={{ borderColor: border }}>
+              {l2.map(({ name, spent: l2spent }) => (
+                <div key={name} className="flex items-center justify-between">
+                  <span className="text-[9px] text-foreground/70">{name}</span>
+                  <span className="text-[9px] text-muted-foreground">RM {l2spent}</span>
                 </div>
               ))}
             </div>
