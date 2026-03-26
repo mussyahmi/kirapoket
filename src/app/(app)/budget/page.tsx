@@ -274,7 +274,7 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div ref={captureRef} className="space-y-6 bg-background rounded-xl p-1">
+      <div ref={captureRef} className={cn("space-y-6 bg-background rounded-xl p-1", censored && "[&_.tabular-nums]:!text-muted-foreground [&_.tabular-nums]:!dark:text-muted-foreground")}>
 
         {/* Forecast Summary */}
         <Card>
@@ -304,13 +304,13 @@ export default function BudgetPage() {
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className="font-medium text-green-600 dark:text-green-400">{fmtAmt(actualIncome)}</span>
+                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmtAmt(actualIncome)}</span>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Expected income</span>
-                  <span className="font-medium text-green-600 dark:text-green-400">{fmtAmt(forecastIncome)}</span>
+                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmtAmt(forecastIncome)}</span>
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
@@ -393,11 +393,11 @@ export default function BudgetPage() {
 
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total budgeted</span>
-              <span className="font-medium">− {fmtAmt(totalBudgeted)}</span>
+              <span className="font-medium tabular-nums">− {fmtAmt(totalBudgeted)}</span>
             </div>
             <div className="flex justify-between text-sm pt-2 border-t font-semibold">
               <span>Unallocated</span>
-              <span className={cn(unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
+              <span className={cn("tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
                 {fmtAmt(unallocated)}
               </span>
             </div>
@@ -405,11 +405,11 @@ export default function BudgetPage() {
             <div className="pt-2 border-t space-y-2.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Spent so far</span>
-                <span className="font-medium text-red-600 dark:text-red-400">{fmtAmt(totalSpent)}</span>
+                <span className="font-medium tabular-nums text-red-600 dark:text-red-400">{fmtAmt(totalSpent)}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold">
                 <span>Remaining</span>
-                <span className={cn(actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
+                <span className={cn("tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
                   {fmtAmt(actualRemaining)}
                 </span>
               </div>
