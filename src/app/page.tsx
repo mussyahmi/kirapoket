@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Wallet,
-  TrendingUp,
   PieChart,
   RefreshCw,
   ArrowUpRight,
@@ -74,48 +73,43 @@ const MOCK_L1 = [
 function MockDashboard() {
   return (
     <div className="w-full rounded-2xl border border-border bg-card shadow-2xl overflow-hidden text-xs select-none">
-      {/* header */}
-      <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
-        <div>
-          <p className="text-[10px] text-muted-foreground">Mar 25 – Apr 24</p>
-          <p className="font-semibold text-sm text-foreground">Mar Cycle</p>
-        </div>
-        <div className="size-7 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-primary">KP</span>
-        </div>
+      {/* header — cycle selector */}
+      <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-center">
+        <p className="text-[11px] font-medium text-foreground">Mar 25 – Apr 24</p>
       </div>
 
-      {/* summary cards */}
-      <div className="grid grid-cols-3 gap-2 p-3">
+      {/* summary — plain 3-col with dividers, no bg */}
+      <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
         {[
-          { label: "Income", value: "RM 4,500", color: "text-emerald-500", Icon: ArrowUpRight },
-          { label: "Expenses", value: "RM 2,310", color: "text-red-400", Icon: ArrowDownRight },
-          { label: "Savings", value: "RM 2,190", color: "text-primary", Icon: TrendingUp },
-        ].map(({ label, value, color, Icon }) => (
-          <div key={label} className="rounded-xl bg-muted/50 p-2.5 flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] text-muted-foreground">{label}</span>
-              <Icon className={`size-3 ${color}`} />
-            </div>
-            <span className={`font-semibold text-[11px] ${color}`}>{value}</span>
+          { label: "Income", value: "RM 4,500", color: "text-green-600" },
+          { label: "Expenses", value: "RM 2,310", color: "text-red-500" },
+          { label: "Savings", value: "RM 2,190", color: "text-blue-600" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="flex flex-col items-center px-2 py-2.5 gap-0.5">
+            <span className="text-[9px] text-muted-foreground">{label}</span>
+            <span className={`font-semibold text-[10px] ${color}`}>{value}</span>
           </div>
         ))}
       </div>
 
-      {/* accounts */}
-      <div className="px-3 pb-2 border-b border-border space-y-1">
-        <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Accounts</p>
+      {/* accounts — card style */}
+      <div className="px-3 py-2.5 border-b border-border space-y-1.5">
+        <p className="text-[10px] font-semibold text-foreground mb-1">Accounts</p>
         {MOCK_ACCOUNTS.map(({ name, balance }) => (
           <div key={name} className="flex items-center justify-between">
             <span className="text-[9px] text-foreground">{name}</span>
             <span className="text-[9px] font-medium text-foreground">{balance}</span>
           </div>
         ))}
+        <div className="flex items-center justify-between border-t border-border pt-1.5">
+          <span className="text-[9px] font-medium text-foreground">Total</span>
+          <span className="text-[9px] font-semibold text-foreground">RM 2,990.00</span>
+        </div>
       </div>
 
       {/* by category — L1 / L2 / L3 hierarchy */}
       <div className="px-3 pb-3 space-y-3">
-        <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">Spending by Category</p>
+        <p className="text-[10px] font-semibold text-foreground">Spending by Category</p>
         {MOCK_L1.map(({ label, spent, dot, border, l2 }) => (
           <div key={label}>
             <div className="flex items-center justify-between mb-1.5">
@@ -150,18 +144,21 @@ function MockDashboard() {
       </div>
 
       {/* recent txns */}
-      <div className="border-t border-border px-3 py-2 space-y-1.5">
+      <div className="border-t border-border px-3 py-2 space-y-2">
         {[
-          { name: "Grab Food", cat: "Wants", amount: "-RM 18.50", neg: true },
-          { name: "Salary", cat: "Income", amount: "+RM 4,500", neg: false },
-          { name: "Petronas", cat: "Needs", amount: "-RM 60.00", neg: true },
-        ].map(({ name, cat, amount, neg }) => (
-          <div key={name} className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-medium text-foreground">{name}</p>
-              <p className="text-[9px] text-muted-foreground">{cat}</p>
+          { name: "Grab Food", sub: "Maybank · 26 Mar", amount: "-RM 18.50", income: false },
+          { name: "Salary", sub: "Maybank · 25 Mar", amount: "+RM 4,500", income: true },
+          { name: "Petronas", sub: "Maybank · 24 Mar", amount: "-RM 60.00", income: false },
+        ].map(({ name, sub, amount, income }) => (
+          <div key={name} className="flex items-center gap-2">
+            <div className={`size-6 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
+              {income ? <ArrowDownRight className="size-3" /> : <ArrowUpRight className="size-3" />}
             </div>
-            <span className={`text-[10px] font-semibold ${neg ? "text-red-400" : "text-emerald-500"}`}>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-medium text-foreground truncate">{name}</p>
+              <p className="text-[8px] text-muted-foreground">{sub}</p>
+            </div>
+            <span className={`text-[10px] font-semibold shrink-0 ${income ? "text-green-600" : "text-red-500"}`}>
               {amount}
             </span>
           </div>
