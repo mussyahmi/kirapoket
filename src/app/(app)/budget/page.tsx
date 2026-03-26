@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef } from "react";
 import { format } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { getSalaryCycleRange } from "@/lib/firestore";
@@ -46,6 +46,7 @@ export default function BudgetPage() {
   const [mode, setMode] = useState<"actual" | "forecast">("actual");
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
 
   // Forecast income items (local draft, saved on change)
@@ -82,27 +83,40 @@ export default function BudgetPage() {
     try {
       const dataUrl = await toPng(captureRef.current, {
         cacheBust: true,
-        backgroundColor: "hsl(var(--background))",
+        backgroundColor: "#ffffff",
         pixelRatio: 2,
       });
-      const blob = await (await fetch(dataUrl)).blob();
-      if (navigator.clipboard?.write) {
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        setCopied(true);
-        toast.success("Copied! Paste anywhere to share.");
-        setTimeout(() => setCopied(false), 2000);
-      } else {
-        const link = document.createElement("a");
-        link.download = `kirapoket-budget.png`;
-        link.href = dataUrl;
-        link.click();
-        toast.success("Downloaded.");
+
+      // Desktop: try clipboard API (stays in gesture context on Chrome/Edge)
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (!isIos && navigator.clipboard?.write) {
+        try {
+          const blob = await (await fetch(dataUrl)).blob();
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          setCopied(true);
+          toast.success("Copied! Paste anywhere to share.");
+          setTimeout(() => setCopied(false), 2000);
+          return;
+        } catch {
+          // Fall through to preview modal
+        }
       }
+
+      // iOS / fallback: show image preview — long-press to copy/save
+      setPreviewUrl(dataUrl);
     } catch {
-      toast.error("Failed to copy image.");
+      toast.error("Failed to generate image.");
     } finally {
       setCopying(false);
     }
+  };
+
+  const handleDownload = () => {
+    if (!previewUrl) return;
+    const link = document.createElement("a");
+    link.download = "kirapoket-budget.png";
+    link.href = previewUrl;
+    link.click();
   };
 
   const salaryDay = userProfile?.salaryDay ?? 25;
@@ -456,6 +470,43 @@ export default function BudgetPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Image preview modal (iOS long-press to copy/save) */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <p className="text-white text-sm font-medium">Long-press the image to copy or save</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewUrl}
+            alt="Budget snapshot"
+            className="max-w-full max-h-[70vh] rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1.5"
+              onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+            >
+              <DownloadIcon className="size-3.5" />
+              Download
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:text-white hover:bg-white/20 gap-1.5"
+              onClick={() => setPreviewUrl(null)}
+            >
+              <XIcon className="size-3.5" />
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
