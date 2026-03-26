@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
@@ -11,9 +11,20 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#4F46E5",
+};
+
 export const metadata: Metadata = {
   title: "KiraPoket – Expense Tracker",
   description: "Track your spending by salary cycle",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KiraPoket",
+  },
+  formatDetection: { telephone: false },
 };
 
 export default function RootLayout({
