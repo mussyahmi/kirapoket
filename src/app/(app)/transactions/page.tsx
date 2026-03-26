@@ -236,7 +236,7 @@ export default function TransactionsPage() {
                           {formatMoney(tx.amount, tx.type)}
                         </span>
                         <div className="flex gap-1 shrink-0">
-                          <Link href={`/transactions/${tx.id}/edit`}>
+                          <Link href={`/transactions/edit?id=${tx.id}`}>
                             <Button variant="ghost" size="icon-sm">
                               <PencilIcon className="size-3.5" />
                             </Button>

@@ -1,9 +1,8 @@
 "use client";
 
-export const dynamic = "force-static";
-
+import { Suspense } from "react";
 import { useState, useMemo, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { ChevronLeftIcon } from "lucide-react";
@@ -17,9 +16,10 @@ import { cn } from "@/lib/utils";
 
 type TxType = "expense" | "income" | "transfer";
 
-export default function EditTransactionPage() {
+function EditTransactionForm() {
   const router = useRouter();
-  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") ?? "";
   const { accounts, categories, transactions, loadingTransactions, editTransaction } = useApp();
 
   const tx = useMemo(() => transactions.find((t) => t.id === id), [transactions, id]);
@@ -322,5 +322,20 @@ export default function EditTransactionPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function EditTransactionPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4">
+        <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+        <div className="h-12 w-full bg-muted rounded animate-pulse" />
+        <div className="h-12 w-full bg-muted rounded animate-pulse" />
+        <div className="h-64 w-full bg-muted rounded animate-pulse" />
+      </div>
+    }>
+      <EditTransactionForm />
+    </Suspense>
   );
 }
