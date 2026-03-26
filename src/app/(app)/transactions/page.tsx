@@ -118,7 +118,7 @@ export default function TransactionsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType((v ?? "all") as FilterType)}
         >
-          <SelectTrigger className="w-full sm:w-36 h-9">
+          <SelectTrigger className="w-full sm:w-36">
             <SelectValue>
               {{ all: "All types", expense: "Expense", income: "Income", transfer: "Transfer" }[filterType]}
             </SelectValue>
@@ -135,7 +135,7 @@ export default function TransactionsPage() {
           value={filterAccount}
           onValueChange={(v) => setFilterAccount(v ?? "all")}
         >
-          <SelectTrigger className="w-full sm:w-40 h-9">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue>
               {filterAccount === "all" ? "All accounts" : accounts.find((a) => a.id === filterAccount)?.name ?? "Account"}
             </SelectValue>
@@ -151,7 +151,7 @@ export default function TransactionsPage() {
         </Select>
 
         <div className="flex items-center gap-2 sm:flex-1">
-          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-9 bg-background flex-1">
+          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-10 bg-background flex-1">
             <span className="text-xs text-muted-foreground shrink-0">From</span>
             <input
               type="date"
@@ -160,7 +160,7 @@ export default function TransactionsPage() {
               className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </label>
-          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-9 bg-background flex-1">
+          <label className="flex items-center gap-1.5 border border-input rounded-md px-2.5 h-10 bg-background flex-1">
             <span className="text-xs text-muted-foreground shrink-0">To</span>
             <input
               type="date"
