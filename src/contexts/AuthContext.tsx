@@ -29,10 +29,18 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return !localStorage.getItem("kirapoket-authed");
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        localStorage.setItem("kirapoket-authed", "1");
+      } else {
+        localStorage.removeItem("kirapoket-authed");
+      }
       setUser(firebaseUser);
       setLoading(false);
     });
