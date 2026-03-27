@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { PlusIcon, TrashIcon, CheckIcon, RotateCcwIcon, PencilIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -181,17 +181,17 @@ export default function DebtsPage() {
           </p>
           {debt.note && <p className="text-xs text-muted-foreground">{debt.note}</p>}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">{debt.date}</span>
+            <span className="text-[10px] text-muted-foreground">{format(parseISO(debt.date), "d MMM yyyy")}</span>
             {debt.dueDate && (
               <span className={cn(
                 "text-[10px]",
                 isOverdue ? "text-red-500 font-medium" : "text-muted-foreground"
               )}>
-                {isOverdue ? "⚠ Overdue · " : "Due · "}{debt.dueDate}
+                {isOverdue ? "⚠ Overdue · " : "Due · "}{format(parseISO(debt.dueDate), "d MMM yyyy")}
               </span>
             )}
             {debt.settled && debt.settledDate && (
-              <span className="text-[10px] text-muted-foreground">Settled · {debt.settledDate}</span>
+              <span className="text-[10px] text-muted-foreground">Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}</span>
             )}
           </div>
         </div>

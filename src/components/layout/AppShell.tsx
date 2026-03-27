@@ -37,7 +37,8 @@ const allNavItems = [...bottomNavItems, ...menuItems];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { userProfile, accounts } = useApp();
+  const { userProfile, accounts, debts } = useApp();
+  const unsettledCount = debts.filter((d) => !d.settled).length;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +110,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="size-4 shrink-0" />
-                {label}
+                <span className="flex-1">{label}</span>
+                {href === "/debts" && unsettledCount > 0 && (
+                  <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                    {unsettledCount > 99 ? "99+" : unsettledCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -189,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               aria-label={label}
-              className="flex items-center justify-center flex-1 py-2"
+              className="flex flex-col items-center justify-center flex-1 py-2 gap-0.5"
             >
               <span className={cn(
                 "flex items-center justify-center w-10 h-8 rounded-full transition-colors",
@@ -197,6 +203,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}>
                 <Icon className={cn("size-5 transition-colors", active ? "text-primary" : "text-muted-foreground")} />
               </span>
+              {href === "/debts" && unsettledCount > 0 ? (
+                <span className="size-1.5 rounded-full bg-red-500" />
+              ) : (
+                <span className="size-1.5" />
+              )}
             </Link>
           );
         })}
