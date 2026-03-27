@@ -15,7 +15,8 @@ export default function AppLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace("/");
+      const t = setTimeout(() => router.replace("/"), 200);
+      return () => clearTimeout(t);
     }
   }, [user, loading, router]);
 
