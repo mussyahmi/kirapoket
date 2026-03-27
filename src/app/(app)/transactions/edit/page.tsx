@@ -219,7 +219,7 @@ function EditTransactionForm() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date & Time</Label>
-          <div className="rounded-xl border border-border overflow-hidden">
+          <div className="rounded-xl border border-border">
             <Calendar
               mode="single"
               selected={selectedDate}
