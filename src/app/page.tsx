@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -210,13 +208,6 @@ function FeatureCard({
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const { userProfile } = useApp();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace("/home");
-    }
-  }, [user, loading, router]);
 
   const handleSignIn = async () => {
     try {
