@@ -160,9 +160,8 @@ export default function AccountsPage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Accounts</h1>
-        <Button size="sm" onClick={openCreate} className="gap-1.5">
+        <Button size="sm" onClick={openCreate} className="size-8 p-0">
           <PlusIcon className="size-4" />
-          Add Account
         </Button>
       </div>
 
