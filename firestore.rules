@@ -30,6 +30,13 @@ service cloud.firestore {
                     && request.auth.uid == request.resource.data.userId;
     }
 
+    match /debts/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId
+                    && request.auth.uid == request.resource.data.userId;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;
