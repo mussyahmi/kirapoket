@@ -452,12 +452,6 @@ export default function BudgetPage() {
                         <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         <p className="text-sm font-bold">{l1.name}</p>
                       </div>
-                      <span className={cn("text-xs amt tabular-nums", l1Over ? "text-red-500" : "text-muted-foreground")}>
-                        {fmtAmt(l1TotalSpent)}
-                        {l1TotalBudget > 0 && (
-                          <span className="amt text-muted-foreground/50"> / {fmtAmt(l1TotalBudget)}</span>
-                        )}
-                      </span>
                     </div>
 
                     {/* L2 rows */}
