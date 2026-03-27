@@ -797,7 +797,7 @@ export default function CategoriesPage() {
                           mode="multiple"
                           selected={form.budgetSelectedDates}
                           onSelect={(dates: Date[] | undefined) => setForm({ ...form, budgetSelectedDates: dates ?? [] })}
-                          className="w-full"
+                          className="w-full pb-6"
                         />
                       </div>
                     </div>
