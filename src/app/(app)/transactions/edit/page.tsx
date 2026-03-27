@@ -179,7 +179,7 @@ function EditTransactionForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Type */}
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">Type</Label>
+          <Label className="mb-1.5 block">Type</Label>
           <div className="flex rounded-lg overflow-hidden border border-border">
             {(["expense", "income", "transfer"] as TxType[]).map((type) => (
               <button
@@ -228,7 +228,7 @@ function EditTransactionForm() {
               className="w-full pb-2"
             />
           </div>
-          <div className="space-y-1.5 mt-4">
+          <div className="space-y-1.5 mt-6">
             <Label htmlFor="time">Time</Label>
             <Input
               id="time"
@@ -270,7 +270,7 @@ function EditTransactionForm() {
         {txType === "expense" && (
           <div className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Category</Label>
+              <Label className="mb-1.5 block">Category</Label>
               <div className="flex flex-wrap gap-2">
                 {l1Categories.map((cat) => (
                   <button key={cat.id} type="button" onClick={() => handleSelectL1(cat.id)} className={pillClass(l1Id === cat.id)}>
@@ -281,7 +281,7 @@ function EditTransactionForm() {
             </div>
             {l1Id && l2Categories.length > 0 && (
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Subcategory</Label>
+                <Label className="mb-1.5 block">Subcategory</Label>
                 <div className="flex flex-wrap gap-2">
                   {l2Categories.map((cat) => (
                     <button key={cat.id} type="button" onClick={() => handleSelectL2(cat.id)} className={pillClass(l2Id === cat.id)}>
@@ -293,7 +293,7 @@ function EditTransactionForm() {
             )}
             {l2Id && l3Categories.length > 0 && (
               <div>
-                <Label className="text-xs text-muted-foreground mb-1.5 block">Item</Label>
+                <Label className="mb-1.5 block">Item</Label>
                 <div className="flex flex-wrap gap-2">
                   {l3Categories.map((cat) => (
                     <button key={cat.id} type="button" onClick={() => setL3Id(l3Id === cat.id ? null : cat.id)} className={pillClass(l3Id === cat.id)}>

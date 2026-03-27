@@ -169,9 +169,7 @@ export default function NewTransactionPage() {
     <div className="space-y-3">
       {/* L1 */}
       <div>
-        <Label className="text-xs text-muted-foreground mb-1.5 block">
-          Category
-        </Label>
+        <Label className="mb-1.5 block">Category</Label>
         <div className="flex flex-wrap gap-2">
           {l1Categories.map((cat) => (
             <button
@@ -199,9 +197,7 @@ export default function NewTransactionPage() {
       {/* L2 */}
       {l1Id && l2Categories.length > 0 && (
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">
-            Subcategory
-          </Label>
+          <Label className="mb-1.5 block">Subcategory</Label>
           <div className="flex flex-wrap gap-2">
             {l2Categories.map((cat) => (
               <button
@@ -225,9 +221,7 @@ export default function NewTransactionPage() {
       {/* L3 */}
       {l2Id && l3Categories.length > 0 && (
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">
-            Item
-          </Label>
+          <Label className="mb-1.5 block">Item</Label>
           <div className="flex flex-wrap gap-2">
             {l3Categories.map((cat) => (
               <button
@@ -267,9 +261,7 @@ export default function NewTransactionPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Type Selector */}
         <div>
-          <Label className="text-xs text-muted-foreground mb-1.5 block">
-            Type
-          </Label>
+          <Label className="mb-1.5 block">Type</Label>
           <div className="flex rounded-lg overflow-hidden border border-border">
             {(["expense", "income", "transfer"] as TxType[]).map((type) => (
               <button
@@ -325,7 +317,7 @@ export default function NewTransactionPage() {
               className="w-full pb-2"
             />
           </div>
-          <div className="space-y-1.5 mt-4">
+          <div className="space-y-1.5 mt-6">
             <Label htmlFor="time">Time</Label>
             <Input
               id="time"
