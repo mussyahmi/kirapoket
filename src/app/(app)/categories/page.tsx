@@ -790,7 +790,7 @@ export default function CategoriesPage() {
                         onChange={(e) => setForm({ ...form, budget: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 mt-2">
                       <Label>Select days this cycle</Label>
                       <div className="rounded-xl border border-border">
                         <Calendar
