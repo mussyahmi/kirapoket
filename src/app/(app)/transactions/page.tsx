@@ -220,11 +220,16 @@ export default function TransactionsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {category?.name ?? tx.type}
+                            {tx.type === "expense"
+                              ? (category?.name ?? "Expense")
+                              : tx.type === "income"
+                              ? (tx.note || "Income")
+                              : "Transfer"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {account?.name}
-                            {tx.note ? ` · ${tx.note}` : ""}
+                            {tx.type === "income"
+                              ? account?.name
+                              : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
                           </p>
                         </div>
                         <span
