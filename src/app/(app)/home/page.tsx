@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { format, addMonths, differenceInDays } from "date-fns";
+import { format, addMonths, differenceInDays, parseISO } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
@@ -532,10 +532,14 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {category?.name ?? tx.type}
+                      {tx.type === "expense"
+                        ? (category?.name ?? "Expense")
+                        : tx.type === "income"
+                        ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
+                        : "Transfer"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {account?.name} · {tx.date}
+                      {account?.name} · {format(parseISO(tx.date), "d MMM yyyy")}
                     </p>
                   </div>
                   <span

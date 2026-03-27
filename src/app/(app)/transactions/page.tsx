@@ -223,7 +223,7 @@ export default function TransactionsPage() {
                             {tx.type === "expense"
                               ? (category?.name ?? "Expense")
                               : tx.type === "income"
-                              ? (tx.note || "Income")
+                              ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
                               : "Transfer"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
