@@ -10,6 +10,7 @@ import {
   TagIcon,
   BarChart3Icon,
   SettingsIcon,
+  HandCoinsIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp } from "@/contexts/AppContext";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRightIcon, requiresSetup: true },
   { href: "/budget", label: "Budget", icon: BarChart3Icon, requiresSetup: false },
   { href: "/accounts", label: "Accounts", icon: WalletIcon, requiresSetup: false },
+  { href: "/debts", label: "Debts", icon: HandCoinsIcon, requiresSetup: false },
   { href: "/categories", label: "Categories", icon: TagIcon, requiresSetup: false },
   { href: "/settings", label: "Settings", icon: SettingsIcon, requiresSetup: false },
 ];

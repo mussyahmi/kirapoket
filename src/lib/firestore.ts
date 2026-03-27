@@ -14,7 +14,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Account, Category, Transaction, UserProfile } from "./types";
+import type { Account, Category, Transaction, UserProfile, Debt } from "./types";
 import { format, startOfDay, endOfDay, parseISO, isWithinInterval, addDays } from "date-fns";
 
 // ─── Default category seed ───────────────────────────────────────────────────
@@ -237,8 +237,47 @@ export async function reorderCategories(
   );
 }
 
+// ─── Debts ────────────────────────────────────────────────────────────────────
+
+export async function getDebts(userId: string): Promise<Debt[]> {
+  const q = query(
+    collection(db, "debts"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Debt));
+}
+
+export async function addDebt(
+  userId: string,
+  data: Omit<Debt, "id" | "userId" | "createdAt">
+): Promise<Debt> {
+  const payload: Record<string, unknown> = { userId, createdAt: Timestamp.now() };
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) payload[k] = v;
+  }
+  const ref = await addDoc(collection(db, "debts"), payload);
+  return { id: ref.id, ...payload } as Debt;
+}
+
+export async function updateDebt(
+  id: string,
+  data: Partial<Omit<Debt, "id" | "userId" | "createdAt">>
+): Promise<void> {
+  const payload: Record<string, unknown> = { ...data };
+  for (const key of ["note", "dueDate", "settledDate"] as const) {
+    if (payload[key] === undefined) payload[key] = deleteField();
+  }
+  await updateDoc(doc(db, "debts", id), payload);
+}
+
+export async function deleteDebt(id: string): Promise<void> {
+  await deleteDoc(doc(db, "debts", id));
+}
+
 export async function deleteAllUserData(uid: string): Promise<void> {
-  const collections = ["accounts", "categories", "transactions"] as const;
+  const collections = ["accounts", "categories", "transactions", "debts"] as const;
   for (const col of collections) {
     const q = query(collection(db, col), where("userId", "==", uid));
     const snap = await getDocs(q);

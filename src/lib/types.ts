@@ -44,6 +44,20 @@ export interface Category {
   sortOrder?: number;
 }
 
+export interface Debt {
+  id: string;
+  userId: string;
+  personName: string;
+  amount: number;
+  note?: string;
+  direction: "i_owe" | "they_owe";
+  date: string;
+  dueDate?: string;
+  settled: boolean;
+  settledDate?: string;
+  createdAt: Timestamp | string;
+}
+
 export interface Transaction {
   id: string;
   userId: string;

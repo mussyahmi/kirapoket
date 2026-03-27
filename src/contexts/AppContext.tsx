@@ -7,7 +7,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import type { Account, Category, Transaction, UserProfile } from "@/lib/types";
+import type { Account, Category, Transaction, UserProfile, Debt } from "@/lib/types";
 import {
   getAccounts,
   addAccount,
@@ -22,6 +22,10 @@ import {
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  getDebts,
+  addDebt,
+  updateDebt,
+  deleteDebt,
   getUserProfile,
   updateUserProfile,
   seedDefaultCategories,
@@ -70,6 +74,14 @@ interface AppContextValue {
   ) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
 
+  // Debts
+  debts: Debt[];
+  loadingDebts: boolean;
+  refreshDebts: () => Promise<void>;
+  createDebt: (data: Omit<Debt, "id" | "userId" | "createdAt">) => Promise<Debt>;
+  editDebt: (id: string, data: Partial<Omit<Debt, "id" | "userId" | "createdAt">>) => Promise<void>;
+  removeDebt: (id: string) => Promise<void>;
+
   // Profile
   refreshProfile: () => Promise<void>;
   saveUserProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -83,11 +95,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [loadingDebts, setLoadingDebts] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   const uid = user?.uid;
@@ -153,19 +167,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [uid]);
 
+  const refreshDebts = useCallback(async () => {
+    if (!uid) return;
+    setLoadingDebts(true);
+    try {
+      const data = await getDebts(uid);
+      setDebts(data);
+    } finally {
+      setLoadingDebts(false);
+    }
+  }, [uid]);
+
   useEffect(() => {
     if (uid) {
       refreshProfile();
       refreshAccounts();
       refreshCategories();
       refreshTransactions();
+      refreshDebts();
     } else {
       setAccounts([]);
       setCategories([]);
       setTransactions([]);
+      setDebts([]);
       setUserProfile(null);
     }
-  }, [uid, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions]);
+  }, [uid, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts]);
 
   // ── Account CRUD ──────────────────────────────────────────────────────────
 
@@ -369,6 +396,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [transactions, accounts]);
 
+  // ── Debt CRUD ─────────────────────────────────────────────────────────────
+
+  const createDebt = useCallback(
+    async (data: Omit<Debt, "id" | "userId" | "createdAt">) => {
+      if (!uid) throw new Error("Not authenticated");
+      const debt = await addDebt(uid, data);
+      setDebts((prev) => [debt, ...prev]);
+      return debt;
+    },
+    [uid]
+  );
+
+  const editDebt = useCallback(
+    async (id: string, data: Partial<Omit<Debt, "id" | "userId" | "createdAt">>) => {
+      await updateDebt(id, data);
+      setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } : d)));
+    },
+    []
+  );
+
+  const removeDebt = useCallback(async (id: string) => {
+    await deleteDebt(id);
+    setDebts((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+
   // ── Profile ───────────────────────────────────────────────────────────────
 
   const saveUserProfile = useCallback(
@@ -404,6 +456,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createTransaction,
         editTransaction,
         removeTransaction,
+        debts,
+        loadingDebts,
+        refreshDebts,
+        createDebt,
+        editDebt,
+        removeDebt,
         refreshProfile,
         saveUserProfile,
       }}
