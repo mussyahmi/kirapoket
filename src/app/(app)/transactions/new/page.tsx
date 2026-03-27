@@ -325,7 +325,7 @@ export default function NewTransactionPage() {
               className="w-full pb-2"
             />
           </div>
-          <div className="space-y-1.5 mt-2">
+          <div className="space-y-1.5 mt-4">
             <Label htmlFor="time">Time</Label>
             <Input
               id="time"
