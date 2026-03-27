@@ -314,7 +314,7 @@ export default function NewTransactionPage() {
               selected={selectedDate}
               onSelect={(d) => d && setSelectedDate(d)}
               disabled={{ after: new Date() }}
-              className="w-full pb-2"
+              className="w-full pb-6"
             />
           </div>
           <div className="space-y-1.5 mt-6">
