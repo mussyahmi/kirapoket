@@ -11,24 +11,35 @@ import {
   BarChart3Icon,
   SettingsIcon,
   HandCoinsIcon,
+  MenuIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+// Bottom nav — 4 core daily-use pages
+const bottomNavItems = [
   { href: "/home", label: "Home", icon: HomeIcon, requiresSetup: false },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRightIcon, requiresSetup: true },
   { href: "/budget", label: "Budget", icon: BarChart3Icon, requiresSetup: false },
-  { href: "/accounts", label: "Accounts", icon: WalletIcon, requiresSetup: false },
   { href: "/debts", label: "Debts", icon: HandCoinsIcon, requiresSetup: false },
-  { href: "/categories", label: "Categories", icon: TagIcon, requiresSetup: false },
-  { href: "/settings", label: "Settings", icon: SettingsIcon, requiresSetup: false },
 ];
+
+// Header menu — less-visited pages
+const menuItems = [
+  { href: "/accounts", label: "Accounts", icon: WalletIcon },
+  { href: "/categories", label: "Categories", icon: TagIcon },
+  { href: "/settings", label: "Settings", icon: SettingsIcon },
+];
+
+// Desktop sidebar — all pages
+const allNavItems = [...bottomNavItems, ...menuItems];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { userProfile, accounts } = useApp();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
 
@@ -50,22 +61,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  // Close menu on route change
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
   return (
     <div className="flex h-full min-h-screen">
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden md:flex md:flex-col md:w-56 md:shrink-0 md:border-r md:border-border md:bg-card md:sticky md:top-0 md:h-screen md:overflow-y-auto">
-        {/* Sidebar Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
             KiraPoket
           </Link>
           <ThemeToggle />
         </div>
-
-        {/* Sidebar Nav */}
         <nav className="flex-1 px-2 py-3 space-y-0.5">
-          {navItems.map(({ href, label, icon: Icon, requiresSetup }) => {
-            const disabled = requiresSetup && !setupComplete;
+          {allNavItems.map(({ href, label, icon: Icon, ...rest }) => {
+            const disabled = ("requiresSetup" in rest ? rest.requiresSetup : false) && !setupComplete;
             return disabled ? (
               <span
                 key={href}
@@ -104,19 +126,54 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
             KiraPoket
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            {/* Header menu button */}
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                className={cn(
+                  "size-9 flex items-center justify-center rounded-lg transition-colors",
+                  menuOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+                )}
+                aria-label="More options"
+              >
+                <MenuIcon className="size-4" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50">
+                  {menuItems.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
+                        isActive(href)
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0 text-muted-foreground" />
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </header>
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
       </div>
 
-      {/* ── Mobile Bottom Nav ── */}
+      {/* ── Mobile Bottom Nav — 4 items only ── */}
       <nav className={cn(
         "md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around border-t border-border bg-card h-16 px-1 transition-transform duration-300",
         navVisible ? "translate-y-0" : "translate-y-full"
       )}>
-        {navItems.map(({ href, label, icon: Icon, requiresSetup }) => {
+        {bottomNavItems.map(({ href, label, icon: Icon, requiresSetup }) => {
           const disabled = requiresSetup && !setupComplete;
           const active = isActive(href);
           return disabled ? (
