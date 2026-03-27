@@ -222,7 +222,11 @@ export async function updateTransaction(
   id: string,
   data: Partial<Omit<Transaction, "id" | "userId" | "createdAt">>
 ): Promise<void> {
-  await updateDoc(doc(db, "transactions", id), data);
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    payload[k] = v === undefined ? deleteField() : v;
+  }
+  await updateDoc(doc(db, "transactions", id), payload);
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
