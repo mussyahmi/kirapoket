@@ -317,7 +317,7 @@ export default function NewTransactionPage() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date & Time</Label>
-          <div className="rounded-xl border border-border overflow-hidden">
+          <div className="rounded-xl border border-border">
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -325,17 +325,17 @@ export default function NewTransactionPage() {
               disabled={{ after: new Date() }}
               className="w-full"
             />
-            <div className="border-t border-border px-4 py-3 flex items-center gap-3">
-              <Label htmlFor="time" className="text-sm shrink-0">Time</Label>
-              <Input
-                id="time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                required
-                className="flex-1"
-              />
-            </div>
+          </div>
+          <div className="rounded-xl border border-border px-4 py-3 flex items-center gap-3">
+            <Label htmlFor="time" className="text-sm shrink-0">Time</Label>
+            <Input
+              id="time"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+              className="flex-1"
+            />
           </div>
         </div>
 
