@@ -792,7 +792,7 @@ export default function CategoriesPage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label>Select days this cycle</Label>
-                      <div className="rounded-xl border border-border overflow-hidden">
+                      <div className="rounded-xl border border-border">
                         <Calendar
                           mode="multiple"
                           selected={form.budgetSelectedDates}
