@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { ChevronLeftIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ function EditTransactionForm() {
 
   const [txType, setTxType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
@@ -43,7 +44,7 @@ function EditTransactionForm() {
 
     setTxType(tx.type);
     setAmount(String(tx.amount));
-    setSelectedDate(tx.date);
+    setSelectedDate(parseISO(tx.date));
     setTime(tx.time ?? format(new Date(), "HH:mm"));
     setAccountId(tx.accountId);
     setToAccountId(tx.toAccountId ?? "");
@@ -100,7 +101,7 @@ function EditTransactionForm() {
   const handleSelectL1 = (id: string) => { setL1Id(id); setL2Id(null); setL3Id(null); };
   const handleSelectL2 = (id: string) => { setL2Id(id); setL3Id(null); };
 
-  const date = selectedDate;
+  const date = format(selectedDate, "yyyy-MM-dd");
 
   const validate = (): string | null => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0)
@@ -218,20 +219,24 @@ function EditTransactionForm() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date & Time</Label>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="date"
-              value={selectedDate}
-              max={format(new Date(), "yyyy-MM-dd")}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              required
+          <div className="rounded-xl border border-border">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => d && setSelectedDate(d)}
+              disabled={{ after: new Date() }}
+              className="w-full pb-2"
             />
+          </div>
+          <div className="rounded-xl border border-border px-4 py-3 flex items-center gap-3">
+            <Label htmlFor="time" className="text-sm shrink-0">Time</Label>
             <Input
               id="time"
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
+              className="flex-1"
             />
           </div>
         </div>

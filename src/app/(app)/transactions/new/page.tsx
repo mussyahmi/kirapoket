@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/types";
@@ -64,7 +65,7 @@ export default function NewTransactionPage() {
 
   const [txType, setTxType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
@@ -115,7 +116,7 @@ export default function NewTransactionPage() {
     setL3Id(null);
   };
 
-  const date = selectedDate;
+  const date = format(selectedDate, "yyyy-MM-dd");
 
   const validate = (): string | null => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0)
@@ -315,20 +316,24 @@ export default function NewTransactionPage() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date & Time</Label>
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="date"
-              value={selectedDate}
-              max={format(new Date(), "yyyy-MM-dd")}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              required
+          <div className="rounded-xl border border-border">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(d) => d && setSelectedDate(d)}
+              disabled={{ after: new Date() }}
+              className="w-full pb-2"
             />
+          </div>
+          <div className="rounded-xl border border-border px-4 py-3 flex items-center gap-3">
+            <Label htmlFor="time" className="text-sm shrink-0">Time</Label>
             <Input
               id="time"
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
+              className="flex-1"
             />
           </div>
         </div>
