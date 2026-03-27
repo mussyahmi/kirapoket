@@ -354,12 +354,20 @@ export default function DebtsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="debt-due">Due date (optional)</Label>
-                <Input
-                  id="debt-due"
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                />
+                <div className="relative">
+                  <Input
+                    id="debt-due"
+                    type="date"
+                    value={form.dueDate}
+                    onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+                    className={!form.dueDate ? "text-transparent" : ""}
+                  />
+                  {!form.dueDate && (
+                    <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-muted-foreground">
+                      Select date
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
