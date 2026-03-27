@@ -219,13 +219,13 @@ function EditTransactionForm() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date</Label>
-          <div className="rounded-xl border border-border">
+          <div className="rounded-xl border border-border min-h-[420px]">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={(d) => d && setSelectedDate(d)}
               disabled={{ after: new Date() }}
-              className="w-full pb-6"
+              className="w-full"
             />
           </div>
           <div className="space-y-1.5 mt-6">

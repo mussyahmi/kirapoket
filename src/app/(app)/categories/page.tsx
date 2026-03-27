@@ -792,12 +792,12 @@ export default function CategoriesPage() {
                     </div>
                     <div className="space-y-1.5 mt-4">
                       <Label>Select days this cycle</Label>
-                      <div className="rounded-xl border border-border">
+                      <div className="rounded-xl border border-border min-h-[420px]">
                         <Calendar
                           mode="multiple"
                           selected={form.budgetSelectedDates}
                           onSelect={(dates: Date[] | undefined) => setForm({ ...form, budgetSelectedDates: dates ?? [] })}
-                          className="w-full pb-6"
+                          className="w-full"
                         />
                       </div>
                     </div>
