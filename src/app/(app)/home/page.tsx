@@ -377,8 +377,8 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Spending Breakdown</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+          <CardContent className="space-y-4">
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie
                   data={pieData}
@@ -387,9 +387,6 @@ export default function DashboardPage() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ name, percent }) =>
-                    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                  }
                   labelLine={false}
                 >
                   {pieData.map((entry, index) => (
@@ -409,6 +406,19 @@ export default function DashboardPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              {pieData.map((entry, index) => {
+                const total = pieData.reduce((s, d) => s + d.value, 0);
+                const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
+                const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
+                return (
+                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                    <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span>{entry.name} {pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
