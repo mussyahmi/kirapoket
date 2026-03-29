@@ -3,7 +3,10 @@
 import { useMemo, useState, useRef } from "react";
 import { format } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { getSalaryCycleRange } from "@/lib/firestore";
@@ -34,6 +37,28 @@ const fmt = (n: number) =>
   }).format(n);
 
 const CENSORED = "RM ••••";
+
+function SortableForecastItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="flex items-center gap-1"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        tabIndex={-1}
+        className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0"
+      >
+        <GripVerticalIcon className="size-3" />
+      </button>
+      {children}
+    </div>
+  );
+}
 
 export default function BudgetPage() {
   const {
@@ -100,6 +125,20 @@ export default function BudgetPage() {
       ),
     });
     setEditingId(null);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleReorderItems = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = savedItems.findIndex((i) => i.id === active.id);
+    const newIndex = savedItems.findIndex((i) => i.id === over.id);
+    const reordered = arrayMove(savedItems, oldIndex, newIndex);
+    await saveUserProfile({ forecastIncomeItems: reordered });
   };
 
   const handleCopy = async () => {
@@ -221,7 +260,19 @@ export default function BudgetPage() {
     [l2BudgetMap]
   );
 
-  const unallocated = effectiveIncome - totalBudgeted;
+  const unbudgetedSpending = useMemo(() => {
+    return cycleTransactions
+      .filter((t) => t.type === "expense" && t.categoryId)
+      .reduce((s, t) => {
+        const cat = categoryMap[t.categoryId!];
+        if (!cat) return s + t.amount;
+        if (cat.level === 3) return effectiveCatBudget(cat) === 0 ? s + t.amount : s;
+        if (cat.level === 2) return (l2BudgetMap[cat.id] ?? 0) === 0 ? s + t.amount : s;
+        return s;
+      }, 0);
+  }, [cycleTransactions, categoryMap, l2BudgetMap]);
+
+  const unallocated = effectiveIncome - totalBudgeted - unbudgetedSpending;
   const actualRemaining = effectiveIncome - totalSpent;
 
   const l1Categories = useMemo(() => {
@@ -314,57 +365,63 @@ export default function BudgetPage() {
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
-                  <div className="space-y-1.5 pl-3 border-l-2 border-border">
-                    {savedItems.map((item) =>
-                      editingId === item.id ? (
-                        <div key={item.id} className="flex gap-1.5 items-center">
-                          <Input
-                            autoFocus
-                            value={editLabel}
-                            onChange={(e) => setEditLabel(e.target.value)}
-                            className="flex-1 h-7 text-xs"
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
-                          />
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={editAmount}
-                            onChange={(e) => setEditAmount(e.target.value)}
-                            className="w-24 h-7 text-xs"
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
-                          />
-                          <button type="button" onClick={handleSaveEdit} className="text-xs font-medium text-primary shrink-0">Save</button>
-                          <button type="button" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground shrink-0">Cancel</button>
-                        </div>
-                      ) : (
-                        <div key={item.id} className="flex items-center justify-between text-xs group">
-                          <button
-                            type="button"
-                            onClick={() => startEdit(item)}
-                            className="text-muted-foreground hover:text-foreground transition-colors text-left"
-                          >
-                            {item.label}
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startEdit(item)}
-                              className="amt tabular-nums text-green-600 dark:text-green-400 hover:underline"
-                            >
-                              {fmtAmt(item.amount)}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="text-muted-foreground/50 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2Icon className="size-3" />
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorderItems}>
+                    <SortableContext items={savedItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-1.5 pl-1 border-l-2 border-border">
+                        {savedItems.map((item) =>
+                          editingId === item.id ? (
+                            <div key={item.id} className="flex gap-1.5 items-center pl-4">
+                              <Input
+                                autoFocus
+                                value={editLabel}
+                                onChange={(e) => setEditLabel(e.target.value)}
+                                className="flex-1 h-7 text-xs"
+                                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                              />
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                value={editAmount}
+                                onChange={(e) => setEditAmount(e.target.value)}
+                                className="w-24 h-7 text-xs"
+                                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                              />
+                              <button type="button" onClick={handleSaveEdit} className="text-xs font-medium text-primary shrink-0">Save</button>
+                              <button type="button" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground shrink-0">Cancel</button>
+                            </div>
+                          ) : (
+                            <SortableForecastItem key={item.id} id={item.id}>
+                              <div className="flex items-center justify-between text-xs group flex-1">
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(item)}
+                                  className="text-muted-foreground hover:text-foreground transition-colors text-left"
+                                >
+                                  {item.label}
+                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => startEdit(item)}
+                                    className="amt tabular-nums text-green-600 dark:text-green-400 hover:underline"
+                                  >
+                                    {fmtAmt(item.amount)}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteItem(item.id)}
+                                    className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                                  >
+                                    <Trash2Icon className="size-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </SortableForecastItem>
+                          )
+                        )}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
                 {/* Add new item */}
                 <div className="flex gap-2">
@@ -393,11 +450,17 @@ export default function BudgetPage() {
 
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Total budgeted</span>
-              <span className="font-medium amt tabular-nums">− {fmtAmt(totalBudgeted)}</span>
+              <span className="font-medium amt tabular-nums text-muted-foreground"><span className="text-foreground/40">−</span> {fmtAmt(totalBudgeted)}</span>
             </div>
+            {unbudgetedSpending > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-orange-500/80">Unbudgeted spending</span>
+                <span className="font-medium amt tabular-nums text-orange-500"><span className="text-orange-400/60">−</span> {fmtAmt(unbudgetedSpending)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm pt-2 border-t font-semibold">
               <span>Unallocated</span>
-              <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-600 dark:text-blue-400")}>
+              <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
                 {fmtAmt(unallocated)}
               </span>
             </div>
@@ -405,11 +468,11 @@ export default function BudgetPage() {
             <div className="pt-2 border-t space-y-2.5">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Spent so far</span>
-                <span className="font-medium amt tabular-nums text-red-600 dark:text-red-400">{fmtAmt(totalSpent)}</span>
+                <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">{fmtAmt(totalSpent)}</span>
               </div>
               <div className="flex justify-between text-sm font-semibold">
                 <span>Remaining</span>
-                <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-600 dark:text-green-400")}>
+                <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-500 dark:text-green-400")}>
                   {fmtAmt(actualRemaining)}
                 </span>
               </div>
@@ -473,7 +536,7 @@ export default function BudgetPage() {
                           <div key={l2.id} className="space-y-1.5">
                             {/* L2 name + amounts */}
                             <div className="flex items-center justify-between gap-2 text-sm">
-                              <span className="font-medium">{l2.name}</span>
+                              <span className={cn("font-medium", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}>{l2.name}</span>
                               <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
                                 {fmtAmt(l2spent)}
                                 {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l2budget)}</span>}
@@ -504,7 +567,7 @@ export default function BudgetPage() {
 
                                   return (
                                     <div key={l3.id} className="flex items-center justify-between gap-2 text-xs">
-                                      <span className="text-muted-foreground/80">{l3.name}</span>
+                                      <span className={cn("text-muted-foreground/80", !l3over && l3remaining === 0 && "line-through")}>{l3.name}</span>
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
                                           {fmtAmt(l3spent)}
