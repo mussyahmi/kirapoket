@@ -110,6 +110,11 @@ export default function TransactionsPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Transactions</h1>
+        <Link href="/transactions/new">
+          <Button size="sm" className="gap-1.5">
+            <PlusIcon className="size-4" /> Add
+          </Button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -188,7 +193,7 @@ export default function TransactionsPage() {
               <p className="text-xs font-medium text-muted-foreground mb-2">
                 {format(parseISO(date), "EEEE, d MMMM yyyy")}
               </p>
-              <Card>
+              <Card className="py-0">
                 <CardContent className="divide-y divide-border p-0">
                   {txs.map((tx) => {
                     const account = accounts.find((a) => a.id === tx.accountId);
@@ -268,15 +273,6 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* FAB */}
-      <Link
-        href="/transactions/new"
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40"
-      >
-        <Button size="icon-lg" className="rounded-full shadow-lg size-14">
-          <PlusIcon className="size-6" />
-        </Button>
-      </Link>
 
       {/* Delete Confirm Dialog */}
       <Dialog
