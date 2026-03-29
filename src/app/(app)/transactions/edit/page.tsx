@@ -268,7 +268,7 @@ function EditTransactionForm() {
 
         {/* Category (Expense only) */}
         {txType === "expense" && (
-          <div className="space-y-3">
+          <div className="space-y-5">
             <div>
               <Label className="mb-1.5 block">Category</Label>
               <div className="flex flex-wrap gap-2">

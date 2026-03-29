@@ -166,7 +166,7 @@ export default function NewTransactionPage() {
   };
 
   const CategoryDrillDown = () => (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {/* L1 */}
       <div>
         <Label className="mb-1.5 block">Category</Label>
