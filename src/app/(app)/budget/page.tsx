@@ -355,13 +355,13 @@ export default function BudgetPage() {
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className="font-medium amt tabular-nums text-green-600 dark:text-green-400">{fmtAmt(actualIncome)}</span>
+                <span className={cn("font-medium amt tabular-nums", censored ? "text-muted-foreground" : "text-green-600 dark:text-green-400")}>{fmtAmt(actualIncome)}</span>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Expected income</span>
-                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmtAmt(forecastIncome)}</span>
+                  <span className={cn("font-medium tabular-nums", censored ? "text-muted-foreground" : "text-green-600 dark:text-green-400")}>{fmtAmt(forecastIncome)}</span>
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
@@ -455,7 +455,7 @@ export default function BudgetPage() {
             {unbudgetedSpending > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-orange-500/80">Unbudgeted spending</span>
-                <span className="font-medium amt tabular-nums text-orange-500"><span className="text-orange-400/60">−</span> {fmtAmt(unbudgetedSpending)}</span>
+                <span className="font-medium amt tabular-nums text-orange-500"><span className={censored ? "text-foreground/40" : "text-orange-400/60"}>−</span> {fmtAmt(unbudgetedSpending)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm pt-2 border-t font-semibold">
