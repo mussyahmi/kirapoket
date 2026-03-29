@@ -442,7 +442,8 @@ export default function BudgetPage() {
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
                 const l1TotalBudget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
                 const l1TotalSpent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
-                const l1Over = l1TotalBudget > 0 && l1TotalSpent > l1TotalBudget;
+                const l1BudgetedSpent = l2sVisible.reduce((s, l2) => (l2BudgetMap[l2.id] ?? 0) > 0 ? s + (l2SpendingMap[l2.id] ?? 0) : s, 0);
+                const l1Over = l1TotalBudget > 0 && l1BudgetedSpent > l1TotalBudget;
 
                 return (
                   <div key={l1.id} className="space-y-3">
