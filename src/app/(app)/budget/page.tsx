@@ -440,10 +440,6 @@ export default function BudgetPage() {
                 if (l2sVisible.length === 0) return null;
 
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
-                const l1TotalBudget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
-                const l1TotalSpent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
-                const l1BudgetedSpent = l2sVisible.reduce((s, l2) => (l2BudgetMap[l2.id] ?? 0) > 0 ? s + (l2SpendingMap[l2.id] ?? 0) : s, 0);
-                const l1Over = l1TotalBudget > 0 && l1BudgetedSpent > l1TotalBudget;
 
                 return (
                   <div key={l1.id} className="space-y-3">
@@ -460,13 +456,15 @@ export default function BudgetPage() {
                       {l2sVisible.map((l2) => {
                         const l2budget = l2BudgetMap[l2.id] ?? 0;
                         const l2spent = l2SpendingMap[l2.id] ?? 0;
-                        const l2remaining = l2budget - l2spent;
-                        const l2pct = l2budget > 0 ? Math.min((l2spent / l2budget) * 100, 100) : null;
-                        const l2over = l2budget > 0 && l2spent > l2budget;
 
                         const l3s = categories
                           .filter((c) => c.level === 3 && c.parentId === l2.id)
                           .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+                        const l2budgetedSpent = l3s.reduce((s, l3) => effectiveCatBudget(l3) > 0 ? s + (l3SpendingMap[l3.id] ?? 0) : s, 0);
+                        const l2remaining = l2budget - l2budgetedSpent;
+                        const l2pct = l2budget > 0 ? Math.min((l2budgetedSpent / l2budget) * 100, 100) : null;
+                        const l2over = l2budget > 0 && l2budgetedSpent > l2budget;
                         const l3sVisible = l3s.filter(
                           (l3) => effectiveCatBudget(l3) > 0 || (l3SpendingMap[l3.id] ?? 0) > 0
                         );
