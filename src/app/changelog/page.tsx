@@ -17,6 +17,8 @@ const releases: Release[] = [
     changes: [
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
+      { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
+      { type: "fix", text: "Changelog link added to the landing page footer" },
     ],
   },
   {
