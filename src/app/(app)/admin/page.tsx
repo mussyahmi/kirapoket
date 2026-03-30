@@ -13,10 +13,12 @@ import type { UserProfile } from "@/lib/types";
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isImpersonating, impersonate, stopImpersonating } = useApp();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  if (authLoading) return null;
 
   if (user?.uid !== ADMIN_UID) {
     router.replace("/home");
