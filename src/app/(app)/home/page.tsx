@@ -310,19 +310,19 @@ export default function DashboardPage() {
 
       {/* Summary Cards */}
       {loading ? (
-        <Skeleton className="h-20 rounded-xl" />
+        <Skeleton className="h-24 rounded-xl" />
       ) : (
         <Card>
-          <CardContent className="px-0 py-3">
+          <CardContent className="px-0 py-4">
             <div className="grid grid-cols-3 divide-x divide-border">
               {[
                 { label: "Income", value: totalIncome, color: "text-green-600 dark:text-green-400" },
                 { label: "Expenses", value: totalExpenses, color: "text-red-600 dark:text-red-400" },
                 { label: "Savings", value: totalSavings, color: "text-blue-600 dark:text-blue-400" },
               ].map(({ label, value, color }) => (
-                <div key={label} className="flex flex-col items-center px-3 py-1">
-                  <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-                  <p className={cn("text-sm font-semibold text-center leading-tight", color)}>
+                <div key={label} className="flex flex-col items-center px-4 py-1 gap-1">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className={cn("text-sm font-bold text-center tabular-nums", color)}>
                     {formatMoney(value)}
                   </p>
                 </div>
@@ -333,15 +333,16 @@ export default function DashboardPage() {
       )}
 
       {/* Account Balances */}
+      {loadingAccounts ? (
+        <Skeleton className="h-28 rounded-xl" />
+      ) : (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle>Accounts</CardTitle>
           {hideBalance && <EyeOffIcon className="size-4 text-muted-foreground" />}
         </CardHeader>
         <CardContent className="space-y-3">
-          {loadingAccounts ? (
-            <Skeleton className="h-16" />
-          ) : accounts.length === 0 ? (
+          {accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No accounts yet.{" "}
               <Link href="/accounts" className="underline">
@@ -369,58 +370,6 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
-
-
-      {/* Pie Chart */}
-      {pieData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Spending Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  labelLine={false}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) =>
-                    new Intl.NumberFormat("ms-MY", {
-                      style: "currency",
-                      currency: "MYR",
-                    }).format(Number(value))
-                  }
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-              {pieData.map((entry, index) => {
-                const total = pieData.reduce((s, d) => s + d.value, 0);
-                const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
-                const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
-                return (
-                  <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-                    <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <span>{entry.name} {pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
       )}
 
       {/* Spending by Category */}
@@ -430,6 +379,33 @@ export default function DashboardPage() {
             <CardTitle>Spending by Category</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {pieData.length > 0 && (
+              <>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} labelLine={false}>
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => new Intl.NumberFormat("ms-MY", { style: "currency", currency: "MYR" }).format(Number(value))} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-2 border-b border-border">
+                  {pieData.map((entry, index) => {
+                    const total = pieData.reduce((s, d) => s + d.value, 0);
+                    const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
+                    const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
+                    return (
+                      <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span>{entry.name} {pct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
             {l1Categories.map((l1) => {
               const l1Spent = l1Spending[l1.id] ?? 0;
               if (l1Spent === 0) return null;
@@ -490,22 +466,21 @@ export default function DashboardPage() {
       )}
 
       {/* Recent Transactions */}
+      {loadingTransactions ? (
+        <Skeleton className="h-44 rounded-xl" />
+      ) : (
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between w-full">
-            <CardTitle>Recent Transactions</CardTitle>
-            <Link
-              href="/transactions"
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              View all
-            </Link>
-          </div>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>Recent Transactions</CardTitle>
+          <Link
+            href="/transactions"
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            View all
+          </Link>
         </CardHeader>
         <CardContent className="space-y-2">
-          {loadingTransactions ? (
-            <Skeleton className="h-24" />
-          ) : recentTransactions.length === 0 ? (
+          {recentTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No transactions yet.{" "}
               <Link href="/transactions/new" className="underline">
@@ -571,6 +546,7 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

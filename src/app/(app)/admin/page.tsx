@@ -18,18 +18,21 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  if (authLoading) return null;
-
-  if (user?.uid !== ADMIN_UID) {
-    router.replace("/home");
-    return null;
-  }
+  const isAdmin = user?.uid === ADMIN_UID;
 
   useEffect(() => {
+    if (!isAdmin) return;
     getAllUsers()
       .then(setUsers)
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAdmin]);
+
+  if (authLoading) return null;
+
+  if (!isAdmin) {
+    router.replace("/home");
+    return null;
+  }
 
   const handleImpersonate = (uid: string) => {
     impersonate(uid);

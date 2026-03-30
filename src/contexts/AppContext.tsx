@@ -95,7 +95,7 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -103,11 +103,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  const [loadingAccounts, setLoadingAccounts] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(false);
-  const [loadingTransactions, setLoadingTransactions] = useState(false);
-  const [loadingDebts, setLoadingDebts] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [loadingDebts, setLoadingDebts] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [impersonatedUid, setImpersonatedUid] = useState<string | null>(() => {
     if (typeof window !== "undefined") return sessionStorage.getItem("impersonatedUid");
@@ -204,14 +204,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshCategories();
       refreshTransactions();
       refreshDebts();
-    } else {
+    } else if (!authLoading) {
       setAccounts([]);
       setCategories([]);
       setTransactions([]);
       setDebts([]);
       setUserProfile(null);
+      setLoadingAccounts(false);
+      setLoadingCategories(false);
+      setLoadingTransactions(false);
+      setLoadingDebts(false);
+      setLoadingProfile(false);
     }
-  }, [uid, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts]);
+  }, [uid, authLoading, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts]);
 
   // ── Account CRUD ──────────────────────────────────────────────────────────
 

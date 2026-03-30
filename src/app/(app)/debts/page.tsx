@@ -56,8 +56,14 @@ export default function DebtsPage() {
   const SETTLED_PAGE = 5;
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  const unsettled = useMemo(() => debts.filter((d) => !d.settled), [debts]);
-  const settled = useMemo(() => debts.filter((d) => d.settled), [debts]);
+  const unsettled = useMemo(
+    () => debts.filter((d) => !d.settled).sort((a, b) => b.date.localeCompare(a.date)),
+    [debts]
+  );
+  const settled = useMemo(
+    () => debts.filter((d) => d.settled).sort((a, b) => b.date.localeCompare(a.date)),
+    [debts]
+  );
 
   const unsettledGroups = useMemo(() => {
     const map = new Map<string, Debt[]>();
@@ -66,11 +72,14 @@ export default function DebtsPage() {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(d);
     }
-    return Array.from(map.entries()).map(([key, groupDebts]) => ({
-      key,
-      displayName: groupDebts[0].personName,
-      debts: groupDebts,
-    }));
+    return Array.from(map.entries())
+      .map(([key, groupDebts]) => ({
+        key,
+        displayName: groupDebts[0].personName,
+        debts: groupDebts, // already sorted by date from unsettled
+        latestDate: groupDebts[0].date,
+      }))
+      .sort((a, b) => b.latestDate.localeCompare(a.latestDate));
   }, [unsettled]);
 
   const totalIOwe = useMemo(

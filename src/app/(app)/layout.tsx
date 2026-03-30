@@ -21,7 +21,7 @@ export default function AppLayout({
     }
   }, [loading, user, router]);
 
-  if (loading || !user) return null;
+  if (!loading && !user) return null;
 
   return (
     <AppShell>
