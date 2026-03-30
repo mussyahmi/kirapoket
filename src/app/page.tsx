@@ -443,6 +443,11 @@ export default function LandingPage() {
           <span>·</span>
           <span>v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
         </footer>
+
+        {/* ── DEBUG: remove after UA identified ── */}
+        <div className="px-4 pb-6">
+          <p className="text-[10px] text-muted-foreground/50 break-all">{typeof navigator !== "undefined" ? navigator.userAgent : ""}</p>
+        </div>
       </div>
     </div>
   );
