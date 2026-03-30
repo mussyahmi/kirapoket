@@ -473,7 +473,9 @@ export default function LandingPage() {
         <footer className="text-center py-6 text-[11px] text-muted-foreground/40 space-x-2">
           <span>KiraPoket &copy; {new Date().getFullYear()}</span>
           <span>·</span>
-          <span>v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+          <Link href="/changelog" className="hover:text-muted-foreground transition-colors">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </Link>
         </footer>
 
       </div>
