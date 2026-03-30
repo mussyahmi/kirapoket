@@ -109,11 +109,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingDebts, setLoadingDebts] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  const [impersonatedUid, setImpersonatedUid] = useState<string | null>(null);
+  const [impersonatedUid, setImpersonatedUid] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return sessionStorage.getItem("impersonatedUid");
+    return null;
+  });
   const uid = impersonatedUid ?? user?.uid;
 
-  const impersonate = useCallback((targetUid: string) => setImpersonatedUid(targetUid), []);
-  const stopImpersonating = useCallback(() => setImpersonatedUid(null), []);
+  const impersonate = useCallback((targetUid: string) => {
+    sessionStorage.setItem("impersonatedUid", targetUid);
+    setImpersonatedUid(targetUid);
+  }, []);
+  const stopImpersonating = useCallback(() => {
+    sessionStorage.removeItem("impersonatedUid");
+    setImpersonatedUid(null);
+  }, []);
   const isImpersonating = impersonatedUid !== null;
 
   const refreshProfile = useCallback(async () => {
