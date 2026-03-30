@@ -12,7 +12,7 @@ export default function ChangelogLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b border-border bg-card">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
           className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeftIcon className="size-4" />

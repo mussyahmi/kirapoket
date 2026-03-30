@@ -1,7 +1,6 @@
 "use client";
 
-import { ScrollTextIcon, ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ScrollTextIcon } from "lucide-react";
 
 interface Release {
   version: string;
@@ -22,6 +21,7 @@ const releases: Release[] = [
       { type: "fix", text: "Changelog link added to the landing page footer" },
       { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
       { type: "fix", text: "Changelog back button now works when opened via a direct link — falls back to the landing page instead of doing nothing" },
+      { type: "fix", text: "Changelog no longer showed two back buttons at once" },
     ],
   },
   {
@@ -94,26 +94,9 @@ const typeLabel: Record<"feat" | "fix", string> = {
 };
 
 export default function ChangelogPage() {
-  const router = useRouter();
-
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      router.push("/");
-    }
-  };
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-8">
       <div className="flex items-center gap-3">
-        <button
-          onClick={handleBack}
-          className="shrink-0 size-9 rounded-xl hover:bg-muted flex items-center justify-center transition-colors"
-          aria-label="Go back"
-        >
-          <ChevronLeft className="size-5 text-muted-foreground" />
-        </button>
         <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
           <ScrollTextIcon className="size-5 text-primary" />
         </div>
