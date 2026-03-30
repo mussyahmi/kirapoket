@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getSalaryCycleRange } from "@/lib/firestore";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -337,9 +338,9 @@ export default function DashboardPage() {
         <Skeleton className="h-28 rounded-xl" />
       ) : (
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader>
           <CardTitle>Accounts</CardTitle>
-          {hideBalance && <EyeOffIcon className="size-4 text-muted-foreground" />}
+          {hideBalance && <CardAction><EyeOffIcon className="size-4 text-muted-foreground" /></CardAction>}
         </CardHeader>
         <CardContent className="space-y-3">
           {accounts.length === 0 ? (
@@ -470,14 +471,16 @@ export default function DashboardPage() {
         <Skeleton className="h-44 rounded-xl" />
       ) : (
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader>
           <CardTitle>Recent Transactions</CardTitle>
-          <Link
-            href="/transactions"
-            className="text-xs text-muted-foreground hover:text-foreground underline"
-          >
-            View all
-          </Link>
+          <CardAction>
+            <Link
+              href="/transactions"
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              View all
+            </Link>
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-2">
           {recentTransactions.length === 0 ? (

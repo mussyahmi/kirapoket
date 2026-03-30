@@ -14,7 +14,6 @@ import {
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -42,13 +41,13 @@ export default function TransactionsPage() {
 
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterAccount, setFilterAccount] = useState<string>("all");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
+const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [visibleGroups, setVisibleGroups] = useState(10);
   const GROUPS_PAGE = 10;
 
@@ -61,16 +60,11 @@ export default function TransactionsPage() {
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
       if (filterAccount !== "all" && t.accountId !== filterAccount) return false;
-      if (
-        filterCategory !== "all" &&
-        t.categoryId !== filterCategory
-      )
-        return false;
       if (dateFrom && t.date < dateFrom) return false;
       if (dateTo && t.date > dateTo) return false;
       return true;
     });
-  }, [transactions, filterType, filterAccount, filterCategory, dateFrom, dateTo]);
+  }, [transactions, filterType, filterAccount, dateFrom, dateTo]);
 
   // Group by date
   const grouped = useMemo(() => {
@@ -207,7 +201,8 @@ export default function TransactionsPage() {
                     return (
                       <div
                         key={tx.id}
-                        className="flex items-center gap-3 px-4 py-3"
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedTx(tx)}
                       >
                         <div
                           className={cn(
@@ -253,20 +248,13 @@ export default function TransactionsPage() {
                         >
                           {formatMoney(tx.amount, tx.type)}
                         </span>
-                        <div className="flex gap-1 shrink-0">
-                          <Link href={`/transactions/edit?id=${tx.id}`}>
-                            <Button variant="ghost" size="icon-sm">
-                              <PencilIcon className="size-3.5" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => setDeleteTarget(tx)}
-                          >
-                            <TrashIcon className="size-3.5 text-destructive" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx); }}
+                        >
+                          <TrashIcon className="size-3.5 text-destructive" />
+                        </Button>
                       </div>
                     );
                   })}
@@ -285,6 +273,76 @@ export default function TransactionsPage() {
           )}
         </div>
       )}
+
+      {/* Transaction Detail Dialog */}
+      {(() => {
+        const tx = selectedTx;
+        if (!tx) return null;
+        const account = accounts.find((a) => a.id === tx.accountId);
+        const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
+        const category = tx.categoryId ? categoryMap[tx.categoryId] : null;
+        const subcategory = category?.parentId ? categoryMap[category.parentId] : null;
+        return (
+          <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>
+                  {tx.type === "expense"
+                    ? (category?.name ?? "Expense")
+                    : tx.type === "income"
+                    ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
+                    : "Transfer"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Amount</span>
+                  <span className={cn(
+                    "text-base font-semibold",
+                    tx.type === "income" ? "text-green-600 dark:text-green-400"
+                    : tx.type === "transfer" ? "text-blue-600 dark:text-blue-400"
+                    : "text-red-600 dark:text-red-400"
+                  )}>
+                    {formatMoney(tx.amount, tx.type)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Date</span>
+                  <span className="text-sm">{format(parseISO(tx.date), "d MMMM yyyy")}</span>
+                </div>
+                {tx.type === "transfer" ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">From → To</span>
+                    <span className="text-sm">{account?.name} → {toAccount?.name ?? "—"}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Account</span>
+                    <span className="text-sm">{account?.name ?? "—"}</span>
+                  </div>
+                )}
+                {subcategory && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Subcategory</span>
+                    <span className="text-sm">{subcategory.name}</span>
+                  </div>
+                )}
+                {tx.note && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Note</p>
+                    <p className="text-sm whitespace-pre-wrap">{tx.note}</p>
+                  </div>
+                )}
+                <Link href={`/transactions/edit?id=${tx.id}`} className="block">
+                  <Button className="w-full" onClick={() => setSelectedTx(null)}>
+                    <PencilIcon className="size-4 mr-2" /> Edit
+                  </Button>
+                </Link>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       {/* Delete Confirm Dialog */}
       <Dialog

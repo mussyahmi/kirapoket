@@ -23,6 +23,8 @@ const releases: Release[] = [
       { type: "fix", text: "Changelog back button now works when opened via a direct link — falls back to the landing page instead of doing nothing" },
       { type: "fix", text: "Changelog no longer showed two back buttons at once" },
       { type: "fix", text: "\"New version available\" now refreshes all open tabs, not just the one you tapped Refresh on" },
+      { type: "fix", text: "Transaction list: tapping a row now shows full details (amount, date, account, subcategory, note) in a popup — edit button moved inside" },
+      { type: "fix", text: "\"View all\" link on the home page now appears correctly in the top-right corner of the Recent Transactions section" },
     ],
   },
   {
