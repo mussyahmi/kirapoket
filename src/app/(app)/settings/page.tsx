@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { LogOutIcon, SunIcon, MoonIcon, TrashIcon } from "lucide-react";
+import { LogOutIcon, SunIcon, MoonIcon, TrashIcon, ShieldAlertIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, ADMIN_UID } from "@/contexts/AppContext";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -261,6 +262,16 @@ export default function SettingsPage() {
       </Card>
 
       <Separator />
+
+      {/* Admin (visible to admin only) */}
+      {user?.uid === ADMIN_UID && (
+        <Link href="/admin">
+          <Button variant="outline" className="w-full gap-2 mb-6">
+            <ShieldAlertIcon className="size-4 text-orange-500" />
+            Admin
+          </Button>
+        </Link>
+      )}
 
       {/* Sign Out */}
       <Button
