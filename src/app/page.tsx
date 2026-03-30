@@ -238,23 +238,12 @@ function InAppBrowserBanner() {
           </p>
         </div>
       </div>
-      <div className="flex gap-2">
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-amber-500 text-white text-sm font-semibold px-4 hover:bg-amber-600 transition-colors"
-        >
-          <ExternalLink className="size-4" />
-          Open in browser
-        </a>
-        <button
-          onClick={handleCopy}
-          className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg border border-amber-400/50 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm font-medium px-3 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-        >
-          {copied ? "Copied!" : "Copy URL"}
-        </button>
-      </div>
+      <button
+        onClick={handleCopy}
+        className="inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-amber-500 text-white text-sm font-semibold px-4 hover:bg-amber-600 transition-colors w-full"
+      >
+        {copied ? "Copied!" : "Copy link"}
+      </button>
     </div>
   );
 }
