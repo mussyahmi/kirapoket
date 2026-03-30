@@ -209,27 +209,52 @@ function FeatureCard({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 function InAppBrowserBanner() {
-  const url = typeof window !== "undefined" ? window.location.href : "https://kirapoket.com";
+  const url = typeof window !== "undefined" ? window.location.href : "https://kirapoket.web.app";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="mx-4 mt-4 rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-4 flex flex-col gap-3">
+    <div className="rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-4 flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <ExternalLink className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
         <div className="space-y-1">
           <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Open in your browser to sign in</p>
           <p className="text-xs text-amber-800/80 dark:text-amber-300/70 leading-relaxed">
-            Google sign-in is blocked in this in-app browser. Tap the button below or open KiraPoket in Safari or Chrome.
+            Google sign-in is blocked in this in-app browser. Open KiraPoket in Safari or Chrome to continue.
           </p>
         </div>
       </div>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-amber-500 text-white text-sm font-semibold px-4 hover:bg-amber-600 transition-colors"
-      >
-        <ExternalLink className="size-4" />
-        Open in browser
-      </a>
+      <div className="flex gap-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-amber-500 text-white text-sm font-semibold px-4 hover:bg-amber-600 transition-colors"
+        >
+          <ExternalLink className="size-4" />
+          Open in browser
+        </a>
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center justify-center gap-1.5 h-10 rounded-lg border border-amber-400/50 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm font-medium px-3 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+        >
+          {copied ? "Copied!" : "Copy URL"}
+        </button>
+      </div>
     </div>
   );
 }
