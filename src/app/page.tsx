@@ -18,6 +18,8 @@ import {
   LayoutDashboardIcon,
   LogOutIcon,
   ExternalLink,
+  Smartphone,
+  Download,
 } from "lucide-react";
 
 // ─── Google logo SVG ─────────────────────────────────────────────────────────
@@ -209,6 +211,80 @@ function FeatureCard({
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Install banner ───────────────────────────────────────────────────────────
+type InstallPlatform = "android" | "ios";
+
+function InstallBanner() {
+  const [platform, setPlatform] = useState<InstallPlatform | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true;
+    if (standalone) return;
+
+    const ua = navigator.userAgent;
+    const isIOS = /iPhone|iPad|iPod/i.test(ua) && !(window as { MSStream?: unknown }).MSStream;
+    const isAndroid = /Android/i.test(ua);
+
+    if (isAndroid) {
+      const handler = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setPlatform("android");
+      };
+      window.addEventListener("beforeinstallprompt", handler);
+      return () => window.removeEventListener("beforeinstallprompt", handler);
+    }
+
+    if (isIOS) {
+      // Only show in Safari — Chrome/Firefox for iOS can't install PWAs
+      const isSafari = /Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|mercury/i.test(ua);
+      if (isSafari) setPlatform("ios");
+    }
+  }, []);
+
+  const handleAndroidInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    setPlatform(null);
+  };
+
+  if (!platform) return null;
+
+  return (
+    <div className="flex gap-3 items-start p-4 rounded-xl border border-border bg-card/60">
+      <div className="shrink-0 size-9 rounded-lg bg-primary/10 flex items-center justify-center">
+        <Smartphone className="size-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">Add to Home Screen</p>
+        {platform === "android" ? (
+          <div className="mt-2">
+            <button
+              onClick={handleAndroidInstall}
+              className="inline-flex items-center gap-2 h-8 rounded-lg bg-primary text-primary-foreground text-xs font-semibold px-3 hover:bg-primary/90 transition-colors"
+            >
+              <Download className="size-3.5" />
+              Install app
+            </button>
+          </div>
+        ) : (
+          <ol className="text-xs text-muted-foreground mt-1 leading-relaxed space-y-0.5">
+            <li>1. Tap the <span className="font-medium text-foreground">Share</span> button (⬆︎) in Safari&apos;s toolbar</li>
+            <li>2. Scroll and tap <span className="font-medium text-foreground">&ldquo;Add to Home Screen&rdquo;</span></li>
+            <li>3. Tap <span className="font-medium text-foreground">&ldquo;Add&rdquo;</span> to confirm</li>
+          </ol>
+        )}
       </div>
     </div>
   );
@@ -457,6 +533,9 @@ export default function LandingPage() {
                 </div>
                 <div className="anim-fade-up" style={{ animationDelay: "660ms" }}>
                   <FeatureCard icon={Wallet} title="Multiple accounts" desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place." />
+                </div>
+                <div className="anim-fade-up" style={{ animationDelay: "760ms" }}>
+                  <InstallBanner />
                 </div>
               </div>
             </div>

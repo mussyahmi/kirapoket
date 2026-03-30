@@ -19,6 +19,7 @@ const releases: Release[] = [
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
       { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
       { type: "fix", text: "Changelog link added to the landing page footer" },
+      { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
     ],
   },
   {
