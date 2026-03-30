@@ -12,6 +12,7 @@ import {
   SettingsIcon,
   HandCoinsIcon,
   MenuIcon,
+  ScrollTextIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp } from "@/contexts/AppContext";
@@ -29,6 +30,7 @@ const bottomNavItems = [
 const menuItems = [
   { href: "/accounts", label: "Accounts", icon: WalletIcon },
   { href: "/categories", label: "Categories", icon: TagIcon },
+  { href: "/changelog", label: "Changelog", icon: ScrollTextIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
