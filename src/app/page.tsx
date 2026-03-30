@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { isInAppBrowser } from "@/lib/utils";
 import {
   Wallet,
   PieChart,
@@ -15,6 +17,7 @@ import {
   ArrowDownRight,
   LayoutDashboardIcon,
   LogOutIcon,
+  ExternalLink,
 } from "lucide-react";
 
 // ─── Google logo SVG ─────────────────────────────────────────────────────────
@@ -205,11 +208,43 @@ function FeatureCard({
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
+function InAppBrowserBanner() {
+  const url = typeof window !== "undefined" ? window.location.href : "https://kirapoket.com";
+  return (
+    <div className="mx-4 mt-4 rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 p-4 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <ExternalLink className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Open in your browser to sign in</p>
+          <p className="text-xs text-amber-800/80 dark:text-amber-300/70 leading-relaxed">
+            Google sign-in is blocked in this in-app browser. Tap the button below or open KiraPoket in Safari or Chrome.
+          </p>
+        </div>
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-amber-500 text-white text-sm font-semibold px-4 hover:bg-amber-600 transition-colors"
+      >
+        <ExternalLink className="size-4" />
+        Open in browser
+      </a>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const { userProfile } = useApp();
+  const [inAppBrowser, setInAppBrowser] = useState(false);
+
+  useEffect(() => {
+    setInAppBrowser(isInAppBrowser());
+  }, []);
 
   const handleSignIn = async () => {
+    if (inAppBrowser) return;
     try {
       await signInWithGoogle();
     } catch {
@@ -322,15 +357,17 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button
-              onClick={handleSignIn}
-              variant="outline"
-              size="sm"
-              className="gap-2 rounded-lg hidden md:flex"
-            >
-              <GoogleIcon />
-              Sign in
-            </Button>
+            {!inAppBrowser && (
+              <Button
+                onClick={handleSignIn}
+                variant="outline"
+                size="sm"
+                className="gap-2 rounded-lg hidden md:flex"
+              >
+                <GoogleIcon />
+                Sign in
+              </Button>
+            )}
           </div>
         </header>
 
@@ -354,19 +391,23 @@ export default function LandingPage() {
               </div>
 
               {/* CTA */}
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={handleSignIn}
-                  size="lg"
-                  className="gap-3 h-12 rounded-xl text-base font-semibold shadow-md w-full md:w-fit md:px-8"
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </Button>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  By signing in you agree to our terms of service and privacy policy.
-                </p>
-              </div>
+              {inAppBrowser ? (
+                <InAppBrowserBanner />
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handleSignIn}
+                    size="lg"
+                    className="gap-3 h-12 rounded-xl text-base font-semibold shadow-md w-full md:w-fit md:px-8"
+                  >
+                    <GoogleIcon />
+                    Continue with Google
+                  </Button>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    By signing in you agree to our terms of service and privacy policy.
+                  </p>
+                </div>
+              )}
 
               {/* Features */}
               <div className="space-y-2.5">
