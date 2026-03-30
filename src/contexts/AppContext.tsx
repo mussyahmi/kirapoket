@@ -32,6 +32,8 @@ import {
 } from "@/lib/firestore";
 import { useAuth } from "./AuthContext";
 
+export const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
+
 interface AppContextValue {
   accounts: Account[];
   categories: Category[];
@@ -41,6 +43,9 @@ interface AppContextValue {
   loadingCategories: boolean;
   loadingTransactions: boolean;
   loadingProfile: boolean;
+  isImpersonating: boolean;
+  impersonate: (uid: string) => void;
+  stopImpersonating: () => void;
 
   // Accounts
   refreshAccounts: () => Promise<void>;
@@ -104,7 +109,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingDebts, setLoadingDebts] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  const uid = user?.uid;
+  const [impersonatedUid, setImpersonatedUid] = useState<string | null>(null);
+  const uid = impersonatedUid ?? user?.uid;
+
+  const impersonate = useCallback((targetUid: string) => setImpersonatedUid(targetUid), []);
+  const stopImpersonating = useCallback(() => setImpersonatedUid(null), []);
+  const isImpersonating = impersonatedUid !== null;
 
   const refreshProfile = useCallback(async () => {
     if (!uid) return;
@@ -113,8 +123,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const profile = await getUserProfile(uid);
       if (profile) {
         setUserProfile(profile);
-      } else {
-        // Bootstrap profile from Firebase Auth user
+      } else if (!impersonatedUid) {
+        // Bootstrap profile only for the real user, not impersonated targets
         const bootstrapped: UserProfile = {
           uid,
           email: user?.email ?? null,
@@ -132,7 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoadingProfile(false);
     }
-  }, [uid, user]);
+  }, [uid, user, impersonatedUid]);
 
   const refreshAccounts = useCallback(async () => {
     if (!uid) return;
@@ -464,6 +474,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         removeDebt,
         refreshProfile,
         saveUserProfile,
+        isImpersonating,
+        impersonate,
+        stopImpersonating,
       }}
     >
       {children}

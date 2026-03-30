@@ -117,6 +117,11 @@ export async function updateUserProfile(
   await setDoc(docRef, { uid, ...data }, { merge: true });
 }
 
+export async function getAllUsers(): Promise<UserProfile[]> {
+  const snap = await getDocs(collection(db, "users"));
+  return snap.docs.map((d) => d.data() as UserProfile);
+}
+
 // ─── Accounts ────────────────────────────────────────────────────────────────
 
 export async function getAccounts(userId: string): Promise<Account[]> {
