@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "KiraPoket – Expense Tracker",
     short_name: "KiraPoket",
     description: "Track your spending by salary cycle",
-    start_url: "/home",
+    start_url: "/",
     display: "standalone",
     orientation: "portrait",
     background_color: "#ffffff",

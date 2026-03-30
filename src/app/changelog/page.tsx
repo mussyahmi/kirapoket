@@ -25,6 +25,7 @@ const releases: Release[] = [
       { type: "fix", text: "\"New version available\" now refreshes all open tabs, not just the one you tapped Refresh on" },
       { type: "fix", text: "Transaction list: tapping a row now shows full details (amount, date, account, subcategory, note) in a popup — edit button moved inside" },
       { type: "fix", text: "\"View all\" link on the home page now appears correctly in the top-right corner of the Recent Transactions section" },
+      { type: "fix", text: "Installing to home screen now opens the app at the correct starting page" },
     ],
   },
   {
