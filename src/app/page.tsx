@@ -255,6 +255,24 @@ function InAppBrowserBanner() {
   );
 }
 
+function useTyping(text: string, speed = 55, delay = 0) {
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    setDisplayed("");
+    let i = 0;
+    const start = setTimeout(() => {
+      const id = setInterval(() => {
+        i++;
+        setDisplayed(text.slice(0, i));
+        if (i >= text.length) clearInterval(id);
+      }, speed);
+      return () => clearInterval(id);
+    }, delay);
+    return () => clearTimeout(start);
+  }, [text, speed, delay]);
+  return displayed;
+}
+
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const { userProfile } = useApp();
@@ -286,6 +304,13 @@ export default function LandingPage() {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
+  const greeting = userProfile?.salaryDay ? "Welcome back," : "Welcome,";
+  const typedGreeting = useTyping(user ? greeting : "", 55, 500);
+  const displayName = user ? (user.displayName ?? user.email ?? "") : "";
+  const nameDelay = 500 + greeting.length * 55 + 80;
+  const typedName = useTyping(displayName, 55, nameDelay);
+  const buttonsDelay = nameDelay + displayName.length * 55 + 150;
+
   if (!loading && user) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -306,21 +331,17 @@ export default function LandingPage() {
 
           <main className="flex-1 flex items-center justify-center px-6 py-16">
             <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
-              <Avatar size="lg" className="size-20">
+              <Avatar size="lg" className="size-20 anim-scale-in">
                 {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName ?? "User"} />}
                 <AvatarFallback className="text-2xl">{getInitials(user.displayName)}</AvatarFallback>
               </Avatar>
 
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm">
-                  {userProfile?.salaryDay ? "Welcome back," : "Welcome,"}
-                </p>
-                <h1 className="text-2xl font-bold text-foreground">
-                  {user.displayName ?? user.email}
-                </h1>
+              <div className="space-y-1 anim-fade-up" style={{ animationDelay: "200ms" }}>
+                <p className="text-muted-foreground text-sm">{typedGreeting}</p>
+                <h1 className="text-2xl font-bold text-foreground">{typedName}</h1>
               </div>
 
-              <div className="flex flex-col gap-3 w-full">
+              <div className="flex flex-col gap-3 w-full anim-fade-up" style={{ animationDelay: `${buttonsDelay}ms` }}>
                 <Link
                   href="/home"
                   className="inline-flex items-center justify-center gap-2 h-12 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-6 w-full"
