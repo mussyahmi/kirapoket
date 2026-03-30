@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { PlusIcon, TrashIcon, CheckIcon, RotateCcwIcon, PencilIcon } from "lucide-react";
+import { PlusIcon, TrashIcon, CheckIcon, RotateCcwIcon, PencilIcon, ChevronDownIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,9 +54,24 @@ export default function DebtsPage() {
   const [showSettled, setShowSettled] = useState(false);
   const [settledVisible, setSettledVisible] = useState(5);
   const SETTLED_PAGE = 5;
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const unsettled = useMemo(() => debts.filter((d) => !d.settled), [debts]);
   const settled = useMemo(() => debts.filter((d) => d.settled), [debts]);
+
+  const unsettledGroups = useMemo(() => {
+    const map = new Map<string, Debt[]>();
+    for (const d of unsettled) {
+      const key = d.personName.trim().toLowerCase();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(d);
+    }
+    return Array.from(map.entries()).map(([key, groupDebts]) => ({
+      key,
+      displayName: groupDebts[0].personName,
+      debts: groupDebts,
+    }));
+  }, [unsettled]);
 
   const totalIOwe = useMemo(
     () => unsettled.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0),
@@ -149,12 +164,15 @@ export default function DebtsPage() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const DebtCard = ({ debt }: { debt: Debt }) => {
+  const DebtCard = ({ debt, hidePersonName, flat }: { debt: Debt; hidePersonName?: boolean; flat?: boolean }) => {
     const isOverdue = !debt.settled && debt.dueDate && debt.dueDate < today;
     return (
       <div className={cn(
-        "flex items-start gap-3 p-3 rounded-xl border",
-        debt.settled ? "border-border bg-muted/30 opacity-60" : "border-border bg-card"
+        "flex items-start gap-3 p-3",
+        flat ? "" : "rounded-xl border",
+        debt.settled
+          ? flat ? "opacity-60" : "border-border bg-muted/30 opacity-60"
+          : flat ? "" : "border-border bg-card"
       )}>
         {/* Direction indicator */}
         <div className={cn(
@@ -165,7 +183,7 @@ export default function DebtsPage() {
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold truncate">{debt.personName}</span>
+            {!hidePersonName && <span className="text-sm font-semibold truncate">{debt.personName}</span>}
             <span className={cn(
               "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
               debt.direction === "i_owe"
@@ -232,6 +250,59 @@ export default function DebtsPage() {
     );
   };
 
+  const DebtGroupCard = ({ group }: { group: { key: string; displayName: string; debts: Debt[] } }) => {
+    const isExpanded = expandedGroups.has(group.key);
+    const toggle = () => setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
+      return next;
+    });
+    const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0);
+    const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + d.amount, 0);
+    const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
+    const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
+    return (
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <button
+          type="button"
+          onClick={toggle}
+          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
+        >
+          <div className={cn(
+            "shrink-0 mt-0.5 size-2.5 rounded-full",
+            allIOwe ? "bg-red-400" : allTheyOwe ? "bg-green-400" : "bg-yellow-400"
+          )} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{group.displayName}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
+                {group.debts.length} entries
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {theyOweTotal > 0 && (
+                <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">{fmt(theyOweTotal)}</span>
+              )}
+              {iOweTotal > 0 && (
+                <span className="text-sm font-bold text-red-500 tabular-nums">{fmt(iOweTotal)}</span>
+              )}
+            </div>
+          </div>
+          <ChevronDownIcon className={cn("size-4 text-muted-foreground shrink-0 transition-transform duration-200", isExpanded && "rotate-180")} />
+        </button>
+        {isExpanded && (
+          <div className="border-t border-border divide-y divide-border">
+            {group.debts.map((d) => (
+              <div key={d.id}>
+                <DebtCard debt={d} hidePersonName flat />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
@@ -267,7 +338,11 @@ export default function DebtsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {unsettled.map((d) => <DebtCard key={d.id} debt={d} />)}
+          {unsettledGroups.map((g) =>
+            g.debts.length === 1
+              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} />
+              : <DebtGroupCard key={g.key} group={g} />
+          )}
         </div>
       )}
 
