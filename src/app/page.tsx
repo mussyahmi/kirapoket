@@ -286,15 +286,7 @@ export default function LandingPage() {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-background">
-        <div className="size-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
-
-  if (user) {
+  if (!loading && user) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
@@ -399,23 +391,25 @@ export default function LandingPage() {
             {/* Left — copy + CTA */}
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card w-fit text-xs text-muted-foreground">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card w-fit text-xs text-muted-foreground anim-fade-up" style={{ animationDelay: "0ms" }}>
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Personal expense tracker
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight anim-fade-up" style={{ animationDelay: "100ms" }}>
                   Know where your<br className="hidden md:block" /> money goes.
                 </h1>
-                <p className="text-base text-muted-foreground leading-relaxed max-w-sm">
+                <p className="text-base text-muted-foreground leading-relaxed max-w-sm anim-fade-up" style={{ animationDelay: "220ms" }}>
                   Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets.
                 </p>
               </div>
 
               {/* CTA */}
               {inAppBrowser ? (
-                <InAppBrowserBanner />
+                <div className="anim-fade-up" style={{ animationDelay: "340ms" }}>
+                  <InAppBrowserBanner />
+                </div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 anim-fade-up" style={{ animationDelay: "340ms" }}>
                   <Button
                     onClick={handleSignIn}
                     size="lg"
@@ -432,26 +426,20 @@ export default function LandingPage() {
 
               {/* Features */}
               <div className="space-y-2.5">
-                <FeatureCard
-                  icon={RefreshCw}
-                  title="Salary cycle tracking"
-                  desc="All summaries scoped to your pay cycle, not the calendar month."
-                />
-                <FeatureCard
-                  icon={PieChart}
-                  title="Needs · Wants · Savings"
-                  desc="Organise every cent into three buckets with optional budgets per category."
-                />
-                <FeatureCard
-                  icon={Wallet}
-                  title="Multiple accounts"
-                  desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place."
-                />
+                <div className="anim-fade-up" style={{ animationDelay: "460ms" }}>
+                  <FeatureCard icon={RefreshCw} title="Salary cycle tracking" desc="All summaries scoped to your pay cycle, not the calendar month." />
+                </div>
+                <div className="anim-fade-up" style={{ animationDelay: "560ms" }}>
+                  <FeatureCard icon={PieChart} title="Needs · Wants · Savings" desc="Organise every cent into three buckets with optional budgets per category." />
+                </div>
+                <div className="anim-fade-up" style={{ animationDelay: "660ms" }}>
+                  <FeatureCard icon={Wallet} title="Multiple accounts" desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place." />
+                </div>
               </div>
             </div>
 
             {/* Right — mock dashboard */}
-            <div className="w-full md:max-w-sm md:ml-auto">
+            <div className="w-full md:max-w-sm md:ml-auto anim-slide-right" style={{ animationDelay: "200ms" }}>
               <MockDashboard />
             </div>
 

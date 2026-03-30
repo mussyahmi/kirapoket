@@ -117,6 +117,29 @@
   --sidebar-ring: oklch(0.68 0.20 264);
 }
 
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(36px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(60px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-4deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.anim-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.anim-slide-right {
+  animation: slide-in-right 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.anim-scale-in {
+  animation: scale-in 0.7s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
