@@ -22,6 +22,7 @@ const releases: Release[] = [
       { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
       { type: "fix", text: "Changelog back button now works when opened via a direct link — falls back to the landing page instead of doing nothing" },
       { type: "fix", text: "Changelog no longer showed two back buttons at once" },
+      { type: "fix", text: "\"New version available\" now refreshes all open tabs, not just the one you tapped Refresh on" },
     ],
   },
   {

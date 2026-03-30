@@ -7,6 +7,16 @@ export function PwaRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    // When the SW controller changes (new SW took over via SKIP_WAITING + clients.claim),
+    // reload every tab — not just the one that clicked the toast.
+    let reloading = false;
+    const onControllerChange = () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
     navigator.serviceWorker.register("/sw.js").then((reg) => {
       // Check for updates every time the page gains focus
       const checkUpdate = () => reg.update().catch(() => {});
@@ -25,8 +35,8 @@ export function PwaRegister() {
               action: {
                 label: "Refresh",
                 onClick: () => {
+                  // SKIP_WAITING → SW activates → clients.claim() → controllerchange fires on all tabs → all reload
                   newSW.postMessage({ type: "SKIP_WAITING" });
-                  window.location.reload();
                 },
               },
             });
@@ -36,6 +46,10 @@ export function PwaRegister() {
 
       return () => window.removeEventListener("focus", checkUpdate);
     }).catch(() => {});
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    };
   }, []);
 
   return null;
