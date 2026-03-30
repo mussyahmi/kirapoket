@@ -52,6 +52,8 @@ export default function DebtsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showSettled, setShowSettled] = useState(false);
+  const [settledVisible, setSettledVisible] = useState(5);
+  const SETTLED_PAGE = 5;
 
   const unsettled = useMemo(() => debts.filter((d) => !d.settled), [debts]);
   const settled = useMemo(() => debts.filter((d) => d.settled), [debts]);
@@ -274,14 +276,23 @@ export default function DebtsPage() {
         <div className="space-y-2">
           <button
             type="button"
-            onClick={() => setShowSettled((v) => !v)}
+            onClick={() => { setShowSettled((v) => !v); setSettledVisible(SETTLED_PAGE); }}
             className="text-xs text-muted-foreground underline underline-offset-2"
           >
             {showSettled ? "Hide" : "Show"} settled ({settled.length})
           </button>
           {showSettled && (
             <div className="space-y-2">
-              {settled.map((d) => <DebtCard key={d.id} debt={d} />)}
+              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} />)}
+              {settledVisible < settled.length && (
+                <button
+                  type="button"
+                  onClick={() => setSettledVisible((v) => v + SETTLED_PAGE)}
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  Load more ({settled.length - settledVisible} remaining)
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -45,8 +45,12 @@ export default function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [visibleGroups, setVisibleGroups] = useState(10);
+  const GROUPS_PAGE = 10;
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
@@ -121,7 +125,7 @@ export default function TransactionsPage() {
       <div className="grid grid-cols-2 gap-2">
         <Select
           value={filterType}
-          onValueChange={(v) => setFilterType((v ?? "all") as FilterType)}
+          onValueChange={(v) => { setFilterType((v ?? "all") as FilterType); resetVisible(); }}
         >
           <SelectTrigger className="w-full">
             <SelectValue>
@@ -138,7 +142,7 @@ export default function TransactionsPage() {
 
         <Select
           value={filterAccount}
-          onValueChange={(v) => setFilterAccount(v ?? "all")}
+          onValueChange={(v) => { setFilterAccount(v ?? "all"); resetVisible(); }}
         >
           <SelectTrigger className="w-full">
             <SelectValue>
@@ -160,7 +164,7 @@ export default function TransactionsPage() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={(e) => { setDateFrom(e.target.value); resetVisible(); }}
             className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
         </label>
@@ -169,7 +173,7 @@ export default function TransactionsPage() {
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            onChange={(e) => { setDateTo(e.target.value); resetVisible(); }}
             className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
         </label>
@@ -188,7 +192,7 @@ export default function TransactionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {grouped.map(([date, txs]) => (
+          {grouped.slice(0, visibleGroups).map(([date, txs]) => (
             <div key={date}>
               <p className="text-xs font-medium text-muted-foreground mb-2">
                 {format(parseISO(date), "EEEE, d MMMM yyyy")}
@@ -270,9 +274,17 @@ export default function TransactionsPage() {
               </Card>
             </div>
           ))}
+          {visibleGroups < grouped.length && (
+            <button
+              type="button"
+              onClick={() => setVisibleGroups((v) => v + GROUPS_PAGE)}
+              className="w-full text-sm text-muted-foreground py-2 underline underline-offset-2"
+            >
+              Load more ({grouped.length - visibleGroups} more days)
+            </button>
+          )}
         </div>
       )}
-
 
       {/* Delete Confirm Dialog */}
       <Dialog
