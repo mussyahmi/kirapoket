@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { AppShell } from "@/components/layout/AppShell";
@@ -10,11 +11,17 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const { isImpersonating, stopImpersonating } = useApp();
   const router = useRouter();
 
-  if (loading) return null;
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) return null;
 
   return (
     <AppShell>
