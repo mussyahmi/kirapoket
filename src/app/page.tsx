@@ -59,16 +59,23 @@ const MOCK_L1 = [
   {
     label: "Wants", spent: "RM 225.00", dot: "#fb923c", border: "#fb923c66",
     l2: [
-      { name: "Dining Out", spent: "RM 180.00", l3: [] },
+      { name: "Dining Out", spent: "RM 180.00", l3: [
+        { name: "Restaurants", spent: "RM 120.00" },
+        { name: "Cafes", spent: "RM 60.00" },
+      ]},
       { name: "Subscriptions", spent: "RM 45.00", l3: [
         { name: "Spotify", spent: "RM 17.90" },
+        { name: "Netflix", spent: "RM 27.10" },
       ]},
     ],
   },
   {
     label: "Savings", spent: "RM 300.00", dot: "#60a5fa", border: "#60a5fa66",
     l2: [
-      { name: "Goals", spent: "RM 300.00", l3: [] },
+      { name: "Goals", spent: "RM 300.00", l3: [
+        { name: "Emergency Fund", spent: "RM 200.00" },
+        { name: "Travel", spent: "RM 100.00" },
+      ]},
     ],
   },
 ];
@@ -161,9 +168,9 @@ function MockDashboard() {
       <MockCard title="Recent Transactions">
         <div className="space-y-3">
           {[
-            { name: "Grab Food", sub: "Maybank · 26 Mar", amount: "-RM 18.50", income: false },
-            { name: "Salary", sub: "Maybank · 25 Mar", amount: "+RM 4,500", income: true },
-            { name: "Petronas", sub: "Maybank · 24 Mar", amount: "-RM 60.00", income: false },
+            { name: "Grab Food", sub: "Maybank · 26 Mar 2026", amount: "-RM 18.50", income: false },
+            { name: "Salary", sub: "Maybank · 25 Mar 2026", amount: "+RM 4,500", income: true },
+            { name: "Petronas", sub: "Maybank · 24 Mar 2026", amount: "-RM 60.00", income: false },
           ].map(({ name, sub, amount, income }) => (
             <div key={name} className="flex items-center gap-2.5">
               <div className={`size-7 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
