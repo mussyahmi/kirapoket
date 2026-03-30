@@ -42,6 +42,146 @@ const DEFAULT_FORM: DebtForm = {
 const fmt = (n: number) =>
   new Intl.NumberFormat("ms-MY", { style: "currency", currency: "MYR", minimumFractionDigits: 2 }).format(n);
 
+const today = format(new Date(), "yyyy-MM-dd");
+
+interface DebtCardProps {
+  debt: Debt;
+  hidePersonName?: boolean;
+  flat?: boolean;
+  onSettle: (debt: Debt) => void;
+  onEdit: (debt: Debt) => void;
+  onDelete: (debt: Debt) => void;
+}
+
+function DebtCard({ debt, hidePersonName, flat, onSettle, onEdit, onDelete }: DebtCardProps) {
+  const isOverdue = !debt.settled && debt.dueDate && debt.dueDate < today;
+  return (
+    <div className={cn(
+      "flex items-start gap-3 p-3",
+      flat ? "" : "rounded-xl border",
+      debt.settled
+        ? flat ? "opacity-60" : "border-border bg-muted/30 opacity-60"
+        : flat ? "" : "border-border bg-card"
+    )}>
+      <div className={cn(
+        "shrink-0 mt-0.5 size-2.5 rounded-full",
+        debt.direction === "i_owe" ? "bg-red-400" : "bg-green-400"
+      )} />
+      <div className="flex-1 min-w-0 space-y-0.5">
+        <div className="flex items-center gap-2">
+          {!hidePersonName && <span className="text-sm font-semibold truncate">{debt.personName}</span>}
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+            debt.direction === "i_owe"
+              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+              : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+          )}>
+            {debt.direction === "i_owe" ? "I owe" : "Owes me"}
+          </span>
+        </div>
+        <p className={cn(
+          "text-base font-bold tabular-nums",
+          debt.direction === "i_owe" ? "text-red-500" : "text-green-600 dark:text-green-400"
+        )}>
+          {fmt(debt.amount)}
+        </p>
+        {debt.note && <p className="text-xs text-muted-foreground">{debt.note}</p>}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] text-muted-foreground">{format(parseISO(debt.date), "d MMM yyyy")}</span>
+          {debt.dueDate && (
+            <span className={cn("text-[10px]", isOverdue ? "text-red-500 font-medium" : "text-muted-foreground")}>
+              {isOverdue ? "⚠ Overdue · " : "Due · "}{format(parseISO(debt.dueDate), "d MMM yyyy")}
+            </span>
+          )}
+          {debt.settled && debt.settledDate && (
+            <span className="text-[10px] text-muted-foreground">Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}</span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => onSettle(debt)}
+          className={cn(
+            "size-7 rounded-lg flex items-center justify-center transition-colors",
+            debt.settled ? "text-muted-foreground hover:bg-muted" : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+          )}
+          title={debt.settled ? "Mark unsettled" : "Mark settled"}
+        >
+          {debt.settled ? <RotateCcwIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onEdit(debt)}
+          className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <PencilIcon className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(debt)}
+          className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          <TrashIcon className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface DebtGroupCardProps {
+  group: { key: string; displayName: string; debts: Debt[] };
+  expandedGroups: Set<string>;
+  onToggle: (key: string) => void;
+  onSettle: (debt: Debt) => void;
+  onEdit: (debt: Debt) => void;
+  onDelete: (debt: Debt) => void;
+}
+
+function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDelete }: DebtGroupCardProps) {
+  const isExpanded = expandedGroups.has(group.key);
+  const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0);
+  const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + d.amount, 0);
+  const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
+  const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(group.key)}
+        className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
+      >
+        <div className={cn(
+          "shrink-0 mt-0.5 size-2.5 rounded-full",
+          allIOwe ? "bg-red-400" : allTheyOwe ? "bg-green-400" : "bg-yellow-400"
+        )} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{group.displayName}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
+              {group.debts.length} entries
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            {theyOweTotal > 0 && <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">{fmt(theyOweTotal)}</span>}
+            {iOweTotal > 0 && <span className="text-sm font-bold text-red-500 tabular-nums">{fmt(iOweTotal)}</span>}
+          </div>
+        </div>
+        <ChevronDownIcon className={cn("size-4 text-muted-foreground shrink-0 transition-transform duration-200", isExpanded && "rotate-180")} />
+      </button>
+      {isExpanded && (
+        <div className="border-t border-border divide-y divide-border">
+          {group.debts.map((d) => (
+            <div key={d.id}>
+              <DebtCard debt={d} hidePersonName flat onSettle={onSettle} onEdit={onEdit} onDelete={onDelete} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DebtsPage() {
   const { debts, loadingDebts, createDebt, editDebt, removeDebt } = useApp();
 
@@ -76,7 +216,7 @@ export default function DebtsPage() {
       .map(([key, groupDebts]) => ({
         key,
         displayName: groupDebts[0].personName,
-        debts: groupDebts, // already sorted by date from unsettled
+        debts: groupDebts.sort((a, b) => b.date.localeCompare(a.date)),
         latestDate: groupDebts[0].date,
       }))
       .sort((a, b) => b.latestDate.localeCompare(a.latestDate));
@@ -171,145 +311,12 @@ export default function DebtsPage() {
     }
   };
 
-  const today = format(new Date(), "yyyy-MM-dd");
-
-  const DebtCard = ({ debt, hidePersonName, flat }: { debt: Debt; hidePersonName?: boolean; flat?: boolean }) => {
-    const isOverdue = !debt.settled && debt.dueDate && debt.dueDate < today;
-    return (
-      <div className={cn(
-        "flex items-start gap-3 p-3",
-        flat ? "" : "rounded-xl border",
-        debt.settled
-          ? flat ? "opacity-60" : "border-border bg-muted/30 opacity-60"
-          : flat ? "" : "border-border bg-card"
-      )}>
-        {/* Direction indicator */}
-        <div className={cn(
-          "shrink-0 mt-0.5 size-2.5 rounded-full",
-          debt.direction === "i_owe" ? "bg-red-400" : "bg-green-400"
-        )} />
-
-        {/* Content */}
-        <div className="flex-1 min-w-0 space-y-0.5">
-          <div className="flex items-center gap-2">
-            {!hidePersonName && <span className="text-sm font-semibold truncate">{debt.personName}</span>}
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
-              debt.direction === "i_owe"
-                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-            )}>
-              {debt.direction === "i_owe" ? "I owe" : "Owes me"}
-            </span>
-          </div>
-          <p className={cn(
-            "text-base font-bold tabular-nums",
-            debt.direction === "i_owe" ? "text-red-500" : "text-green-600 dark:text-green-400"
-          )}>
-            {fmt(debt.amount)}
-          </p>
-          {debt.note && <p className="text-xs text-muted-foreground">{debt.note}</p>}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">{format(parseISO(debt.date), "d MMM yyyy")}</span>
-            {debt.dueDate && (
-              <span className={cn(
-                "text-[10px]",
-                isOverdue ? "text-red-500 font-medium" : "text-muted-foreground"
-              )}>
-                {isOverdue ? "⚠ Overdue · " : "Due · "}{format(parseISO(debt.dueDate), "d MMM yyyy")}
-              </span>
-            )}
-            {debt.settled && debt.settledDate && (
-              <span className="text-[10px] text-muted-foreground">Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => handleSettle(debt)}
-            className={cn(
-              "size-7 rounded-lg flex items-center justify-center transition-colors",
-              debt.settled
-                ? "text-muted-foreground hover:bg-muted"
-                : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-            )}
-            title={debt.settled ? "Mark unsettled" : "Mark settled"}
-          >
-            {debt.settled ? <RotateCcwIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => openEdit(debt)}
-            className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
-          >
-            <PencilIcon className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeleteTarget(debt)}
-            className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
-            <TrashIcon className="size-3.5" />
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const DebtGroupCard = ({ group }: { group: { key: string; displayName: string; debts: Debt[] } }) => {
-    const isExpanded = expandedGroups.has(group.key);
-    const toggle = () => setExpandedGroups((prev) => {
+  const handleToggleGroup = (key: string) => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(group.key)) next.delete(group.key); else next.add(group.key);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
-    const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0);
-    const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + d.amount, 0);
-    const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
-    const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
-    return (
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <button
-          type="button"
-          onClick={toggle}
-          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
-        >
-          <div className={cn(
-            "shrink-0 mt-0.5 size-2.5 rounded-full",
-            allIOwe ? "bg-red-400" : allTheyOwe ? "bg-green-400" : "bg-yellow-400"
-          )} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{group.displayName}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
-                {group.debts.length} entries
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              {theyOweTotal > 0 && (
-                <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">{fmt(theyOweTotal)}</span>
-              )}
-              {iOweTotal > 0 && (
-                <span className="text-sm font-bold text-red-500 tabular-nums">{fmt(iOweTotal)}</span>
-              )}
-            </div>
-          </div>
-          <ChevronDownIcon className={cn("size-4 text-muted-foreground shrink-0 transition-transform duration-200", isExpanded && "rotate-180")} />
-        </button>
-        {isExpanded && (
-          <div className="border-t border-border divide-y divide-border">
-            {group.debts.map((d) => (
-              <div key={d.id}>
-                <DebtCard debt={d} hidePersonName flat />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -349,8 +356,8 @@ export default function DebtsPage() {
         <div className="space-y-2">
           {unsettledGroups.map((g) =>
             g.debts.length === 1
-              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} />
-              : <DebtGroupCard key={g.key} group={g} />
+              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} />
+              : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} />
           )}
         </div>
       )}
@@ -367,7 +374,7 @@ export default function DebtsPage() {
           </button>
           {showSettled && (
             <div className="space-y-2">
-              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} />)}
+              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} />)}
               {settledVisible < settled.length && (
                 <button
                   type="button"
