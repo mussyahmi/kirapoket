@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { AppShell } from "@/components/layout/AppShell";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function AppLayout({
   children,
@@ -14,7 +14,6 @@ export default function AppLayout({
   const { user, loading } = useAuth();
   const { isImpersonating, stopImpersonating } = useApp();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,9 +37,7 @@ export default function AppLayout({
           </button>
         </div>
       )}
-      <div key={pathname} className="anim-fade-up" style={{ animationDuration: "0.35s" }}>
-        {children}
-      </div>
+      {children}
     </AppShell>
   );
 }

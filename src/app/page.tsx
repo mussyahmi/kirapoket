@@ -255,24 +255,6 @@ function InAppBrowserBanner() {
   );
 }
 
-function useTyping(text: string, speed = 55, delay = 0) {
-  const [displayed, setDisplayed] = useState("");
-  useEffect(() => {
-    setDisplayed("");
-    let i = 0;
-    const start = setTimeout(() => {
-      const id = setInterval(() => {
-        i++;
-        setDisplayed(text.slice(0, i));
-        if (i >= text.length) clearInterval(id);
-      }, speed);
-      return () => clearInterval(id);
-    }, delay);
-    return () => clearTimeout(start);
-  }, [text, speed, delay]);
-  return displayed;
-}
-
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
   const { userProfile } = useApp();
@@ -281,13 +263,6 @@ export default function LandingPage() {
   useEffect(() => {
     setInAppBrowser(isInAppBrowser());
   }, []);
-
-  const greeting = userProfile?.salaryDay ? "Welcome back," : "Welcome,";
-  const typedGreeting = useTyping(user ? greeting : "", 55, 500);
-  const nameDelay = 500 + greeting.length * 55 + 80;
-  const displayName = user ? (user.displayName ?? user.email ?? "") : "";
-  const typedName = useTyping(displayName, 55, nameDelay);
-  const buttonsDelay = nameDelay + displayName.length * 55 + 150;
 
   const handleSignIn = async () => {
     if (inAppBrowser) return;
@@ -339,21 +314,21 @@ export default function LandingPage() {
 
           <main className="flex-1 flex items-center justify-center px-6 py-16">
             <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
-              <Avatar size="lg" className="size-20 anim-scale-in">
+              <Avatar size="lg" className="size-20">
                 {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName ?? "User"} />}
                 <AvatarFallback className="text-2xl">{getInitials(user.displayName)}</AvatarFallback>
               </Avatar>
 
-              <div className="space-y-1 anim-fade-up" style={{ animationDelay: "200ms" }}>
+              <div className="space-y-1">
                 <p className="text-muted-foreground text-sm">
-                  {typedGreeting}
+                  {userProfile?.salaryDay ? "Welcome back," : "Welcome,"}
                 </p>
                 <h1 className="text-2xl font-bold text-foreground">
-                  {typedName}
+                  {user.displayName ?? user.email}
                 </h1>
               </div>
 
-              <div className="flex flex-col gap-3 w-full anim-fade-up" style={{ animationDelay: `${buttonsDelay}ms` }}>
+              <div className="flex flex-col gap-3 w-full">
                 <Link
                   href="/home"
                   className="inline-flex items-center justify-center gap-2 h-12 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-6 w-full"
@@ -424,25 +399,23 @@ export default function LandingPage() {
             {/* Left — copy + CTA */}
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card w-fit text-xs text-muted-foreground anim-fade-up" style={{ animationDelay: "0ms" }}>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card w-fit text-xs text-muted-foreground">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Personal expense tracker
                 </div>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight anim-fade-up" style={{ animationDelay: "100ms" }}>
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight">
                   Know where your<br className="hidden md:block" /> money goes.
                 </h1>
-                <p className="text-base text-muted-foreground leading-relaxed max-w-sm anim-fade-up" style={{ animationDelay: "220ms" }}>
+                <p className="text-base text-muted-foreground leading-relaxed max-w-sm">
                   Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets.
                 </p>
               </div>
 
               {/* CTA */}
               {inAppBrowser ? (
-                <div className="anim-fade-up" style={{ animationDelay: "340ms" }}>
-                  <InAppBrowserBanner />
-                </div>
+                <InAppBrowserBanner />
               ) : (
-                <div className="flex flex-col gap-2 anim-fade-up" style={{ animationDelay: "340ms" }}>
+                <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleSignIn}
                     size="lg"
@@ -459,32 +432,26 @@ export default function LandingPage() {
 
               {/* Features */}
               <div className="space-y-2.5">
-                <div className="anim-fade-up" style={{ animationDelay: "460ms" }}>
-                  <FeatureCard
-                    icon={RefreshCw}
-                    title="Salary cycle tracking"
-                    desc="All summaries scoped to your pay cycle, not the calendar month."
-                  />
-                </div>
-                <div className="anim-fade-up" style={{ animationDelay: "560ms" }}>
-                  <FeatureCard
-                    icon={PieChart}
-                    title="Needs · Wants · Savings"
-                    desc="Organise every cent into three buckets with optional budgets per category."
-                  />
-                </div>
-                <div className="anim-fade-up" style={{ animationDelay: "660ms" }}>
-                  <FeatureCard
-                    icon={Wallet}
-                    title="Multiple accounts"
-                    desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place."
-                  />
-                </div>
+                <FeatureCard
+                  icon={RefreshCw}
+                  title="Salary cycle tracking"
+                  desc="All summaries scoped to your pay cycle, not the calendar month."
+                />
+                <FeatureCard
+                  icon={PieChart}
+                  title="Needs · Wants · Savings"
+                  desc="Organise every cent into three buckets with optional budgets per category."
+                />
+                <FeatureCard
+                  icon={Wallet}
+                  title="Multiple accounts"
+                  desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place."
+                />
               </div>
             </div>
 
             {/* Right — mock dashboard */}
-            <div className="w-full md:max-w-sm md:ml-auto anim-slide-right" style={{ animationDelay: "200ms" }}>
+            <div className="w-full md:max-w-sm md:ml-auto">
               <MockDashboard />
             </div>
 
