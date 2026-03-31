@@ -13,7 +13,7 @@ interface Release {
 const releases: Release[] = [
   {
     version: "0.4.x",
-    dateRange: "2026-03-30",
+    dateRange: "2026-03-30 – 2026-03-31",
     changes: [
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
