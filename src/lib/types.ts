@@ -16,6 +16,7 @@ export interface UserProfile {
   manualCycleStart?: string;
   hideBalance: boolean;
   forecastIncomeItems?: ForecastIncomeItem[];
+  lastLogin?: Timestamp | null;
 }
 
 export interface Account {

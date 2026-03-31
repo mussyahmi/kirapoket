@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
@@ -8,8 +8,29 @@ import { getAllUsers } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShieldAlertIcon, UserIcon } from "lucide-react";
+import { ShieldAlertIcon, UserIcon, ArrowUpDownIcon } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import type { UserProfile } from "@/lib/types";
+import type { Timestamp } from "firebase/firestore";
+
+function formatLastLogin(lastLogin: Timestamp | null | undefined): string {
+  if (!lastLogin) return "Never";
+  try {
+    const date = lastLogin.toDate();
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch {
+    return "Unknown";
+  }
+}
+
+function lastLoginMs(lastLogin: Timestamp | null | undefined): number {
+  if (!lastLogin) return 0;
+  try {
+    return lastLogin.toDate().getTime();
+  } catch {
+    return 0;
+  }
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -17,6 +38,7 @@ export default function AdminPage() {
   const { isImpersonating, impersonate, stopImpersonating } = useApp();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortAsc, setSortAsc] = useState(false);
 
   const isAdmin = user?.uid === ADMIN_UID;
 
@@ -26,6 +48,13 @@ export default function AdminPage() {
       .then(setUsers)
       .finally(() => setLoading(false));
   }, [isAdmin]);
+
+  const sortedUsers = useMemo(() => {
+    return [...users].sort((a, b) => {
+      const diff = lastLoginMs(b.lastLogin) - lastLoginMs(a.lastLogin);
+      return sortAsc ? -diff : diff;
+    });
+  }, [users, sortAsc]);
 
   if (authLoading) return null;
 
@@ -60,19 +89,28 @@ export default function AdminPage() {
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm">Users ({users.length})</CardTitle>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs gap-1 text-muted-foreground"
+            onClick={() => setSortAsc((v) => !v)}
+          >
+            <ArrowUpDownIcon className="size-3" />
+            Last login {sortAsc ? "↑" : "↓"}
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="space-y-2 p-4">
               {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
-          ) : users.length === 0 ? (
+          ) : sortedUsers.length === 0 ? (
             <p className="text-sm text-muted-foreground p-4">No users found.</p>
           ) : (
             <div className="divide-y divide-border">
-              {users.map((u) => (
+              {sortedUsers.map((u) => (
                 <div key={u.uid} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex items-center justify-center size-8 rounded-full bg-muted shrink-0">
                     {u.photoURL ? (
@@ -84,6 +122,7 @@ export default function AdminPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{u.displayName ?? "—"}</p>
                     <p className="text-xs text-muted-foreground truncate">{u.email ?? u.uid}</p>
+                    <p className="text-xs text-muted-foreground/60">{formatLastLogin(u.lastLogin)}</p>
                   </div>
                   {u.uid === user.uid ? (
                     <span className="text-xs text-muted-foreground shrink-0">You</span>
