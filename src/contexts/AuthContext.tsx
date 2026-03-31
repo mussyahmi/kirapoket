@@ -15,8 +15,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { deleteAllUserData, updateUserProfile } from "@/lib/firestore";
-import { Timestamp } from "firebase/firestore";
+import { deleteAllUserData } from "@/lib/firestore";
 
 interface AuthContextValue {
   user: User | null;
@@ -36,9 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
-      if (firebaseUser) {
-        updateUserProfile(firebaseUser.uid, { lastLogin: Timestamp.now() });
-      }
     });
     return () => unsubscribe();
   }, []);

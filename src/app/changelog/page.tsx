@@ -26,6 +26,7 @@ const releases: Release[] = [
       { type: "fix", text: "Transaction list: tapping a row now shows full details (amount, date, account, subcategory, note) in a popup — edit button moved inside" },
       { type: "fix", text: "\"View all\" link on the home page now appears correctly in the top-right corner of the Recent Transactions section" },
       { type: "fix", text: "Installing to home screen now opens the app at the correct starting page" },
+      { type: "fix", text: "Salary day selection now immediately reflects on the home page after tapping" },
     ],
   },
   {

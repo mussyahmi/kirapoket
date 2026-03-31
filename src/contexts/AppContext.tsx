@@ -30,6 +30,7 @@ import {
   updateUserProfile,
   seedDefaultCategories,
 } from "@/lib/firestore";
+import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
 
 export const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
@@ -132,6 +133,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const profile = await getUserProfile(uid);
       if (profile) {
         setUserProfile(profile);
+        // Update lastLogin for the real user only (not when viewing as someone else)
+        if (!impersonatedUid) {
+          updateUserProfile(uid, { lastLogin: Timestamp.now() });
+        }
       } else if (!impersonatedUid) {
         // Bootstrap profile only for the real user, not impersonated targets
         const bootstrapped: UserProfile = {
@@ -141,6 +146,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           photoURL: user?.photoURL ?? null,
           salaryDay: null,
           hideBalance: false,
+          lastLogin: Timestamp.now(),
         };
         await updateUserProfile(uid, bootstrapped);
         setUserProfile(bootstrapped);
@@ -451,7 +457,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (data: Partial<UserProfile>) => {
       if (!uid) throw new Error("Not authenticated");
       await updateUserProfile(uid, data);
-      setUserProfile((prev) => (prev ? { ...prev, ...data } : null));
+      const latest = await getUserProfile(uid);
+      if (latest) setUserProfile(latest);
     },
     [uid]
   );
