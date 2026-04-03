@@ -100,6 +100,66 @@ export async function seedDefaultCategories(uid: string): Promise<void> {
   }
 }
 
+// Idempotent version — only adds what's missing. Safe to call on every login.
+export async function ensureDefaultCategories(uid: string): Promise<void> {
+  const existing = await getCategories(uid);
+
+  for (const l1Def of DEFAULT_CATEGORIES) {
+    let l1 = existing.find((c) => c.level === 1 && c.type === l1Def.type);
+
+    if (!l1) {
+      const ref = await addDoc(collection(db, "categories"), {
+        name: l1Def.name,
+        level: 1,
+        parentId: null,
+        type: l1Def.type,
+        userId: uid,
+      });
+      l1 = { id: ref.id, userId: uid, name: l1Def.name, level: 1, parentId: null, type: l1Def.type };
+      existing.push(l1);
+    }
+
+    for (let l2i = 0; l2i < l1Def.children.length; l2i++) {
+      const l2Def = l1Def.children[l2i];
+      let l2 = existing.find(
+        (c) => c.level === 2 && c.parentId === l1!.id && c.name === l2Def.name
+      );
+
+      if (!l2) {
+        const ref = await addDoc(collection(db, "categories"), {
+          name: l2Def.name,
+          level: 2,
+          parentId: l1.id,
+          type: l1Def.type,
+          userId: uid,
+          sortOrder: l2i,
+        });
+        l2 = { id: ref.id, userId: uid, name: l2Def.name, level: 2, parentId: l1.id, type: l1Def.type, sortOrder: l2i };
+        existing.push(l2);
+      }
+
+      const existingL3Names = existing
+        .filter((c) => c.level === 3 && c.parentId === l2!.id)
+        .map((c) => c.name);
+
+      for (let l3i = 0; l3i < (l2Def.items ?? []).length; l3i++) {
+        const itemName = l2Def.items![l3i];
+        if (!existingL3Names.includes(itemName)) {
+          const ref = await addDoc(collection(db, "categories"), {
+            name: itemName,
+            level: 3,
+            parentId: l2.id,
+            type: l1Def.type,
+            userId: uid,
+            sortOrder: l3i,
+          });
+          existing.push({ id: ref.id, userId: uid, name: itemName, level: 3, parentId: l2.id, type: l1Def.type, sortOrder: l3i });
+        }
+      }
+    }
+  }
+}
+
 // ─── User Profile ────────────────────────────────────────────────────────────
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {

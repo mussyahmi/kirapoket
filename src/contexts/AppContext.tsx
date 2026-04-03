@@ -28,7 +28,7 @@ import {
   deleteDebt,
   getUserProfile,
   updateUserProfile,
-  seedDefaultCategories,
+  ensureDefaultCategories,
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -146,6 +146,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
         if (!impersonatedUid) {
           updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
+          // Re-seed if a previous seeding attempt was incomplete or never flagged as done
+          if (!profile.categoriesSeeded) {
+            await ensureDefaultCategories(uid);
+            await updateUserProfile(uid, { categoriesSeeded: true });
+            const seeded = await getCategories(uid);
+            setCategories(seeded);
+          }
         }
       } else if (!impersonatedUid) {
         // Bootstrap profile only for the real user, not impersonated targets
@@ -160,7 +167,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         await updateUserProfile(uid, bootstrapped);
         setUserProfile(bootstrapped);
-        await seedDefaultCategories(uid);
+        await ensureDefaultCategories(uid);
+        await updateUserProfile(uid, { categoriesSeeded: true });
         const seeded = await getCategories(uid);
         setCategories(seeded);
       }

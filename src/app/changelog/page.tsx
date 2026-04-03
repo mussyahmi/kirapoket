@@ -13,7 +13,7 @@ interface Release {
 const releases: Release[] = [
   {
     version: "0.4.x",
-    dateRange: "2026-03-30 – 2026-04-03",
+    dateRange: "2026-03-30 – 2026-04-04",
     changes: [
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
       { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
@@ -33,6 +33,7 @@ const releases: Release[] = [
       { type: "fix", text: "\"View all\" link on the home page now appears correctly in the top-right corner of the Recent Transactions section" },
       { type: "fix", text: "Installing to home screen now opens the app at the correct starting page" },
       { type: "fix", text: "Salary day selection now immediately reflects on the home page after tapping" },
+      { type: "fix", text: "New accounts no longer end up with missing or incomplete default categories — any gaps are automatically filled in on the next login" },
     ],
   },
   {

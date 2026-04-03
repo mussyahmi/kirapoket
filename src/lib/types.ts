@@ -17,6 +17,7 @@ export interface UserProfile {
   hideBalance: boolean;
   forecastIncomeItems?: ForecastIncomeItem[];
   lastLogin?: Timestamp | null;
+  categoriesSeeded?: boolean;
 }
 
 export interface Account {
