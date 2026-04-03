@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+
 import { format, parseISO } from "date-fns";
 import {
   PlusIcon,
@@ -36,7 +37,7 @@ import type { Transaction } from "@/lib/types";
 
 type FilterType = "all" | "expense" | "income" | "transfer";
 
-export default function TransactionsPage() {
+function TransactionsPage() {
   const { transactions, accounts, categories, loadingTransactions, removeTransaction } =
     useApp();
 
@@ -474,5 +475,13 @@ export default function TransactionsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function TransactionsPageWrapper() {
+  return (
+    <Suspense>
+      <TransactionsPage />
+    </Suspense>
   );
 }
