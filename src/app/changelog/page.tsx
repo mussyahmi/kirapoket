@@ -13,8 +13,14 @@ interface Release {
 const releases: Release[] = [
   {
     version: "0.4.x",
-    dateRange: "2026-03-30 – 2026-03-31",
+    dateRange: "2026-03-30 – 2026-04-03",
     changes: [
+      { type: "feat", text: "Transactions: filter by category — tap any L2 or L3 category name on the budget page to jump straight to its transactions" },
+      { type: "feat", text: "Transactions: daily net total shown next to each date header — green for net income, red for net expense" },
+      { type: "feat", text: "Transactions: delete button moved into the detail popup — no more accidental deletes from the list" },
+      { type: "feat", text: "Transaction time is now shown on the home page and in the transaction detail popup" },
+      { type: "feat", text: "Transactions sort by time within the same day — most recent first" },
+      { type: "feat", text: "Transfer transactions now show a distinct icon on the home page" },
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
       { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
