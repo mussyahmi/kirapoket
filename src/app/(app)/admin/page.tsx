@@ -8,7 +8,7 @@ import { getAllUsers } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShieldAlertIcon, UserIcon, ArrowUpDownIcon } from "lucide-react";
+import { ShieldAlertIcon, UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { UserProfile } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
@@ -97,7 +97,6 @@ export default function AdminPage() {
             className="h-7 text-xs gap-1 text-muted-foreground"
             onClick={() => setSortAsc((v) => !v)}
           >
-            <ArrowUpDownIcon className="size-3" />
             Last login {sortAsc ? "↑" : "↓"}
           </Button>
         </CardHeader>

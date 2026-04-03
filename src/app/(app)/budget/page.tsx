@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toPng } from "html-to-image";
 import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon } from "lucide-react";
@@ -61,6 +62,7 @@ function SortableForecastItem({ id, children }: { id: string; children: React.Re
 }
 
 export default function BudgetPage() {
+  const router = useRouter();
   const {
     userProfile,
     categories,
@@ -536,7 +538,13 @@ export default function BudgetPage() {
                           <div key={l2.id} className="space-y-1.5">
                             {/* L2 name + amounts */}
                             <div className="flex items-center justify-between gap-2 text-sm">
-                              <span className={cn("font-medium", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}>{l2.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
+                                className={cn("font-medium text-left hover:underline", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}
+                              >
+                                {l2.name}
+                              </button>
                               <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
                                 {fmtAmt(l2spent)}
                                 {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l2budget)}</span>}
@@ -567,7 +575,13 @@ export default function BudgetPage() {
 
                                   return (
                                     <div key={l3.id} className="flex items-center justify-between gap-2 text-xs">
-                                      <span className={cn("text-muted-foreground/80", !l3over && l3remaining === 0 && "line-through")}>{l3.name}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`)}
+                                        className={cn("text-muted-foreground/80 text-left hover:underline hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}
+                                      >
+                                        {l3.name}
+                                      </button>
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
                                           {fmtAmt(l3spent)}

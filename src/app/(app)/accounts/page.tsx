@@ -101,7 +101,7 @@ export default function AccountsPage() {
     setForm({
       name: account.name,
       type: account.type,
-      balance: String(account.balance),
+      balance: account.balance.toFixed(2),
     });
     setDialogOpen(true);
   };

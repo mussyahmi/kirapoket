@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import {
   PlusIcon,
@@ -39,32 +40,60 @@ export default function TransactionsPage() {
   const { transactions, accounts, categories, loadingTransactions, removeTransaction } =
     useApp();
 
+  const searchParams = useSearchParams();
+
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterAccount, setFilterAccount] = useState<string>("all");
-const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>(
+    () => searchParams.get("category") ?? "all"
+  );
+  const [dateFrom, setDateFrom] = useState(
+    () => searchParams.get("from") ?? ""
+  );
+  const [dateTo, setDateTo] = useState(
+    () => searchParams.get("to") ?? ""
+  );
 
-  const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [visibleGroups, setVisibleGroups] = useState(10);
   const GROUPS_PAGE = 10;
+  const [visibleGroups, setVisibleGroups] = useState(GROUPS_PAGE);
+  const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
     [categories]
   );
 
+  // Build a set of matching categoryIds for the category filter
+  const matchingCategoryIds = useMemo(() => {
+    if (filterCategory === "all") return null;
+    const cat = categoryMap[filterCategory];
+    if (!cat) return new Set<string>();
+    if (cat.level === 2) {
+      // Include the L2 itself and all its L3 children
+      const ids = new Set<string>([cat.id]);
+      for (const c of categories) {
+        if (c.level === 3 && c.parentId === cat.id) ids.add(c.id);
+      }
+      return ids;
+    }
+    return new Set([cat.id]);
+  }, [filterCategory, categoryMap, categories]);
+
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
       if (filterAccount !== "all" && t.accountId !== filterAccount) return false;
+      if (matchingCategoryIds !== null) {
+        if (!t.categoryId || !matchingCategoryIds.has(t.categoryId)) return false;
+      }
       if (dateFrom && t.date < dateFrom) return false;
       if (dateTo && t.date > dateTo) return false;
       return true;
     });
-  }, [transactions, filterType, filterAccount, dateFrom, dateTo]);
+  }, [transactions, filterType, filterAccount, matchingCategoryIds, dateFrom, dateTo]);
 
   // Group by date
   const grouped = useMemo(() => {
@@ -153,6 +182,50 @@ const [dateFrom, setDateFrom] = useState("");
           </SelectContent>
         </Select>
 
+        {/* Category filter — full width */}
+        {(() => {
+          const l1Cats = categories.filter((c) => c.level === 1).sort((a, b) => {
+            const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
+            return (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9);
+          });
+          const selectedCat = filterCategory !== "all" ? categoryMap[filterCategory] : null;
+          return (
+            <Select
+              value={filterCategory}
+              onValueChange={(v) => { setFilterCategory(v ?? "all"); resetVisible(); }}
+            >
+              <SelectTrigger className="w-full col-span-2">
+                <SelectValue>
+                  {selectedCat ? selectedCat.name : "All categories"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {l1Cats.map((l1) => {
+                  const l2s = categories
+                    .filter((c) => c.level === 2 && c.parentId === l1.id)
+                    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                  return l2s.map((l2) => {
+                    const l3s = categories
+                      .filter((c) => c.level === 3 && c.parentId === l2.id)
+                      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                    return [
+                      <SelectItem key={l2.id} value={l2.id}>
+                        {l2.name}
+                      </SelectItem>,
+                      ...l3s.map((l3) => (
+                        <SelectItem key={l3.id} value={l3.id}>
+                          <span className="pl-3 text-muted-foreground">· {l3.name}</span>
+                        </SelectItem>
+                      )),
+                    ];
+                  });
+                })}
+              </SelectContent>
+            </Select>
+          );
+        })()}
+
         <label className="flex h-8 items-center gap-1.5 border border-input rounded-lg px-2.5 bg-background">
           <span className="text-xs text-muted-foreground shrink-0">From</span>
           <input
@@ -188,9 +261,31 @@ const [dateFrom, setDateFrom] = useState("");
         <div className="space-y-4">
           {grouped.slice(0, visibleGroups).map(([date, txs]) => (
             <div key={date}>
-              <p className="text-xs font-medium text-muted-foreground mb-2">
-                {format(parseISO(date), "EEEE, d MMMM yyyy")}
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {format(parseISO(date), "EEEE, d MMMM yyyy")}
+                </p>
+                {(() => {
+                  const net = txs.reduce((sum, t) => {
+                    if (t.type === "income") return sum + t.amount;
+                    if (t.type === "expense") return sum - t.amount;
+                    return sum;
+                  }, 0);
+                  const formatted = new Intl.NumberFormat("ms-MY", {
+                    style: "currency",
+                    currency: "MYR",
+                    minimumFractionDigits: 2,
+                  }).format(Math.abs(net));
+                  return (
+                    <p className={cn(
+                      "text-xs font-semibold",
+                      net > 0 ? "text-green-600 dark:text-green-400" : net < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                    )}>
+                      {net > 0 ? "+" : net < 0 ? "-" : ""}{formatted}
+                    </p>
+                  );
+                })()}
+              </div>
               <Card className="py-0">
                 <CardContent className="divide-y divide-border p-0">
                   {txs.map((tx) => {
@@ -248,13 +343,6 @@ const [dateFrom, setDateFrom] = useState("");
                         >
                           {formatMoney(tx.amount, tx.type)}
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx); }}
-                        >
-                          <TrashIcon className="size-3.5 text-destructive" />
-                        </Button>
                       </div>
                     );
                   })}
@@ -308,7 +396,10 @@ const [dateFrom, setDateFrom] = useState("");
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Date</span>
-                  <span className="text-sm">{format(parseISO(tx.date), "d MMMM yyyy")}</span>
+                  <span className="text-sm">
+                    {format(parseISO(tx.date), "d MMMM yyyy")}
+                    {tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
+                  </span>
                 </div>
                 {tx.type === "transfer" ? (
                   <div className="flex items-center justify-between">
@@ -338,6 +429,13 @@ const [dateFrom, setDateFrom] = useState("");
                     <PencilIcon className="size-4 mr-2" /> Edit
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
+                >
+                  <TrashIcon className="size-4 mr-2" /> Delete transaction
+                </Button>
               </div>
             </DialogContent>
           </Dialog>

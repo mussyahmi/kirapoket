@@ -35,6 +35,16 @@ import { useAuth } from "./AuthContext";
 
 export const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
 
+function sortTransactions(txs: Transaction[]): Transaction[] {
+  return [...txs].sort((a, b) => {
+    const dateCompare = b.date.localeCompare(a.date);
+    if (dateCompare !== 0) return dateCompare;
+    const aTime = a.time ?? "00:00";
+    const bTime = b.time ?? "00:00";
+    return bTime.localeCompare(aTime);
+  });
+}
+
 interface AppContextValue {
   accounts: Account[];
   categories: Category[];
@@ -133,9 +143,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const profile = await getUserProfile(uid);
       if (profile) {
         setUserProfile(profile);
-        // Update lastLogin for the real user only (not when viewing as someone else)
+        // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
         if (!impersonatedUid) {
-          updateUserProfile(uid, { lastLogin: Timestamp.now() });
+          updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
         }
       } else if (!impersonatedUid) {
         // Bootstrap profile only for the real user, not impersonated targets
@@ -186,7 +196,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLoadingTransactions(true);
     try {
       const data = await getTransactions(uid);
-      setTransactions(data);
+      setTransactions(sortTransactions(data));
     } finally {
       setLoadingTransactions(false);
     }
@@ -297,7 +307,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (data: Omit<Transaction, "id" | "userId" | "createdAt">) => {
       if (!uid) throw new Error("Not authenticated");
       const tx = await addTransaction(uid, data);
-      setTransactions((prev) => [tx, ...prev]);
+      setTransactions((prev) => sortTransactions([tx, ...prev]));
 
       // Update account balance(s)
       setAccounts((prev) =>
@@ -346,7 +356,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const old = transactions.find((t) => t.id === id);
       await updateTransaction(id, data);
       setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...data } : t))
+        sortTransactions(prev.map((t) => (t.id === id ? { ...t, ...data } : t)))
       );
 
       if (!old) return;

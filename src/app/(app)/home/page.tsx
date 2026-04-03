@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format, addMonths, differenceInDays, parseISO } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
@@ -514,6 +514,8 @@ export default function DashboardPage() {
                   >
                     {tx.type === "income" ? (
                       <ArrowDownRightIcon className="size-4" />
+                    ) : tx.type === "transfer" ? (
+                      <ArrowLeftRightIcon className="size-4" />
                     ) : (
                       <ArrowUpRightIcon className="size-4" />
                     )}
@@ -527,7 +529,7 @@ export default function DashboardPage() {
                         : "Transfer"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {account?.name} · {format(parseISO(tx.date), "d MMM yyyy")}
+                      {account?.name} · {format(parseISO(tx.date), "d MMM yyyy")}{tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
                     </p>
                   </div>
                   <span
