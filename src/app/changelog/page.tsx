@@ -37,6 +37,7 @@ const releases: Release[] = [
       { type: "fix", text: "Installing to home screen now opens the app at the correct starting page" },
       { type: "fix", text: "Salary day selection now immediately reflects on the home page after tapping" },
       { type: "fix", text: "New accounts no longer end up with missing or incomplete default categories — any gaps are automatically filled in on the next login" },
+      { type: "feat", text: "Home page spending breakdown: tap any category name to jump to its filtered transaction list" },
     ],
   },
   {
