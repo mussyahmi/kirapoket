@@ -16,6 +16,7 @@ const releases: Release[] = [
     dateRange: "2026-03-30 – 2026-04-06",
     changes: [
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
+      { type: "feat", text: "Give Feedback and Buy Me a Coffee — accessible from the sidebar and mobile menu" },
       { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
       { type: "feat", text: "Transactions: filter by category — tap any L2 or L3 category name on the budget page to jump straight to its transactions" },
       { type: "feat", text: "Transactions: daily net total shown next to each date header — green for net income, red for net expense" },

@@ -19,6 +19,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import FeedbackButton from "@/components/common/FeedbackButton";
+import SupportButton from "@/components/common/SupportButton";
 
 // Bottom nav — 4 core daily-use pages
 const bottomNavItems = [
@@ -139,6 +141,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="flex-1">Admin</span>
             </Link>
           )}
+          <div className="pt-2 mt-1 border-t border-border space-y-0.5">
+            <FeedbackButton className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" />
+            <SupportButton className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" />
+          </div>
         </nav>
       </aside>
 
@@ -198,6 +204,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       Admin
                     </Link>
                   )}
+                  <div className="border-t border-border py-1">
+                    <FeedbackButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
+                    <SupportButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
+                  </div>
                 </div>
               )}
             </div>
