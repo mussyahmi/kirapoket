@@ -27,6 +27,8 @@ const releases: Release[] = [
       { type: "feat", text: "Landing page mock cycle selector now shows navigation arrows and the full date format matching the real app" },
       { type: "feat", text: "Landing page mock recent transactions now show the time alongside the date" },
       { type: "feat", text: "Home page spending breakdown: tap any category name to jump to its filtered transaction list" },
+      { type: "feat", text: "Categories: deleting a subcategory is blocked if it still has items inside — clear the items first" },
+      { type: "feat", text: "Categories: deleting an item is blocked if transactions are linked to it — a link jumps straight to the filtered transaction list" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
       { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
       { type: "fix", text: "Changelog link added to the landing page footer" },

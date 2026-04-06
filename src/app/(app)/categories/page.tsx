@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   PlusIcon,
@@ -375,6 +376,7 @@ function L2Row({
 export default function CategoriesPage() {
   const {
     categories,
+    transactions,
     loadingCategories,
     createCategory,
     editCategory,
@@ -542,8 +544,27 @@ export default function CategoriesPage() {
     }
   };
 
+  const deleteBlockReason = useMemo(() => {
+    if (!deleteTarget) return null;
+    if (deleteTarget.level === 2) {
+      const childCount = categories.filter(
+        (c) => c.level === 3 && c.parentId === deleteTarget.id
+      ).length;
+      if (childCount > 0)
+        return `This subcategory has ${childCount} item${childCount > 1 ? "s" : ""} inside it. Delete all items first.`;
+    }
+    if (deleteTarget.level === 3) {
+      const txCount = transactions.filter(
+        (t) => t.categoryId === deleteTarget.id
+      ).length;
+      if (txCount > 0)
+        return `${txCount} transaction${txCount > 1 ? "s are" : " is"} linked to this item. Reassign or delete them first.`;
+    }
+    return null;
+  }, [deleteTarget, categories, transactions]);
+
   const handleDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleteBlockReason) return;
     setDeleting(true);
     try {
       await removeCategory(deleteTarget.id);
@@ -890,28 +911,43 @@ export default function CategoriesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Category</DialogTitle>
+            <DialogTitle>Delete {deleteTarget?.level === 3 ? "Item" : "Subcategory"}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <strong>{deleteTarget?.name}</strong>? Subcategories will also be
-            orphaned.
-          </p>
+          {deleteBlockReason ? (
+            <div className="space-y-3">
+              <p className="text-sm text-destructive">{deleteBlockReason}</p>
+              {deleteTarget?.level === 3 && (
+                <Link
+                  href={`/transactions?category=${deleteTarget.id}`}
+                  onClick={() => setDeleteTarget(null)}
+                  className="inline-flex items-center justify-center w-full rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  View linked transactions
+                </Link>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
+            </p>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setDeleteTarget(null)}
               disabled={deleting}
             >
-              Cancel
+              {deleteBlockReason ? "OK" : "Cancel"}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </Button>
+            {!deleteBlockReason && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
