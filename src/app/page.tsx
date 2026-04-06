@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,13 @@ function GoogleIcon() {
 }
 
 // ─── Mock dashboard preview ───────────────────────────────────────────────────
+const MOCK_PIE = [
+  { label: "Needs",   value: 630, color: "#4ade80" },
+  { label: "Wants",   value: 225, color: "#fb923c" },
+  { label: "Savings", value: 300, color: "#60a5fa" },
+];
+const MOCK_PIE_TOTAL = MOCK_PIE.reduce((s, d) => s + d.value, 0);
+
 const MOCK_ACCOUNTS = [
   { name: "Maybank", balance: "RM 2,840.00" },
   { name: "Touch 'n Go", balance: "RM 150.00" },
@@ -95,7 +103,11 @@ function MockDashboard() {
   return (
     <div className="w-full rounded-2xl bg-muted/30 border border-border shadow-2xl overflow-hidden text-xs select-none p-3 space-y-2">
       {/* cycle selector */}
-      <p className="text-center text-[11px] font-medium text-foreground py-1">Mar 25 – Apr 24</p>
+      <div className="flex items-center justify-between px-1 py-1">
+        <span className="text-muted-foreground/40 text-[11px] select-none">‹</span>
+        <p className="text-[11px] font-medium text-foreground">25 Mar – 24 Apr 2026</p>
+        <span className="text-muted-foreground/40 text-[11px] select-none">›</span>
+      </div>
 
       {/* summary */}
       <MockCard>
@@ -131,6 +143,23 @@ function MockDashboard() {
 
       {/* spending by category */}
       <MockCard title="Spending by Category">
+        <ResponsiveContainer width="100%" height={120}>
+          <RechartsPieChart>
+            <Pie data={MOCK_PIE} dataKey="value" cx="50%" cy="50%" outerRadius={50} labelLine={false}>
+              {MOCK_PIE.map(({ color, label }) => (
+                <Cell key={label} fill={color} />
+              ))}
+            </Pie>
+          </RechartsPieChart>
+        </ResponsiveContainer>
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 pb-3 border-b border-border mb-3">
+          {MOCK_PIE.map(({ label, value, color }) => (
+            <div key={label} className="flex items-center gap-1">
+              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-[9px] text-muted-foreground">{label} {Math.round(value / MOCK_PIE_TOTAL * 100)}%</span>
+            </div>
+          ))}
+        </div>
         <div className="space-y-4">
           {MOCK_L1.map(({ label, spent, dot, border, l2 }) => (
             <div key={label}>
@@ -170,9 +199,9 @@ function MockDashboard() {
       <MockCard title="Recent Transactions">
         <div className="space-y-3">
           {[
-            { name: "Grab Food", sub: "Maybank · 26 Mar 2026", amount: "-RM 18.50", income: false },
-            { name: "Salary", sub: "Maybank · 25 Mar 2026", amount: "+RM 4,500", income: true },
-            { name: "Petronas", sub: "Maybank · 24 Mar 2026", amount: "-RM 60.00", income: false },
+            { name: "Work Meals", sub: "Maybank · 26 Mar 2026, 1:12 PM", amount: "-RM 18.50", income: false },
+            { name: "Salary", sub: "Maybank · 25 Mar 2026, 9:00 AM", amount: "+RM 4,500", income: true },
+            { name: "Fuel", sub: "Maybank · 24 Mar 2026, 7:34 AM", amount: "-RM 60.00", income: false },
           ].map(({ name, sub, amount, income }) => (
             <div key={name} className="flex items-center gap-2.5">
               <div className={`size-7 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
