@@ -16,7 +16,6 @@ const releases: Release[] = [
     dateRange: "2026-03-30 – 2026-04-06",
     changes: [
       { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
-      { type: "feat", text: "Give Feedback and Buy Me a Coffee — accessible from the sidebar and mobile menu" },
       { type: "feat", text: "\"Add to Home Screen\" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari" },
       { type: "feat", text: "Transactions: filter by category — tap any L2 or L3 category name on the budget page to jump straight to its transactions" },
       { type: "feat", text: "Transactions: daily net total shown next to each date header — green for net income, red for net expense" },
@@ -30,6 +29,7 @@ const releases: Release[] = [
       { type: "feat", text: "Home page spending breakdown: tap any category name to jump to its filtered transaction list" },
       { type: "feat", text: "Categories: deleting a subcategory is blocked if it still has items inside — clear the items first" },
       { type: "feat", text: "Categories: deleting an item is blocked if transactions are linked to it — a link jumps straight to the filtered transaction list" },
+      { type: "feat", text: "Give Feedback and Buy Me a Coffee — accessible from the sidebar and mobile menu" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
       { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
       { type: "fix", text: "Changelog link added to the landing page footer" },
