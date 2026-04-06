@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export default function FeedbackButton({ className }: { className?: string }) {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
@@ -39,14 +39,15 @@ export default function FeedbackButton({ className }: { className?: string }) {
           </DialogHeader>
           <DialogFooter className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setShowFeedbackDialog(false)}>Cancel</Button>
-            <Button
-              onClick={() => {
-                window.open("https://insigh.to/b/kirapoket", "_blank");
-                setShowFeedbackDialog(false);
-              }}
+            <a
+              href="https://insigh.to/b/kirapoket"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowFeedbackDialog(false)}
+              className={buttonVariants()}
             >
               Open Feedback Board
-            </Button>
+            </a>
           </DialogFooter>
         </DialogContent>
       </Dialog>
