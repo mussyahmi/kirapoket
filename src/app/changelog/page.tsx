@@ -26,6 +26,7 @@ const releases: Release[] = [
       { type: "feat", text: "Landing page mock dashboard now shows a pie chart with Needs / Wants / Savings breakdown" },
       { type: "feat", text: "Landing page mock cycle selector now shows navigation arrows and the full date format matching the real app" },
       { type: "feat", text: "Landing page mock recent transactions now show the time alongside the date" },
+      { type: "feat", text: "Home page spending breakdown: tap any category name to jump to its filtered transaction list" },
       { type: "fix", text: "Changelog is now accessible without logging in — share the link freely" },
       { type: "fix", text: "Changelog now has a back button — no more getting stuck on mobile" },
       { type: "fix", text: "Changelog link added to the landing page footer" },
@@ -37,7 +38,6 @@ const releases: Release[] = [
       { type: "fix", text: "Installing to home screen now opens the app at the correct starting page" },
       { type: "fix", text: "Salary day selection now immediately reflects on the home page after tapping" },
       { type: "fix", text: "New accounts no longer end up with missing or incomplete default categories — any gaps are automatically filled in on the next login" },
-      { type: "feat", text: "Home page spending breakdown: tap any category name to jump to its filtered transaction list" },
     ],
   },
   {
