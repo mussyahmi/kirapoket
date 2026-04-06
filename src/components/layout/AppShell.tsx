@@ -13,9 +13,11 @@ import {
   HandCoinsIcon,
   MenuIcon,
   ScrollTextIcon,
+  ShieldAlertIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, ADMIN_UID } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 // Bottom nav — 4 core daily-use pages
@@ -40,6 +42,8 @@ const allNavItems = [...bottomNavItems, ...menuItems];
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { userProfile, accounts, debts } = useApp();
+  const { user } = useAuth();
+  const isAdmin = user?.uid === ADMIN_UID;
   const unsettledCount = debts.filter((d) => !d.settled).length;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -121,6 +125,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive("/admin")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
+              <span className="flex-1">Admin</span>
+            </Link>
+          )}
         </nav>
       </aside>
 
@@ -166,6 +184,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       {label}
                     </Link>
                   ))}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
+                        isActive("/admin")
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
+                      Admin
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
