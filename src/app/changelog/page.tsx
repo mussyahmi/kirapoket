@@ -28,6 +28,7 @@ const releases: Release[] = [
       { type: "feat", text: "App version shown at the bottom of the sidebar (desktop) and menu (mobile)" },
       { type: "fix", text: "iOS: signing out then signing in no longer auto-selects the previous Google account — the account picker is always shown" },
       { type: "fix", text: "Give Feedback and Buy Me a Coffee now open reliably on mobile — tapping no longer does nothing" },
+      { type: "fix", text: "Buy Me a Coffee dialog no longer closes when tapping its content on mobile" },
     ],
   },
   {

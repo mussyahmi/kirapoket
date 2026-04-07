@@ -15,6 +15,7 @@ import {
   MessageSquareIcon,
   ScrollTextIcon,
   ShieldAlertIcon,
+  CoffeeIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
@@ -51,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const unsettledCount = debts.filter((d) => !d.settled).length;
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
@@ -218,7 +220,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <MessageSquareIcon className="size-4 shrink-0" />
                       Give Feedback
                     </button>
-                    <SupportButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
+                    <button
+                      onClick={() => { setMenuOpen(false); setSupportOpen(true); }}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors"
+                    >
+                      <CoffeeIcon className="size-4 shrink-0" />
+                      Buy Me a Coffee
+                    </button>
                     <div className="px-4 py-2">
                       <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
                     </div>
@@ -229,8 +237,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Feedback dialog — rendered outside menu conditional so it survives menu close */}
+        {/* Dialogs rendered outside menu conditional so they survive menu close */}
         <FeedbackButton dialogOnly open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+        <SupportButton dialogOnly open={supportOpen} onOpenChange={setSupportOpen} />
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
