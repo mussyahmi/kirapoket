@@ -2,52 +2,48 @@
 
 import { useState } from "react";
 import { MessageSquareIcon } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-export default function FeedbackButton({ className }: { className?: string }) {
-  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+interface FeedbackButtonProps {
+  className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  dialogOnly?: boolean;
+}
+
+export default function FeedbackButton({ className, open: controlledOpen, onOpenChange, dialogOnly }: FeedbackButtonProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
+
+  function openFeedbackBoard() {
+    setOpen(false);
+    setTimeout(() => { window.open("https://insigh.to/b/kirapoket", "_blank"); }, 150);
+  }
 
   return (
     <>
-      <button
-        onClick={() => setShowFeedbackDialog(true)}
-        title="Give Feedback"
-        className={className}
-      >
-        <MessageSquareIcon className="size-4 shrink-0" />
-        Give Feedback
-      </button>
+      {!dialogOnly && (
+        <button onClick={() => setOpen(true)} title="Give Feedback" className={className}>
+          <MessageSquareIcon className="size-4 shrink-0" />
+          Give Feedback
+        </button>
+      )}
 
-      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Your Feedback</DialogTitle>
-            <DialogDescription>
-              Help us improve KiraPoket! Your feedback and suggestions are
-              greatly appreciated. Click the button below to open the feedback
-              board where you can share your thoughts, report issues,
-              or suggest new features.
-            </DialogDescription>
+            <DialogTitle>Give Feedback</DialogTitle>
           </DialogHeader>
-          <DialogFooter className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowFeedbackDialog(false)}>Cancel</Button>
-            <a
-              href="https://insigh.to/b/kirapoket"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setShowFeedbackDialog(false)}
-              className={buttonVariants()}
-            >
+          <p className="text-sm text-muted-foreground">
+            Help us improve KiraPoket! Share your thoughts, report issues, or suggest new features on our feedback board.
+          </p>
+          <DialogFooter>
+            <Button onClick={openFeedbackBoard} className="w-full sm:w-auto">
               Open Feedback Board
-            </a>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

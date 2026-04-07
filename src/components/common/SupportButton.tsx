@@ -9,26 +9,22 @@ export default function SupportButton({ className }: { className?: string }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className={className}
-      >
+      <button onClick={() => setOpen(true)} className={className}>
         <CoffeeIcon className="size-4 shrink-0" />
         Buy Me a Coffee
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="!max-w-2xl" onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Buy Me a Coffee</DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-muted-foreground text-center sm:text-left">
+          <p className="text-sm text-muted-foreground">
             Thank you for supporting KiraPoket! Scan any QR code below.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {/* DuitNow */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col items-center gap-2 border rounded-xl p-3">
               <p className="text-xs font-semibold">DuitNow QR</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -36,7 +32,6 @@ export default function SupportButton({ className }: { className?: string }) {
               <p className="text-[10px] text-muted-foreground text-center">Any banking app</p>
             </div>
 
-            {/* Buy Me a Coffee */}
             <div className="flex flex-col items-center gap-2 border rounded-xl p-3">
               <p className="text-xs font-semibold">Buy Me a Coffee</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -12,6 +12,7 @@ import {
   SettingsIcon,
   HandCoinsIcon,
   MenuIcon,
+  MessageSquareIcon,
   ScrollTextIcon,
   ShieldAlertIcon,
 } from "lucide-react";
@@ -49,6 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = user?.uid === ADMIN_UID;
   const unsettledCount = debts.filter((d) => !d.settled).length;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
@@ -209,7 +211,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </Link>
                   )}
                   <div className="border-t border-border py-1">
-                    <FeedbackButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
+                    <button
+                      onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors"
+                    >
+                      <MessageSquareIcon className="size-4 shrink-0" />
+                      Give Feedback
+                    </button>
                     <SupportButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
                     <div className="px-4 py-2">
                       <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
@@ -220,6 +228,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
+
+        {/* Feedback dialog — rendered outside menu conditional so it survives menu close */}
+        <FeedbackButton dialogOnly open={feedbackOpen} onOpenChange={setFeedbackOpen} />
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
