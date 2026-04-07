@@ -26,6 +26,7 @@ const releases: Release[] = [
       { type: "feat", text: "Debt Repayment and Money Lent are protected — cannot be renamed or deleted" },
       { type: "feat", text: "Person names are automatically added as items under Money Lent or Debt Repayment when a transaction is first recorded" },
       { type: "fix", text: "iOS: signing out then signing in no longer auto-selects the previous Google account — the account picker is always shown" },
+      { type: "feat", text: "App version shown at the bottom of the sidebar (desktop) and menu (mobile)" },
     ],
   },
   {

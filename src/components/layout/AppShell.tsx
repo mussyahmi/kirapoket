@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import FeedbackButton from "@/components/common/FeedbackButton";
 import SupportButton from "@/components/common/SupportButton";
+import pkg from "../../../package.json";
 
 // Bottom nav — 4 core daily-use pages
 const bottomNavItems = [
@@ -146,6 +147,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SupportButton className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" />
           </div>
         </nav>
+        <div className="px-4 py-3 border-t border-border">
+          <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
+        </div>
       </aside>
 
       {/* ── Main Content Area ── */}
@@ -207,6 +211,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <div className="border-t border-border py-1">
                     <FeedbackButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
                     <SupportButton className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors" />
+                    <div className="px-4 py-2">
+                      <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
+                    </div>
                   </div>
                 </div>
               )}
