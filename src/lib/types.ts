@@ -1,5 +1,23 @@
 import { Timestamp } from "firebase/firestore";
 
+export type ActivityType =
+  | "login"
+  | "transaction_add"
+  | "transaction_delete"
+  | "account_add"
+  | "account_delete"
+  | "debt_add"
+  | "debt_settle"
+  | "debt_delete";
+
+export interface Activity {
+  id: string;
+  userId: string;
+  type: ActivityType;
+  description: string;
+  timestamp: Timestamp;
+}
+
 export interface ForecastIncomeItem {
   id: string;
   label: string;

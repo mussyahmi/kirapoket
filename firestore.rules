@@ -47,6 +47,12 @@ service cloud.firestore {
                     && request.auth.uid == request.resource.data.userId;
     }
 
+    match /activities/{docId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

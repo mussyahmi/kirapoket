@@ -4,24 +4,14 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
-import { getAllUsers } from "@/lib/firestore";
+import { getAllUsers, getRecentActivities, getUserActivities } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShieldAlertIcon, UserIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, ShieldAlertIcon, UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { UserProfile } from "@/lib/types";
+import type { Activity, UserProfile } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
-
-function formatLastLogin(lastLogin: Timestamp | null | undefined): string {
-  if (!lastLogin) return "Never";
-  try {
-    const date = lastLogin.toDate();
-    return formatDistanceToNow(date, { addSuffix: true });
-  } catch {
-    return "Unknown";
-  }
-}
 
 function lastLoginMs(lastLogin: Timestamp | null | undefined): number {
   if (!lastLogin) return 0;
@@ -32,6 +22,36 @@ function lastLoginMs(lastLogin: Timestamp | null | undefined): number {
   }
 }
 
+function formatTimestamp(ts: Timestamp): string {
+  try {
+    return formatDistanceToNow(ts.toDate(), { addSuffix: true });
+  } catch {
+    return "Unknown";
+  }
+}
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  login: "Signed in",
+  transaction_add: "Added transaction",
+  transaction_delete: "Deleted transaction",
+  account_add: "Added account",
+  account_delete: "Deleted account",
+  debt_add: "Added debt",
+  debt_settle: "Settled debt",
+  debt_delete: "Deleted debt",
+};
+
+function ActivityRow({ activity }: { activity: Activity }) {
+  return (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="text-xs text-muted-foreground leading-snug">{activity.description}</p>
+      <p className="text-xs text-muted-foreground/50 shrink-0 whitespace-nowrap">
+        {formatTimestamp(activity.timestamp)}
+      </p>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -40,14 +60,34 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Global recent activities — latest 50 across all users
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+
+  // Per-user drill-down: uid → activities (fetched on expand)
+  const [expandedUid, setExpandedUid] = useState<string | null>(null);
+  const [userActivities, setUserActivities] = useState<Record<string, Activity[]>>({});
+  const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
+
   const isAdmin = user?.uid === ADMIN_UID;
 
   useEffect(() => {
     if (!isAdmin) return;
-    getAllUsers()
-      .then(setUsers)
+    Promise.all([getAllUsers(), getRecentActivities(50)])
+      .then(([u, a]) => {
+        setUsers(u);
+        setRecentActivities(a);
+      })
       .finally(() => setLoading(false));
   }, [isAdmin]);
+
+  // Latest activity per user, derived from the global fetch
+  const latestByUser = useMemo(() => {
+    const map: Record<string, Activity> = {};
+    for (const a of recentActivities) {
+      if (!map[a.userId]) map[a.userId] = a;
+    }
+    return map;
+  }, [recentActivities]);
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
@@ -70,6 +110,22 @@ export default function AdminPage() {
 
   const handleStop = () => {
     stopImpersonating();
+  };
+
+  const toggleExpand = async (uid: string) => {
+    if (expandedUid === uid) {
+      setExpandedUid(null);
+      return;
+    }
+    setExpandedUid(uid);
+    if (userActivities[uid]) return; // already loaded
+    setLoadingActivity(uid);
+    try {
+      const acts = await getUserActivities(uid, 20);
+      setUserActivities((prev) => ({ ...prev, [uid]: acts }));
+    } finally {
+      setLoadingActivity(null);
+    }
   };
 
   return (
@@ -109,29 +165,74 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground p-4">No users found.</p>
           ) : (
             <div className="divide-y divide-border">
-              {sortedUsers.map((u) => (
-                <div key={u.uid} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex items-center justify-center size-8 rounded-full bg-muted shrink-0">
-                    {u.photoURL ? (
-                      <img src={u.photoURL} alt="" className="size-8 rounded-full object-cover" />
-                    ) : (
-                      <UserIcon className="size-4 text-muted-foreground" />
+              {sortedUsers.map((u) => {
+                const latest = latestByUser[u.uid];
+                const isExpanded = expandedUid === u.uid;
+                const acts = userActivities[u.uid];
+                const isLoadingActs = loadingActivity === u.uid;
+
+                return (
+                  <div key={u.uid}>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex items-center justify-center size-8 rounded-full bg-muted shrink-0">
+                        {u.photoURL ? (
+                          <img src={u.photoURL} alt="" className="size-8 rounded-full object-cover" />
+                        ) : (
+                          <UserIcon className="size-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{u.displayName ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.email ?? u.uid}</p>
+                        {latest && (
+                          <p className="text-xs text-muted-foreground/50 truncate mt-0.5">
+                            {ACTIVITY_LABELS[latest.type] ?? latest.type} · {formatTimestamp(latest.timestamp)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => toggleExpand(u.uid)}
+                          title="Activity history"
+                        >
+                          {isExpanded ? (
+                            <ChevronUpIcon className="size-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDownIcon className="size-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                        {u.uid === user.uid ? (
+                          <span className="text-xs text-muted-foreground">You</span>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleImpersonate(u.uid)}>
+                            View
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-3 border-t border-border bg-muted/30">
+                        <p className="text-xs font-medium text-muted-foreground pt-2 pb-1">Recent activity</p>
+                        {isLoadingActs ? (
+                          <div className="space-y-1.5 py-1">
+                            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-4 w-full" />)}
+                          </div>
+                        ) : !acts || acts.length === 0 ? (
+                          <p className="text-xs text-muted-foreground/50 py-1">No activity recorded.</p>
+                        ) : (
+                          <div className="divide-y divide-border/50">
+                            {acts.map((a) => <ActivityRow key={a.id} activity={a} />)}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{u.displayName ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{u.email ?? u.uid}</p>
-                    <p className="text-xs text-muted-foreground/60">{formatLastLogin(u.lastLogin)}</p>
-                  </div>
-                  {u.uid === user.uid ? (
-                    <span className="text-xs text-muted-foreground shrink-0">You</span>
-                  ) : (
-                    <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => handleImpersonate(u.uid)}>
-                      View
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

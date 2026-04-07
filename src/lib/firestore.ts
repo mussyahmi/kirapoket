@@ -9,12 +9,13 @@ import {
   query,
   where,
   orderBy,
+  limit,
   setDoc,
   deleteField,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Account, Category, Transaction, UserProfile, Debt } from "./types";
+import type { Account, Activity, ActivityType, Category, Transaction, UserProfile, Debt } from "./types";
 import { format, startOfDay, endOfDay, parseISO, isWithinInterval, addDays } from "date-fns";
 
 // ─── Default category seed ───────────────────────────────────────────────────
@@ -399,6 +400,44 @@ export async function updateDebt(
 
 export async function deleteDebt(id: string): Promise<void> {
   await deleteDoc(doc(db, "debts", id));
+}
+
+// ─── Activities ───────────────────────────────────────────────────────────────
+
+export async function logActivity(
+  userId: string,
+  type: ActivityType,
+  description: string
+): Promise<void> {
+  await addDoc(collection(db, "activities"), {
+    userId,
+    type,
+    description,
+    timestamp: Timestamp.now(),
+  });
+}
+
+/** Latest 50 activities across all users — for admin global feed. */
+export async function getRecentActivities(n = 50): Promise<Activity[]> {
+  const q = query(
+    collection(db, "activities"),
+    orderBy("timestamp", "desc"),
+    limit(n)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Activity));
+}
+
+/** Latest activities for a single user — for admin per-user drill-down. */
+export async function getUserActivities(userId: string, n = 20): Promise<Activity[]> {
+  const q = query(
+    collection(db, "activities"),
+    where("userId", "==", userId),
+    orderBy("timestamp", "desc"),
+    limit(n)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Activity));
 }
 
 export async function deleteAllUserData(uid: string): Promise<void> {

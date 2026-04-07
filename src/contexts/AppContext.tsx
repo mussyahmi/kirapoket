@@ -31,6 +31,7 @@ import {
   ensureDefaultCategories,
   applySeedV2,
   applySeedV3,
+  logActivity,
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -148,6 +149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
         if (!impersonatedUid) {
           updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
+          void logActivity(uid, "login", "Signed in");
           // Re-seed if a previous seeding attempt was incomplete or never flagged as done
           if (!profile.categoriesSeeded) {
             await ensureDefaultCategories(uid);
@@ -261,6 +263,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       const account = await addAccount(uid, data);
       setAccounts((prev) => [...prev, account]);
+      void logActivity(uid, "account_add", `Added account "${data.name}"`);
       return account;
     },
     [uid]
@@ -280,9 +283,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const removeAccount = useCallback(async (id: string) => {
+    const acc = accounts.find((a) => a.id === id);
     await deleteAccount(id);
     setAccounts((prev) => prev.filter((a) => a.id !== id));
-  }, []);
+    if (acc && uid) void logActivity(uid, "account_delete", `Deleted account "${acc.name}"`);
+  }, [accounts, uid]);
 
   // ── Category CRUD ─────────────────────────────────────────────────────────
 
@@ -328,6 +333,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       const tx = await addTransaction(uid, data);
       setTransactions((prev) => sortTransactions([tx, ...prev]));
+      void logActivity(uid, "transaction_add", `Added ${data.type} RM ${data.amount.toFixed(2)}`);
 
       // Update account balance(s)
       setAccounts((prev) =>
@@ -418,6 +424,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const tx = transactions.find((t) => t.id === id);
     await deleteTransaction(id);
     setTransactions((prev) => prev.filter((t) => t.id !== id));
+    if (tx && uid) void logActivity(uid, "transaction_delete", `Deleted ${tx.type} RM ${tx.amount.toFixed(2)}`);
 
     if (!tx) return;
 
@@ -454,7 +461,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (from) await updateAccount(tx.accountId, { balance: from.balance + tx.amount });
       if (to && tx.toAccountId) await updateAccount(tx.toAccountId, { balance: to.balance - tx.amount });
     }
-  }, [transactions, accounts]);
+  }, [transactions, accounts, uid]);
 
   // ── Debt CRUD ─────────────────────────────────────────────────────────────
 
@@ -463,6 +470,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       const debt = await addDebt(uid, data);
       setDebts((prev) => [debt, ...prev]);
+      void logActivity(uid, "debt_add", `Added debt with ${data.personName} RM ${data.amount.toFixed(2)}`);
       return debt;
     },
     [uid]
@@ -472,14 +480,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (id: string, data: Partial<Omit<Debt, "id" | "userId" | "createdAt">>) => {
       await updateDebt(id, data);
       setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, ...data } : d)));
+      if (data.settled === true && uid) {
+        const debt = debts.find((d) => d.id === id);
+        if (debt) void logActivity(uid, "debt_settle", `Settled debt with ${debt.personName} RM ${debt.amount.toFixed(2)}`);
+      }
     },
-    []
+    [uid, debts]
   );
 
   const removeDebt = useCallback(async (id: string) => {
+    const debt = debts.find((d) => d.id === id);
     await deleteDebt(id);
     setDebts((prev) => prev.filter((d) => d.id !== id));
-  }, []);
+    if (debt && uid) void logActivity(uid, "debt_delete", `Deleted debt with ${debt.personName}`);
+  }, [debts, uid]);
 
   // ── Profile ───────────────────────────────────────────────────────────────
 
