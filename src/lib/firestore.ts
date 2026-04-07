@@ -38,6 +38,7 @@ const DEFAULT_CATEGORIES: {
       { name: "Personal Care", items: ["Haircut", "Toiletries", "Laundry"] },
       { name: "Baby & Kids", items: ["Diapers & Formula", "Childcare", "School Supplies"] },
       { name: "Zakat & Sedekah", items: ["Zakat Pendapatan", "Zakat Fitrah", "Zakat Harta", "Sedekah"] },
+      { name: "Debt Repayment", items: ["Personal", "Bank Loan", "PTPTN", "Hire Purchase", "Credit Card"] },
     ],
   },
   {
@@ -61,6 +62,7 @@ const DEFAULT_CATEGORIES: {
       { name: "Emergency Fund", items: ["Contribution", "Top Up"] },
       { name: "Investments", items: ["ASB", "Unit Trust", "Stocks"] },
       { name: "Goals", items: ["House", "Car", "Travel", "Education", "Wedding"] },
+      { name: "Money Lent", items: [] },
     ],
   },
 ];
@@ -158,6 +160,60 @@ export async function ensureDefaultCategories(uid: string): Promise<void> {
       }
     }
   }
+}
+
+// Targeted one-time migration — only adds "Debt Repayment" under Needs if absent.
+// Never re-adds anything the user already deleted.
+export async function applySeedV2(uid: string): Promise<void> {
+  const existing = await getCategories(uid);
+  const needsL1 = existing.find((c) => c.level === 1 && c.type === "needs");
+  if (!needsL1) return;
+
+  const hasDebtRepayment = existing.some(
+    (c) => c.level === 2 && c.parentId === needsL1.id && c.name === "Debt Repayment"
+  );
+  if (hasDebtRepayment) return;
+
+  const l2Ref = await addDoc(collection(db, "categories"), {
+    name: "Debt Repayment",
+    level: 2,
+    parentId: needsL1.id,
+    type: "needs",
+    userId: uid,
+    sortOrder: 99,
+  });
+  const items = ["Personal", "Bank Loan", "PTPTN", "Hire Purchase", "Credit Card"];
+  for (let i = 0; i < items.length; i++) {
+    await addDoc(collection(db, "categories"), {
+      name: items[i],
+      level: 3,
+      parentId: l2Ref.id,
+      type: "needs",
+      userId: uid,
+      sortOrder: i,
+    });
+  }
+}
+
+// Targeted one-time migration — only adds "Money Lent" under Savings if absent.
+export async function applySeedV3(uid: string): Promise<void> {
+  const existing = await getCategories(uid);
+  const savingsL1 = existing.find((c) => c.level === 1 && c.type === "savings");
+  if (!savingsL1) return;
+
+  const hasMoneyLent = existing.some(
+    (c) => c.level === 2 && c.parentId === savingsL1.id && c.name === "Money Lent"
+  );
+  if (hasMoneyLent) return;
+
+  await addDoc(collection(db, "categories"), {
+    name: "Money Lent",
+    level: 2,
+    parentId: savingsL1.id,
+    type: "savings",
+    userId: uid,
+    sortOrder: 99,
+  });
 }
 
 // ─── User Profile ────────────────────────────────────────────────────────────
@@ -335,7 +391,7 @@ export async function updateDebt(
   data: Partial<Omit<Debt, "id" | "userId" | "createdAt">>
 ): Promise<void> {
   const payload: Record<string, unknown> = { ...data };
-  for (const key of ["note", "dueDate", "settledDate"] as const) {
+  for (const key of ["note", "dueDate", "settledDate", "accountId", "transactionLinked"] as const) {
     if (payload[key] === undefined) payload[key] = deleteField();
   }
   await updateDoc(doc(db, "debts", id), payload);

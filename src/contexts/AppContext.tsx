@@ -29,6 +29,8 @@ import {
   getUserProfile,
   updateUserProfile,
   ensureDefaultCategories,
+  applySeedV2,
+  applySeedV3,
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -149,9 +151,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // Re-seed if a previous seeding attempt was incomplete or never flagged as done
           if (!profile.categoriesSeeded) {
             await ensureDefaultCategories(uid);
-            await updateUserProfile(uid, { categoriesSeeded: true });
+            await updateUserProfile(uid, { categoriesSeeded: true, categoriesSeedVersion: 3 });
             const seeded = await getCategories(uid);
             setCategories(seeded);
+          } else {
+            const seedVersion = profile.categoriesSeedVersion ?? 1;
+            let needsRefresh = false;
+            if (seedVersion < 2) { await applySeedV2(uid); needsRefresh = true; }
+            if (seedVersion < 3) { await applySeedV3(uid); needsRefresh = true; }
+            if (needsRefresh) {
+              await updateUserProfile(uid, { categoriesSeedVersion: 3 });
+              const refreshed = await getCategories(uid);
+              setCategories(refreshed);
+            }
           }
         }
       } else if (!impersonatedUid) {
@@ -168,7 +180,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await updateUserProfile(uid, bootstrapped);
         setUserProfile(bootstrapped);
         await ensureDefaultCategories(uid);
-        await updateUserProfile(uid, { categoriesSeeded: true });
+        await updateUserProfile(uid, { categoriesSeeded: true, categoriesSeedVersion: 3 });
         const seeded = await getCategories(uid);
         setCategories(seeded);
       }

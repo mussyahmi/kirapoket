@@ -18,6 +18,7 @@ export interface UserProfile {
   forecastIncomeItems?: ForecastIncomeItem[];
   lastLogin?: Timestamp | null;
   categoriesSeeded?: boolean;
+  categoriesSeedVersion?: number;
 }
 
 export interface Account {
@@ -51,6 +52,9 @@ export interface Debt {
   userId: string;
   personName: string;
   amount: number;
+  originalAmount?: number;
+  accountId?: string;
+  transactionLinked?: boolean;
   note?: string;
   direction: "i_owe" | "they_owe";
   date: string;

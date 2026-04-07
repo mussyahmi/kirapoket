@@ -55,6 +55,8 @@ import type { Category } from "@/lib/types";
 
 type L1Type = "needs" | "wants" | "savings";
 
+const PROTECTED_L2_NAMES = ["Debt Repayment", "Money Lent"];
+
 const L1_COLORS: Record<L1Type, string> = {
   needs: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   wants: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
@@ -242,6 +244,7 @@ interface L2RowProps {
   l3: Category[];
   isOpen: boolean;
   subtotal: number;
+  isProtected: boolean;
   fmtBudget: (n: number) => string;
   toggleExpand: (id: string) => void;
   onDragEnd: (e: DragEndEvent, siblings: { id: string }[]) => void;
@@ -256,6 +259,7 @@ function L2Row({
   l3,
   isOpen,
   subtotal,
+  isProtected,
   fmtBudget,
   toggleExpand,
   onDragEnd,
@@ -327,16 +331,20 @@ function L2Row({
             <DropdownMenuItem onClick={() => openCreate(3, cat.id, l1Type)}>
               <PlusIcon className="size-3.5 mr-2" /> Add item
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openEdit(cat)}>
-              <PencilIcon className="size-3.5 mr-2" /> Rename
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => setDeleteTarget(cat)}
-            >
-              <TrashIcon className="size-3.5 mr-2" /> Delete
-            </DropdownMenuItem>
+            {!isProtected && (
+              <>
+                <DropdownMenuItem onClick={() => openEdit(cat)}>
+                  <PencilIcon className="size-3.5 mr-2" /> Rename
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteTarget(cat)}
+                >
+                  <TrashIcon className="size-3.5 mr-2" /> Delete
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -521,6 +529,11 @@ export default function CategoriesPage() {
       };
 
       if (editTarget) {
+        if (editTarget.level === 2 && PROTECTED_L2_NAMES.includes(editTarget.name)) {
+          toast.error("This category cannot be renamed.");
+          setSaving(false);
+          return;
+        }
         await editCategory(editTarget.id, {
           name: payload.name,
           budget: payload.budget,
@@ -546,6 +559,8 @@ export default function CategoriesPage() {
 
   const deleteBlockReason = useMemo(() => {
     if (!deleteTarget) return null;
+    if (deleteTarget.level === 2 && PROTECTED_L2_NAMES.includes(deleteTarget.name))
+      return "This is a system category and cannot be deleted.";
     if (deleteTarget.level === 2) {
       const childCount = categories.filter(
         (c) => c.level === 3 && c.parentId === deleteTarget.id
@@ -677,6 +692,7 @@ export default function CategoriesPage() {
                               l3={childrenOf(cat.id, 3)}
                               isOpen={!!expanded[cat.id]}
                               subtotal={l2Subtotal(cat.id)}
+                              isProtected={PROTECTED_L2_NAMES.includes(cat.name)}
                               fmtBudget={fmtBudget}
                               toggleExpand={toggleExpand}
                               onDragEnd={handleDragEnd}

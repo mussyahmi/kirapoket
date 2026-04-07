@@ -12,6 +12,22 @@ interface Release {
 // Patch is bumped on every commit — individual patches are not listed.
 const releases: Release[] = [
   {
+    version: "0.5.x",
+    dateRange: "2026-04-06 – present",
+    changes: [
+      { type: "feat", text: "Debts: link a transaction when adding a debt — pick an account and an income/expense is recorded automatically" },
+      { type: "feat", text: "Debts: Pay button on \"I Owe\" debts — record partial or full payments that flow to your account and reduce the balance" },
+      { type: "feat", text: "Debts: Collect button on \"They Owe Me\" debts — record money you received back into an account" },
+      { type: "feat", text: "Debts: original amount shown as strikethrough when a debt has been partially paid" },
+      { type: "feat", text: "Debts: quick-select chips for known person names when adding a new debt" },
+      { type: "feat", text: "Debts: Record Transaction option in the ··· menu — for existing debts that have no linked transaction yet" },
+      { type: "feat", text: "New default category: Debt Repayment (under Needs) — auto-categorizes debt payments, existing accounts get it on next login" },
+      { type: "feat", text: "New default category: Money Lent (under Savings) — auto-categorizes money you lend out, existing accounts get it on next login" },
+      { type: "feat", text: "Debt Repayment and Money Lent are protected — cannot be renamed or deleted" },
+      { type: "feat", text: "Person names are automatically added as items under Money Lent or Debt Repayment when a transaction is first recorded" },
+    ],
+  },
+  {
     version: "0.4.x",
     dateRange: "2026-03-30 – 2026-04-06",
     changes: [
