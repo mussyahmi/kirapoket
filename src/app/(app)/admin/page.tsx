@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
-import { getAllUsers, getRecentActivities, getUserActivities } from "@/lib/firestore";
+import { getAllUsers, getUserActivities } from "@/lib/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,16 +30,6 @@ function formatTimestamp(ts: Timestamp): string {
   }
 }
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  login: "Signed in",
-  transaction_add: "Added transaction",
-  transaction_delete: "Deleted transaction",
-  account_add: "Added account",
-  account_delete: "Deleted account",
-  debt_add: "Added debt",
-  debt_settle: "Settled debt",
-  debt_delete: "Deleted debt",
-};
 
 function ActivityRow({ activity }: { activity: Activity }) {
   return (
@@ -60,9 +50,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(false);
 
-  // Global recent activities — latest 50 across all users
-  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
-
   // Per-user drill-down: uid → activities (fetched on expand)
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [userActivities, setUserActivities] = useState<Record<string, Activity[]>>({});
@@ -72,22 +59,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAdmin) return;
-    Promise.all([getAllUsers(), getRecentActivities(50)])
-      .then(([u, a]) => {
-        setUsers(u);
-        setRecentActivities(a);
-      })
+    getAllUsers()
+      .then(setUsers)
       .finally(() => setLoading(false));
   }, [isAdmin]);
-
-  // Latest activity per user, derived from the global fetch
-  const latestByUser = useMemo(() => {
-    const map: Record<string, Activity> = {};
-    for (const a of recentActivities) {
-      if (!map[a.userId]) map[a.userId] = a;
-    }
-    return map;
-  }, [recentActivities]);
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) => {
@@ -166,7 +141,6 @@ export default function AdminPage() {
           ) : (
             <div className="divide-y divide-border">
               {sortedUsers.map((u) => {
-                const latest = latestByUser[u.uid];
                 const isExpanded = expandedUid === u.uid;
                 const acts = userActivities[u.uid];
                 const isLoadingActs = loadingActivity === u.uid;
@@ -184,9 +158,9 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{u.displayName ?? "—"}</p>
                         <p className="text-xs text-muted-foreground truncate">{u.email ?? u.uid}</p>
-                        {latest && (
+                        {u.lastLogin && (
                           <p className="text-xs text-muted-foreground/50 truncate mt-0.5">
-                            {ACTIVITY_LABELS[latest.type] ?? latest.type} · {formatTimestamp(latest.timestamp)}
+                            Last login · {formatTimestamp(u.lastLogin)}
                           </p>
                         )}
                       </div>

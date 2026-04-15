@@ -149,7 +149,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
         if (!impersonatedUid) {
           updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
-          void logActivity(uid, "login", "Signed in");
           // Re-seed if a previous seeding attempt was incomplete or never flagged as done
           if (!profile.categoriesSeeded) {
             await ensureDefaultCategories(uid);

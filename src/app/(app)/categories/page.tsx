@@ -11,6 +11,7 @@ import {
   ChevronRightIcon,
   MoreHorizontalIcon,
   GripVerticalIcon,
+  ListIcon,
 } from "lucide-react";
 import {
   DndContext,
@@ -223,12 +224,23 @@ function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
                 </div>
               </div>
             )}
-            <Button
-              className="w-full"
-              onClick={() => { setPreviewOpen(false); openEdit(item); }}
-            >
-              <PencilIcon className="size-4 mr-2" /> Edit
-            </Button>
+            <div className="flex gap-2">
+              <Link
+                href={`/transactions?category=${item.id}`}
+                className="flex-1"
+                onClick={() => setPreviewOpen(false)}
+              >
+                <Button variant="outline" className="w-full">
+                  <ListIcon className="size-4 mr-2" /> Transactions
+                </Button>
+              </Link>
+              <Button
+                className="flex-1"
+                onClick={() => { setPreviewOpen(false); openEdit(item); }}
+              >
+                <PencilIcon className="size-4 mr-2" /> Edit
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
