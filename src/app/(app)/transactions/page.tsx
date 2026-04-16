@@ -44,7 +44,9 @@ function TransactionsPage() {
   const searchParams = useSearchParams();
 
   const [filterType, setFilterType] = useState<FilterType>("all");
-  const [filterAccount, setFilterAccount] = useState<string>("all");
+  const [filterAccount, setFilterAccount] = useState<string>(
+    () => searchParams.get("account") ?? "all"
+  );
   const [filterCategory, setFilterCategory] = useState<string>(
     () => searchParams.get("category") ?? "all"
   );

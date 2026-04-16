@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   PlusIcon,
@@ -67,7 +68,7 @@ const DEFAULT_FORM: AccountFormData = {
 };
 
 export default function AccountsPage() {
-  const { accounts, loadingAccounts, userProfile, createAccount, editAccount, removeAccount } =
+  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount } =
     useApp();
 
   const hideBalance = userProfile?.hideBalance ?? false;
@@ -141,6 +142,16 @@ export default function AccountsPage() {
       setSaving(false);
     }
   };
+
+  const deleteBlockReason = useMemo(() => {
+    if (!deleteTarget) return null;
+    const txCount = transactions.filter(
+      (t) => t.accountId === deleteTarget.id || t.toAccountId === deleteTarget.id
+    ).length;
+    if (txCount > 0)
+      return `${txCount} transaction${txCount > 1 ? "s are" : " is"} linked to this account. Reassign or delete them first.`;
+    return null;
+  }, [deleteTarget, transactions]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -318,25 +329,40 @@ export default function AccountsPage() {
           <DialogHeader>
             <DialogTitle>Delete Account</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete{" "}
-            <strong>{deleteTarget?.name}</strong>? This cannot be undone.
-          </p>
+          {deleteBlockReason ? (
+            <div className="space-y-3">
+              <p className="text-sm text-destructive">{deleteBlockReason}</p>
+              <Link
+                href={`/transactions?account=${deleteTarget?.id}`}
+                onClick={() => setDeleteTarget(null)}
+                className="inline-flex items-center justify-center w-full rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+              >
+                View linked transactions
+              </Link>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget?.name}</strong>? This cannot be undone.
+            </p>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setDeleteTarget(null)}
               disabled={deleting}
             >
-              Cancel
+              {deleteBlockReason ? "OK" : "Cancel"}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </Button>
+            {!deleteBlockReason && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

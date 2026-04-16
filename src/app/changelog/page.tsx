@@ -27,6 +27,7 @@ const releases: Release[] = [
       { type: "feat", text: "Person names are automatically added as items under Money Lent or Debt Repayment when a transaction is first recorded" },
       { type: "feat", text: "App version shown at the bottom of the sidebar (desktop) and menu (mobile)" },
       { type: "feat", text: "Categories: tap a category item to see a Transactions button — jump straight to its filtered transaction list" },
+      { type: "feat", text: "Accounts: deleting an account is blocked if transactions are linked to it — a link jumps straight to the filtered transaction list" },
       { type: "fix", text: "iOS: signing out then signing in no longer auto-selects the previous Google account — the account picker is always shown" },
       { type: "fix", text: "Give Feedback and Buy Me a Coffee now open reliably on mobile — tapping no longer does nothing" },
       { type: "fix", text: "Buy Me a Coffee dialog no longer closes when tapping its content on mobile" },
