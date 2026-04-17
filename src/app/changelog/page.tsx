@@ -12,6 +12,19 @@ interface Release {
 // Patch is bumped on every commit — individual patches are not listed.
 const releases: Release[] = [
   {
+    version: "0.6.x",
+    dateRange: "2026-04-17 – present",
+    changes: [
+      { type: "feat", text: "Visual revamp — warm coral accent replaces indigo throughout the app" },
+      { type: "feat", text: "New typeface: Nunito — rounder and friendlier than Inter across all text" },
+      { type: "feat", text: "Mobile bottom nav now shows text labels under each icon" },
+      { type: "feat", text: "Mobile header and bottom nav use frosted glass (backdrop blur)" },
+      { type: "feat", text: "KP logo badge added to mobile header and desktop sidebar" },
+      { type: "feat", text: "Slightly more rounded corners across all cards and buttons" },
+      { type: "feat", text: "Warm-tinted dark mode — replaces cold charcoal with brown-tinted dark backgrounds" },
+    ],
+  },
+  {
     version: "0.5.x",
     dateRange: "2026-04-06 – present",
     changes: [

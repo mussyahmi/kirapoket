@@ -94,8 +94,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden md:flex md:flex-col md:w-56 md:shrink-0 md:border-r md:border-border md:bg-card md:sticky md:top-0 md:h-screen md:overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-          <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-            KiraPoket
+          <Link href="/" className="flex items-center gap-2">
+            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">KP</span>
+            <span className="text-base font-bold tracking-tight text-foreground">KiraPoket</span>
           </Link>
           <ThemeToggle />
         </div>
@@ -160,11 +161,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col min-w-0">
         {/* Mobile Header */}
         <header className={cn(
-          "md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card sticky top-0 z-40 transition-transform duration-300",
+          "md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-40 transition-transform duration-300",
           navVisible ? "translate-y-0" : "-translate-y-full"
         )}>
-          <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-            KiraPoket
+          <Link href="/" className="flex items-center gap-2">
+            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">KP</span>
+            <span className="text-base font-bold tracking-tight text-foreground">KiraPoket</span>
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
@@ -247,7 +249,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ── Mobile Bottom Nav — 4 items only ── */}
       <nav className={cn(
-        "md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around border-t border-border bg-card h-16 px-1 transition-transform duration-300",
+        "md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around border-t border-border bg-card/90 backdrop-blur-md h-16 px-1 transition-transform duration-300",
         navVisible ? "translate-y-0" : "translate-y-full"
       )}>
         {bottomNavItems.map(({ href, label, icon: Icon, requiresSetup }) => {
@@ -257,28 +259,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span
               key={href}
               title={label}
-              className="flex items-center justify-center flex-1 cursor-not-allowed select-none"
+              className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 cursor-not-allowed select-none"
             >
-              <Icon className="size-5 text-muted-foreground/30" />
+              <span className="flex items-center justify-center w-10 h-7 rounded-full">
+                <Icon className="size-5 text-muted-foreground/25" />
+              </span>
+              <span className="text-[10px] font-semibold text-muted-foreground/25">{label}</span>
             </span>
           ) : (
             <Link
               key={href}
               href={href}
               aria-label={label}
-              className="flex flex-col items-center justify-center flex-1 py-2 gap-0.5"
+              className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5"
             >
               <span className={cn(
-                "flex items-center justify-center w-10 h-8 rounded-full transition-colors",
+                "relative flex items-center justify-center w-10 h-7 rounded-full transition-all duration-200",
                 active ? "bg-primary/15" : ""
               )}>
                 <Icon className={cn("size-5 transition-colors", active ? "text-primary" : "text-muted-foreground")} />
+                {href === "/debts" && unsettledCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-card" />
+                )}
               </span>
-              {href === "/debts" && unsettledCount > 0 ? (
-                <span className="size-1.5 rounded-full bg-red-500" />
-              ) : (
-                <span className="size-1.5" />
-              )}
+              <span className={cn(
+                "text-[10px] font-semibold transition-colors",
+                active ? "text-primary" : "text-muted-foreground/60"
+              )}>
+                {label}
+              </span>
             </Link>
           );
         })}
