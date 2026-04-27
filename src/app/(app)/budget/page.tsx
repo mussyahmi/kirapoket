@@ -327,8 +327,6 @@ export default function BudgetPage() {
 
   const daysLeft = differenceInDays(end, new Date());
 
-  const cacheKey = `insights-${startStr}`;
-
   const fetchInsights = useCallback(async (force = false) => {
     if (fetchingRef.current) return;
     if (insightCategories.length === 0) return;
@@ -336,46 +334,23 @@ export default function BudgetPage() {
     const uid = user.uid;
     const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent);
 
-    // 1. localStorage fast path — avoid network if hash matches
     if (!force) {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        const cachedHash = localStorage.getItem(`${cacheKey}-hash`);
-        if (cached && cachedHash === currentHash) {
-          setInsights(JSON.parse(cached));
-          const cachedAt = localStorage.getItem(`${cacheKey}-at`);
-          if (cachedAt) setInsightsGeneratedAt(new Date(cachedAt));
-          return;
-        }
-      } catch { /* ignore */ }
-
-      // 2. Firestore — same hash means data hasn't changed, reuse stored result
       try {
         const stored = await getInsight(uid, startStr);
         if (stored && stored.hash === currentHash) {
-          const result = { summary: stored.summary, dos: stored.dos, donts: stored.donts };
-          const generatedAt = stored.generatedAt.toDate();
-          setInsights(result);
-          setInsightsGeneratedAt(generatedAt);
-          localStorage.setItem(cacheKey, JSON.stringify(result));
-          localStorage.setItem(`${cacheKey}-hash`, currentHash);
-          localStorage.setItem(`${cacheKey}-at`, generatedAt.toISOString());
+          setInsights({ summary: stored.summary, dos: stored.dos, donts: stored.donts });
+          setInsightsGeneratedAt(stored.generatedAt.toDate());
           return;
         }
       } catch { /* ignore — fall through to Gemini */ }
     }
 
-    // 3. Call Gemini and persist
     fetchingRef.current = true;
     setInsightsLoading(true);
     try {
       const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent);
-      const now = new Date();
       setInsights(result);
-      setInsightsGeneratedAt(now);
-      localStorage.setItem(cacheKey, JSON.stringify(result));
-      localStorage.setItem(`${cacheKey}-hash`, currentHash);
-      localStorage.setItem(`${cacheKey}-at`, now.toISOString());
+      setInsightsGeneratedAt(new Date());
       await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
     } catch (err) {
       console.error("[AI Insights]", err);
@@ -384,7 +359,7 @@ export default function BudgetPage() {
       fetchingRef.current = false;
       setInsightsLoading(false);
     }
-  }, [insightCategories, daysLeft, actualIncome, totalSpent, cacheKey, user, startStr]);
+  }, [insightCategories, daysLeft, actualIncome, totalSpent, user, startStr]);
 
   const loading = loadingTransactions || loadingProfile;
 
