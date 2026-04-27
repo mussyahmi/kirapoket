@@ -23,6 +23,7 @@ const releases: Release[] = [
       { type: "feat", text: "AI insights are rate-limited to once per day per user — the refresh button is disabled during the cooldown and shows exactly when it unlocks" },
       { type: "fix", text: "Quota errors from the AI provider now show a clear message instead of a generic failure toast" },
       { type: "fix", text: "AI insights refresh button stays clickable during cooldown — clicking shows a toast with the exact unlock time instead of silently doing nothing" },
+      { type: "fix", text: "AI insights cooldown check was using a stale value and never firing — refresh was never actually blocked" },
     ],
   },
   {

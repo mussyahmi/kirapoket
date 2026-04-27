@@ -403,7 +403,7 @@ export default function BudgetPage() {
       fetchingRef.current = false;
       setInsightsLoading(false);
     }
-  }, [insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr]);
+  }, [insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr, cooldownActive, nextRefreshLabel]);
 
   const loading = loadingTransactions || loadingProfile;
 
@@ -446,9 +446,7 @@ export default function BudgetPage() {
                   {insightsGeneratedAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               )}
-              {cooldownActive && nextRefreshLabel && !insightsLoading && (
-                <p className="text-[10px] text-amber-400/60 dark:text-amber-600/60 leading-none mt-0.5">{nextRefreshLabel}</p>
-              )}
+
             </div>
           </div>
           <button
