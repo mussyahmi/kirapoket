@@ -517,3 +517,27 @@ export async function getSalaryCycleTransactions(
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Transaction));
 }
+
+// ─── Insights ─────────────────────────────────────────────────────────────────
+
+export interface StoredInsight {
+  userId: string;
+  cycleStart: string;
+  hash: string;
+  summary: string;
+  dos: string[];
+  donts: string[];
+  generatedAt: Timestamp;
+}
+
+export async function getInsight(uid: string, cycleStart: string): Promise<StoredInsight | null> {
+  const ref = doc(db, "insights", `${uid}_${cycleStart}`);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return snap.data() as StoredInsight;
+}
+
+export async function saveInsight(uid: string, cycleStart: string, hash: string, summary: string, dos: string[], donts: string[]): Promise<void> {
+  const ref = doc(db, "insights", `${uid}_${cycleStart}`);
+  await setDoc(ref, { userId: uid, cycleStart, hash, summary, dos, donts, generatedAt: Timestamp.now() });
+}

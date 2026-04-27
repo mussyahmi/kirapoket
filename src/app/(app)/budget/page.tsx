@@ -10,7 +10,8 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
-import { getSalaryCycleRange } from "@/lib/firestore";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSalaryCycleRange, getInsight, saveInsight } from "@/lib/firestore";
 import { getSpendingInsights, hashInsightInput, type SpendingInsights, type CategoryInsightInput, type L3InsightInput } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,8 @@ export default function BudgetPage() {
     loadingProfile,
     saveUserProfile,
   } = useApp();
+
+  const { user } = useAuth();
 
   const [mode, setMode] = useState<"actual" | "forecast">("actual");
   const [copying, setCopying] = useState(false);
@@ -329,19 +332,40 @@ export default function BudgetPage() {
   const fetchInsights = useCallback(async (force = false) => {
     if (fetchingRef.current) return;
     if (insightCategories.length === 0) return;
+    if (!user?.uid) return;
+    const uid = user.uid;
     const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent);
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      const cachedHash = localStorage.getItem(`${cacheKey}-hash`);
-      if (cached && cachedHash === currentHash) {
-        setInsights(JSON.parse(cached));
-        const cachedAt = localStorage.getItem(`${cacheKey}-at`);
-        if (cachedAt) setInsightsGeneratedAt(new Date(cachedAt));
-        setInsightsLoading(false);
-        if (force) toast.info("No changes in transactions or budget.");
-        return;
-      }
-    } catch { /* ignore */ }
+
+    // 1. localStorage fast path — avoid network if hash matches
+    if (!force) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        const cachedHash = localStorage.getItem(`${cacheKey}-hash`);
+        if (cached && cachedHash === currentHash) {
+          setInsights(JSON.parse(cached));
+          const cachedAt = localStorage.getItem(`${cacheKey}-at`);
+          if (cachedAt) setInsightsGeneratedAt(new Date(cachedAt));
+          return;
+        }
+      } catch { /* ignore */ }
+
+      // 2. Firestore — same hash means data hasn't changed, reuse stored result
+      try {
+        const stored = await getInsight(uid, startStr);
+        if (stored && stored.hash === currentHash) {
+          const result = { summary: stored.summary, dos: stored.dos, donts: stored.donts };
+          const generatedAt = stored.generatedAt.toDate();
+          setInsights(result);
+          setInsightsGeneratedAt(generatedAt);
+          localStorage.setItem(cacheKey, JSON.stringify(result));
+          localStorage.setItem(`${cacheKey}-hash`, currentHash);
+          localStorage.setItem(`${cacheKey}-at`, generatedAt.toISOString());
+          return;
+        }
+      } catch { /* ignore — fall through to Gemini */ }
+    }
+
+    // 3. Call Gemini and persist
     fetchingRef.current = true;
     setInsightsLoading(true);
     try {
@@ -352,6 +376,7 @@ export default function BudgetPage() {
       localStorage.setItem(cacheKey, JSON.stringify(result));
       localStorage.setItem(`${cacheKey}-hash`, currentHash);
       localStorage.setItem(`${cacheKey}-at`, now.toISOString());
+      await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
     } catch (err) {
       console.error("[AI Insights]", err);
       toast.error("Failed to get insights. Check your API key.");
@@ -359,7 +384,7 @@ export default function BudgetPage() {
       fetchingRef.current = false;
       setInsightsLoading(false);
     }
-  }, [insightCategories, daysLeft, actualIncome, totalSpent, cacheKey]);
+  }, [insightCategories, daysLeft, actualIncome, totalSpent, cacheKey, user, startStr]);
 
   const loading = loadingTransactions || loadingProfile;
 
