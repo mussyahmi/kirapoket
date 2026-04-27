@@ -22,6 +22,7 @@ const releases: Release[] = [
       { type: "fix", text: "Refresh insights button is now disabled when nothing has changed since the last fetch — re-enables as soon as transactions, budgets, or notes are updated" },
       { type: "feat", text: "AI insights are rate-limited to once per day per user — the refresh button is disabled during the cooldown and shows exactly when it unlocks" },
       { type: "fix", text: "Quota errors from the AI provider now show a clear message instead of a generic failure toast" },
+      { type: "fix", text: "AI insights cooldown no longer disables the refresh button — clicking during cooldown shows a toast with the exact time you can refresh again" },
     ],
   },
   {
