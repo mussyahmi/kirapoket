@@ -97,6 +97,7 @@ export default function BudgetPage() {
   const [insights, setInsights] = useState<SpendingInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
+  const [lastFetchedHash, setLastFetchedHash] = useState<string | null>(null);
   const fetchingRef = useRef(false);
   const insightsInitialized = useRef(false);
 
@@ -351,6 +352,7 @@ export default function BudgetPage() {
         if (stored && stored.hash === currentHash) {
           setInsights({ summary: stored.summary, dos: stored.dos, donts: stored.donts });
           setInsightsGeneratedAt(stored.generatedAt.toDate());
+          setLastFetchedHash(currentHash);
           return;
         }
       } catch { /* ignore — fall through to Gemini */ }
@@ -362,6 +364,7 @@ export default function BudgetPage() {
       const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent, insightNotes);
       setInsights(result);
       setInsightsGeneratedAt(new Date());
+      setLastFetchedHash(currentHash);
       await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
     } catch (err) {
       console.error("[AI Insights]", err);
@@ -418,7 +421,7 @@ export default function BudgetPage() {
           <button
             type="button"
             onClick={() => fetchInsights(true)}
-            disabled={insightsLoading}
+            disabled={insightsLoading || lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes)}
             className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
             aria-label="Refresh insights"
           >

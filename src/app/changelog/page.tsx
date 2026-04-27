@@ -19,6 +19,7 @@ const releases: Release[] = [
       { type: "feat", text: "Insights are cached per cycle and only re-fetched when your spending data changes — no unnecessary AI calls" },
       { type: "feat", text: "AI insights now factor in transaction notes — expenses with notes are shared with Gemini so tips reference real context like 'car service' or 'birthday dinner'" },
       { type: "fix", text: "AI insights response is now English only" },
+      { type: "fix", text: "Refresh insights button is now disabled when nothing has changed since the last fetch — re-enables as soon as transactions, budgets, or notes are updated" },
     ],
   },
   {
