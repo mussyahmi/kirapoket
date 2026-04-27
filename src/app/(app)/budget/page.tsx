@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSalaryCycleRange, getInsight, saveInsight } from "@/lib/firestore";
-import { getSpendingInsights, hashInsightInput, type SpendingInsights, type CategoryInsightInput, type L3InsightInput } from "@/lib/gemini";
+import { getSpendingInsights, hashInsightInput, type SpendingInsights, type CategoryInsightInput, type L3InsightInput, type TransactionNoteInput } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -325,6 +325,17 @@ export default function BudgetPage() {
     return result;
   }, [categories, l2BudgetMap, l2SpendingMap]);
 
+  const insightNotes = useMemo<TransactionNoteInput[]>(() => {
+    return cycleTransactions
+      .filter((t) => t.type === "expense" && t.note?.trim())
+      .map((t) => {
+        const cat = t.categoryId ? categoryMap[t.categoryId] : undefined;
+        const catName = cat?.name ?? "Other";
+        return { date: t.date, amount: t.amount, categoryName: catName, note: t.note!.trim() };
+      })
+      .sort((a, b) => b.amount - a.amount);
+  }, [cycleTransactions, categoryMap]);
+
   const daysLeft = differenceInDays(end, new Date());
 
   const fetchInsights = useCallback(async (force = false) => {
@@ -332,7 +343,7 @@ export default function BudgetPage() {
     if (insightCategories.length === 0) return;
     if (!user?.uid) return;
     const uid = user.uid;
-    const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent);
+    const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes);
 
     if (!force) {
       try {
@@ -348,7 +359,7 @@ export default function BudgetPage() {
     fetchingRef.current = true;
     setInsightsLoading(true);
     try {
-      const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent);
+      const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent, insightNotes);
       setInsights(result);
       setInsightsGeneratedAt(new Date());
       await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
@@ -359,7 +370,7 @@ export default function BudgetPage() {
       fetchingRef.current = false;
       setInsightsLoading(false);
     }
-  }, [insightCategories, daysLeft, actualIncome, totalSpent, user, startStr]);
+  }, [insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr]);
 
   const loading = loadingTransactions || loadingProfile;
 

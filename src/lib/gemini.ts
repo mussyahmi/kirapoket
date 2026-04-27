@@ -19,6 +19,13 @@ export interface CategoryInsightInput {
   subcategories: L3InsightInput[];
 }
 
+export interface TransactionNoteInput {
+  date: string;
+  amount: number;
+  categoryName: string;
+  note: string;
+}
+
 export interface SpendingInsights {
   summary: string;
   dos: string[];
@@ -28,16 +35,18 @@ export interface SpendingInsights {
 export function hashInsightInput(
   categories: CategoryInsightInput[],
   totalIncome: number,
-  totalSpent: number
+  totalSpent: number,
+  transactionNotes?: TransactionNoteInput[]
 ): string {
-  return JSON.stringify({ categories, totalIncome, totalSpent });
+  return JSON.stringify({ categories, totalIncome, totalSpent, transactionNotes });
 }
 
 export async function getSpendingInsights(
   categories: CategoryInsightInput[],
   daysLeft: number,
   totalIncome: number,
-  totalSpent: number
+  totalSpent: number,
+  transactionNotes?: TransactionNoteInput[]
 ): Promise<SpendingInsights> {
   const summary = categories
     .map((c) => {
@@ -67,6 +76,13 @@ export async function getSpendingInsights(
     })
     .join("\n");
 
+  const notesSection =
+    transactionNotes && transactionNotes.length > 0
+      ? `\nNotable transactions (expenses with notes):\n${transactionNotes
+          .map((t) => `- ${t.date} | RM${t.amount.toFixed(2)} | ${t.categoryName} | ${t.note}`)
+          .join("\n")}\n`
+      : "";
+
   const prompt = `You are a personal finance advisor for a Malaysian user tracking their monthly salary cycle expenses.
 
 Current cycle data (${daysLeft} days remaining):
@@ -76,7 +92,7 @@ Current cycle data (${daysLeft} days remaining):
 
 Category breakdown (only categories with budget or spending):
 ${summary}
-
+${notesSection}
 Based on this data, provide:
 1. A short summary (2-3 sentences) of the user's overall financial situation this cycle.
 2. Between 2 and 4 practical "Do" tips tailored to their spending patterns.

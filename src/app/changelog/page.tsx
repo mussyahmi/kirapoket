@@ -17,6 +17,7 @@ const releases: Release[] = [
     changes: [
       { type: "feat", text: "AI spending insights on the budget page — get a personalised summary, do's, and don'ts based on your actual cycle data, powered by Gemini" },
       { type: "feat", text: "Insights are cached per cycle and only re-fetched when your spending data changes — no unnecessary AI calls" },
+      { type: "feat", text: "AI insights now factor in transaction notes — expenses with notes are shared with Gemini so tips reference real context like 'car service' or 'birthday dinner'" },
     ],
   },
   {
