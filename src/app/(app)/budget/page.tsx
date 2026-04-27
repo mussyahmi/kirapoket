@@ -454,7 +454,7 @@ export default function BudgetPage() {
           <button
             type="button"
             onClick={() => fetchInsights(true)}
-            disabled={insightsLoading || cooldownActive || lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes)}
+            disabled={insightsLoading || (!cooldownActive && lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes))}
             className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
             aria-label="Refresh insights"
           >
