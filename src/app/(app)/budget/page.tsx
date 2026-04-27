@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, RefreshCwIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { getSalaryCycleRange } from "@/lib/firestore";
+import { getSpendingInsights, hashInsightInput, type SpendingInsights, type CategoryInsightInput, type L3InsightInput } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,12 @@ export default function BudgetPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editAmount, setEditAmount] = useState("");
+
+  const [insights, setInsights] = useState<SpendingInsights | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
+  const fetchingRef = useRef(false);
+  const insightsInitialized = useRef(false);
 
   const handleAddItem = async () => {
     const amount = parseFloat(newAmount);
@@ -289,12 +296,84 @@ export default function BudgetPage() {
     [l2BudgetMap]
   );
 
+  const insightCategories = useMemo<CategoryInsightInput[]>(() => {
+    const result: CategoryInsightInput[] = [];
+    for (const l2 of categories.filter((c) => c.level === 2)) {
+      const budget = l2BudgetMap[l2.id] ?? 0;
+      const totalSpent = l2SpendingMap[l2.id] ?? 0;
+      if (budget === 0 && totalSpent === 0) continue;
+      const l1 = categories.find((c) => c.id === l2.parentId);
+      const l3s = categories.filter((c) => c.level === 3 && c.parentId === l2.id);
+      const budgetedSpent = l3s.reduce((s, l3) => effectiveCatBudget(l3) > 0 ? s + (l3SpendingMap[l3.id] ?? 0) : s, 0);
+      const unbudgetedSpent = totalSpent - budgetedSpent;
+      const subcategories: L3InsightInput[] = l3s
+        .filter((l3) => effectiveCatBudget(l3) > 0 || (l3SpendingMap[l3.id] ?? 0) > 0)
+        .map((l3) => ({ name: l3.name, budget: effectiveCatBudget(l3), spent: l3SpendingMap[l3.id] ?? 0 }));
+      result.push({
+        name: l2.name,
+        type: (l1?.type ?? "needs") as "needs" | "wants" | "savings",
+        budget,
+        budgetedSpent,
+        unbudgetedSpent,
+        pctUsed: budget > 0 ? (budgetedSpent / budget) * 100 : 0,
+        subcategories,
+      });
+    }
+    return result;
+  }, [categories, l2BudgetMap, l2SpendingMap]);
+
+  const daysLeft = differenceInDays(end, new Date());
+
+  const cacheKey = `insights-${startStr}`;
+
+  const fetchInsights = useCallback(async (force = false) => {
+    if (fetchingRef.current) return;
+    if (insightCategories.length === 0) return;
+    const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent);
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      const cachedHash = localStorage.getItem(`${cacheKey}-hash`);
+      if (cached && cachedHash === currentHash) {
+        setInsights(JSON.parse(cached));
+        const cachedAt = localStorage.getItem(`${cacheKey}-at`);
+        if (cachedAt) setInsightsGeneratedAt(new Date(cachedAt));
+        setInsightsLoading(false);
+        if (force) toast.info("No changes in transactions or budget.");
+        return;
+      }
+    } catch { /* ignore */ }
+    fetchingRef.current = true;
+    setInsightsLoading(true);
+    try {
+      const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent);
+      const now = new Date();
+      setInsights(result);
+      setInsightsGeneratedAt(now);
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+      localStorage.setItem(`${cacheKey}-hash`, currentHash);
+      localStorage.setItem(`${cacheKey}-at`, now.toISOString());
+    } catch (err) {
+      console.error("[AI Insights]", err);
+      toast.error("Failed to get insights. Check your API key.");
+    } finally {
+      fetchingRef.current = false;
+      setInsightsLoading(false);
+    }
+  }, [insightCategories, daysLeft, actualIncome, totalSpent, cacheKey]);
+
   const loading = loadingTransactions || loadingProfile;
+
+  useEffect(() => {
+    if (loading || insightsInitialized.current) return;
+    insightsInitialized.current = true;
+    fetchInsights();
+  }, [loading, fetchInsights]);
 
   if (loading) {
     return (
       <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
         <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-36 w-full rounded-xl" />
         <Skeleton className="h-40 w-full rounded-xl" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -303,27 +382,90 @@ export default function BudgetPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Budget</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCensored((v) => !v)}
-            aria-label={censored ? "Show amounts" : "Hide amounts"}
+
+      <div>
+        <h1 className="text-xl font-semibold">Budget</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
+      </div>
+
+      {/* AI Insights */}
+      <div className="rounded-xl border border-amber-200/60 dark:border-amber-700/40 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border-b border-amber-100 dark:border-amber-800/40">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className={cn("size-4 text-amber-500 dark:text-amber-400 shrink-0", insightsLoading && "animate-pulse")} />
+            <div>
+              <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">AI Insights</span>
+              {insightsGeneratedAt && !insightsLoading && (
+                <p className="text-[10px] text-amber-500/70 dark:text-amber-500/60 leading-none mt-0.5">
+                  {insightsGeneratedAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })}
+                  {" · "}
+                  {insightsGeneratedAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchInsights(true)}
+            disabled={insightsLoading}
+            className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
+            aria-label="Refresh insights"
           >
-            {censored
-              ? <EyeOffIcon className="size-4 text-muted-foreground" />
-              : <EyeIcon className="size-4 text-muted-foreground" />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleCopy} disabled={copying} aria-label="Copy as image">
-            {copied
-              ? <CheckIcon className="size-4 text-green-500" />
-              : <CopyIcon className={cn("size-4 text-muted-foreground", copying && "animate-pulse")} />}
-          </Button>
+            <RefreshCwIcon className={cn("size-3.5", insightsLoading && "animate-spin")} />
+          </button>
+        </div>
+        <div className="p-4 bg-card space-y-4">
+          {insightsLoading || !insights ? (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-5/6" />
+                <Skeleton className="h-3.5 w-4/6" />
+              </div>
+              <div className="space-y-1.5 pt-3 border-t border-border/50">
+                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-11/12" />
+                <Skeleton className="h-3.5 w-4/5" />
+              </div>
+              <div className="space-y-1.5 pt-3 border-t border-border/50">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-3.5 w-full" />
+                <Skeleton className="h-3.5 w-10/12" />
+                <Skeleton className="h-3.5 w-3/5" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-foreground/80 border-l-2 border-amber-300 dark:border-amber-600 pl-3">{insights.summary}</p>
+              <div className="space-y-2.5 pt-1 border-t border-border/50">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs font-semibold">
+                  <span className="size-1.5 rounded-full bg-green-500 shrink-0" />Do
+                </span>
+                <ul className="space-y-2.5">
+                  {insights.dos.map((tip, i) => (
+                    <li key={i} className="flex gap-2.5 text-sm">
+                      <span className="size-5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                      <span className="leading-relaxed">{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="space-y-2.5 pt-1 border-t border-border/50">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-semibold">
+                  <span className="size-1.5 rounded-full bg-red-500 shrink-0" />Don&apos;t
+                </span>
+                <ul className="space-y-2.5">
+                  {insights.donts.map((tip, i) => (
+                    <li key={i} className="flex gap-2.5 text-sm">
+                      <span className="size-5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
+                      <span className="leading-relaxed">{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -334,21 +476,39 @@ export default function BudgetPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Income</CardTitle>
-              {/* Toggle */}
-              <div className="flex rounded-lg overflow-hidden border border-border text-xs">
-                {(["actual", "forecast"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMode(m)}
-                    className={cn(
-                      "px-3 py-1.5 capitalize transition-colors",
-                      mode === m ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {m}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  onClick={() => setCensored((v) => !v)}
+                  aria-label={censored ? "Show amounts" : "Hide amounts"}
+                >
+                  {censored
+                    ? <EyeOffIcon className="size-3.5 text-muted-foreground" />
+                    : <EyeIcon className="size-3.5 text-muted-foreground" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="size-7" onClick={handleCopy} disabled={copying} aria-label="Copy as image">
+                  {copied
+                    ? <CheckIcon className="size-3.5 text-green-500" />
+                    : <CopyIcon className={cn("size-3.5 text-muted-foreground", copying && "animate-pulse")} />}
+                </Button>
+                {/* Toggle */}
+                <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+                  {(["actual", "forecast"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      className={cn(
+                        "px-3 py-1.5 capitalize transition-colors",
+                        mode === m ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </CardHeader>

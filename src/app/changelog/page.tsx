@@ -12,8 +12,16 @@ interface Release {
 // Patch is bumped on every commit — individual patches are not listed.
 const releases: Release[] = [
   {
+    version: "0.7.x",
+    dateRange: "2026-04-27 – present",
+    changes: [
+      { type: "feat", text: "AI spending insights on the budget page — get a personalised summary, do's, and don'ts based on your actual cycle data, powered by Gemini" },
+      { type: "feat", text: "Insights are cached per cycle and only re-fetched when your spending data changes — no unnecessary AI calls" },
+    ],
+  },
+  {
     version: "0.6.x",
-    dateRange: "2026-04-17 – present",
+    dateRange: "2026-04-17 – 2026-04-27",
     changes: [
       { type: "feat", text: "Visual revamp — warm coral accent replaces indigo throughout the app" },
       { type: "feat", text: "New typeface: Nunito — rounder and friendlier than Inter across all text" },
