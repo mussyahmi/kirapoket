@@ -354,11 +354,10 @@ export default function BudgetPage() {
     if (!nextRefreshAt) return null;
     const now = new Date();
     const timeStr = nextRefreshAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" });
-    const todayStr = now.toDateString();
     const tomorrowStr = new Date(now.getTime() + 86400000).toDateString();
-    if (nextRefreshAt.toDateString() === todayStr) return `Refreshes today at ${timeStr}`;
-    if (nextRefreshAt.toDateString() === tomorrowStr) return `Refreshes tomorrow at ${timeStr}`;
-    return `Refreshes ${nextRefreshAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })} at ${timeStr}`;
+    if (nextRefreshAt.toDateString() === now.toDateString()) return `You can refresh again today at ${timeStr}`;
+    if (nextRefreshAt.toDateString() === tomorrowStr) return `You can refresh again tomorrow at ${timeStr}`;
+    return `You can refresh again on ${nextRefreshAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })} at ${timeStr}`;
   }, [nextRefreshAt]);
 
   const fetchInsights = useCallback(async (force = false) => {
@@ -366,7 +365,7 @@ export default function BudgetPage() {
     if (insightCategories.length === 0) return;
     if (!user?.uid) return;
     if (force && cooldownActive) {
-      toast.error("You can only refresh AI insights once per day.");
+      toast.info(nextRefreshLabel ?? "You can only refresh AI insights once per day.");
       return;
     }
     const uid = user.uid;
@@ -447,15 +446,12 @@ export default function BudgetPage() {
                   {insightsGeneratedAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               )}
-              {cooldownActive && nextRefreshLabel && !insightsLoading && (
-                <p className="text-[10px] text-amber-400/60 dark:text-amber-600/60 leading-none mt-0.5">{nextRefreshLabel}</p>
-              )}
             </div>
           </div>
           <button
             type="button"
             onClick={() => fetchInsights(true)}
-            disabled={insightsLoading || cooldownActive || lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes)}
+            disabled={insightsLoading || (!cooldownActive && lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes))}
             className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
             aria-label="Refresh insights"
           >
