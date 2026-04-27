@@ -20,6 +20,8 @@ const releases: Release[] = [
       { type: "feat", text: "AI insights now factor in transaction notes — expenses with notes are shared with Gemini so tips reference real context like 'car service' or 'birthday dinner'" },
       { type: "fix", text: "AI insights response is now English only" },
       { type: "fix", text: "Refresh insights button is now disabled when nothing has changed since the last fetch — re-enables as soon as transactions, budgets, or notes are updated" },
+      { type: "feat", text: "AI insights are rate-limited to once per day per user — the refresh button is disabled during the cooldown and shows exactly when it unlocks" },
+      { type: "fix", text: "Quota errors from the AI provider now show a clear message instead of a generic failure toast" },
     ],
   },
   {

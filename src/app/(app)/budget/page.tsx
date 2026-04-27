@@ -40,6 +40,7 @@ const fmt = (n: number) =>
   }).format(n);
 
 const CENSORED = "RM ••••";
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 function SortableForecastItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -339,10 +340,35 @@ export default function BudgetPage() {
 
   const daysLeft = differenceInDays(end, new Date());
 
+  const cooldownActive = useMemo(() => {
+    if (!insightsGeneratedAt) return false;
+    return Date.now() - insightsGeneratedAt.getTime() < COOLDOWN_MS;
+  }, [insightsGeneratedAt, COOLDOWN_MS]);
+
+  const nextRefreshAt = useMemo(() => {
+    if (!insightsGeneratedAt) return null;
+    return new Date(insightsGeneratedAt.getTime() + COOLDOWN_MS);
+  }, [insightsGeneratedAt, COOLDOWN_MS]);
+
+  const nextRefreshLabel = useMemo(() => {
+    if (!nextRefreshAt) return null;
+    const now = new Date();
+    const timeStr = nextRefreshAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" });
+    const todayStr = now.toDateString();
+    const tomorrowStr = new Date(now.getTime() + 86400000).toDateString();
+    if (nextRefreshAt.toDateString() === todayStr) return `Refreshes today at ${timeStr}`;
+    if (nextRefreshAt.toDateString() === tomorrowStr) return `Refreshes tomorrow at ${timeStr}`;
+    return `Refreshes ${nextRefreshAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })} at ${timeStr}`;
+  }, [nextRefreshAt]);
+
   const fetchInsights = useCallback(async (force = false) => {
     if (fetchingRef.current) return;
     if (insightCategories.length === 0) return;
     if (!user?.uid) return;
+    if (force && cooldownActive) {
+      toast.error("You can only refresh AI insights once per day.");
+      return;
+    }
     const uid = user.uid;
     const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes);
 
@@ -368,7 +394,12 @@ export default function BudgetPage() {
       await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
     } catch (err) {
       console.error("[AI Insights]", err);
-      toast.error("Failed to get insights. Check your API key.");
+      const msg = err instanceof Error ? err.message.toLowerCase() : "";
+      if (msg.includes("429") || msg.includes("quota") || msg.includes("resource_exhausted")) {
+        toast.error("Daily AI limit reached. Try again tomorrow.");
+      } else {
+        toast.error("Failed to get insights. Try again later.");
+      }
     } finally {
       fetchingRef.current = false;
       setInsightsLoading(false);
@@ -416,12 +447,15 @@ export default function BudgetPage() {
                   {insightsGeneratedAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}
                 </p>
               )}
+              {cooldownActive && nextRefreshLabel && !insightsLoading && (
+                <p className="text-[10px] text-amber-400/60 dark:text-amber-600/60 leading-none mt-0.5">{nextRefreshLabel}</p>
+              )}
             </div>
           </div>
           <button
             type="button"
             onClick={() => fetchInsights(true)}
-            disabled={insightsLoading || lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes)}
+            disabled={insightsLoading || cooldownActive || lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes)}
             className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
             aria-label="Refresh insights"
           >
