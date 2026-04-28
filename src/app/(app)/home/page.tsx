@@ -39,7 +39,11 @@ export default function DashboardPage() {
     saveUserProfile,
   } = useApp();
 
-  const [cycleOffset, setCycleOffset] = useState(0);
+  const [cycleOffset, setCycleOffset] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const saved = sessionStorage.getItem("home:cycleOffset");
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [markingReceived, setMarkingReceived] = useState(false);
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
@@ -291,7 +295,7 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setCycleOffset((o) => o - 1); setEditingStart(false); }}
+            onClick={() => { setCycleOffset((o) => { const n = o - 1; sessionStorage.setItem("home:cycleOffset", String(n)); return n; }); setEditingStart(false); }}
             aria-label="Previous cycle"
           >
             <ChevronLeftIcon className="size-4" />
@@ -304,7 +308,7 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => { setCycleOffset((o) => o + 1); setEditingStart(false); }}
+            onClick={() => { setCycleOffset((o) => { const n = o + 1; sessionStorage.setItem("home:cycleOffset", String(n)); return n; }); setEditingStart(false); }}
             aria-label="Next cycle"
           >
             <ChevronRightIcon className="size-4" />

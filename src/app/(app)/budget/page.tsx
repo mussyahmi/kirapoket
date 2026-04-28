@@ -373,11 +373,16 @@ export default function BudgetPage() {
     if (!force) {
       try {
         const stored = await getInsight(uid, startStr);
-        if (stored && stored.hash === currentHash) {
-          setInsights({ summary: stored.summary, dos: stored.dos, donts: stored.donts });
-          setInsightsGeneratedAt(stored.generatedAt.toDate());
-          setLastFetchedHash(currentHash);
-          return;
+        if (stored) {
+          const storedAge = Date.now() - stored.generatedAt.toDate().getTime();
+          const storedCooldownActive = storedAge < COOLDOWN_MS;
+          // Reuse stored insight if hash matches OR if cooldown is still active
+          if (stored.hash === currentHash || storedCooldownActive) {
+            setInsights({ summary: stored.summary, dos: stored.dos, donts: stored.donts });
+            setInsightsGeneratedAt(stored.generatedAt.toDate());
+            setLastFetchedHash(stored.hash);
+            return;
+          }
         }
       } catch { /* ignore — fall through to Gemini */ }
     }

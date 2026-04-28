@@ -840,7 +840,18 @@ export default function CategoriesPage() {
                       />
                     </div>
                     <div className="space-y-1.5 mt-4">
-                      <Label>Select days this cycle</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Select days this cycle</Label>
+                        {form.budgetSelectedDates.length > 0 && (
+                          <button
+                            type="button"
+                            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            onClick={() => setForm({ ...form, budgetSelectedDates: [] })}
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
                       <div className="rounded-xl border border-border min-h-[420px]">
                         <Calendar
                           mode="multiple"

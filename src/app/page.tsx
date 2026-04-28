@@ -496,20 +496,7 @@ export default function LandingPage() {
             </div>
             <span className="font-bold text-foreground tracking-tight">KiraPoket</span>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            {!inAppBrowser && (
-              <Button
-                onClick={handleSignIn}
-                variant="outline"
-                size="sm"
-                className="gap-2 rounded-lg hidden md:flex"
-              >
-                <GoogleIcon />
-                Sign in
-              </Button>
-            )}
-          </div>
+          <ThemeToggle />
         </header>
 
         {/* ── Two-column hero (stacked on mobile, side-by-side on md+) ── */}
