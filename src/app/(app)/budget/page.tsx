@@ -198,9 +198,8 @@ export default function BudgetPage() {
   };
 
   const salaryDay = userProfile?.salaryDay ?? 25;
-  const graceDays = userProfile?.salaryGraceDays ?? 0;
-  const manualCycleStart = userProfile?.manualCycleStart;
-  const cycleOptions = { graceDays, manualCycleStart };
+  const cycleStarts = userProfile?.cycleStarts;
+  const cycleOptions = { cycleStarts };
 
   const { start, end } = getSalaryCycleRange(salaryDay, new Date(), cycleOptions);
   const cycleLabel = `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;

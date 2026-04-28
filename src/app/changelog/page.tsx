@@ -24,6 +24,8 @@ const releases: Release[] = [
       { type: "fix", text: "Quota errors from the AI provider now show a clear message instead of a generic failure toast" },
       { type: "fix", text: "AI insights refresh button stays clickable during cooldown — clicking shows a toast with the exact unlock time instead of silently doing nothing" },
       { type: "fix", text: "AI insights cooldown check was using a stale value and never firing — refresh was never actually blocked" },
+      { type: "feat", text: "Each salary cycle now remembers its own manually-marked start date — marking salary received on cycle 2 no longer overwrites cycle 1's record" },
+      { type: "fix", text: "Removed Early arrival buffer setting — cycle start is now controlled entirely by the Mark today action" },
     ],
   },
   {

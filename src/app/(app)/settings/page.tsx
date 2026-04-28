@@ -32,7 +32,6 @@ export default function SettingsPage() {
   const { resolvedTheme, setTheme } = useTheme();
 
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
-  const [salaryGraceDays, setSalaryGraceDays] = useState(0);
   const [hideBalance, setHideBalance] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -43,7 +42,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (userProfile) {
       setSalaryDay(userProfile.salaryDay ?? null);
-      setSalaryGraceDays(userProfile.salaryGraceDays ?? 0);
       setHideBalance(userProfile.hideBalance ?? false);
     }
   }, [userProfile]);
@@ -54,15 +52,6 @@ export default function SettingsPage() {
       await saveUserProfile({ salaryDay: day });
     } catch {
       toast.error("Failed to save salary day.");
-    }
-  };
-
-  const handleSelectGrace = async (days: number) => {
-    setSalaryGraceDays(days);
-    try {
-      await saveUserProfile({ salaryGraceDays: days });
-    } catch {
-      toast.error("Failed to save grace period.");
     }
   };
 
@@ -155,39 +144,6 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">Select your salary day.</p>
           )}
 
-          {/* Grace period */}
-          {salaryDay && (
-            <div className="space-y-2 pt-1 border-t border-border">
-              <div>
-                <p className="text-sm font-medium">Early arrival buffer</p>
-                <p className="text-xs text-muted-foreground">
-                  Start the cycle this many days before your salary day.
-                </p>
-              </div>
-              <div className="flex gap-1.5">
-                {[0, 1, 2, 3, 4, 5].map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => handleSelectGrace(d)}
-                    className={cn(
-                      "flex-1 h-9 rounded-lg text-sm font-medium transition-colors",
-                      salaryGraceDays === d
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground hover:bg-muted/70"
-                    )}
-                  >
-                    {d === 0 ? "Off" : `${d}d`}
-                  </button>
-                ))}
-              </div>
-              {salaryGraceDays > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Cycle will start on day {Math.max(salaryDay - salaryGraceDays, 1)}, {salaryGraceDays} day{salaryGraceDays > 1 ? "s" : ""} early.
-                </p>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 

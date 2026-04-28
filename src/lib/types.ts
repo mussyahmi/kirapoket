@@ -30,8 +30,7 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   salaryDay: number | null;
-  salaryGraceDays?: number;
-  manualCycleStart?: string;
+  cycleStarts?: Record<string, string>;
   hideBalance: boolean;
   forecastIncomeItems?: ForecastIncomeItem[];
   lastLogin?: Timestamp | null;

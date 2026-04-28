@@ -234,6 +234,11 @@ export async function updateUserProfile(
   await setDoc(docRef, { uid, ...data }, { merge: true });
 }
 
+export async function deleteCycleStart(uid: string, cycleKey: string): Promise<void> {
+  const docRef = doc(db, "users", uid);
+  await updateDoc(docRef, { [`cycleStarts.${cycleKey}`]: deleteField() });
+}
+
 export async function getAllUsers(): Promise<UserProfile[]> {
   const snap = await getDocs(collection(db, "users"));
   return snap.docs.map((d) => d.data() as UserProfile);
@@ -458,39 +463,35 @@ export async function deleteAllUserData(uid: string): Promise<void> {
 export function getSalaryCycleRange(
   salaryDay: number,
   referenceDate: Date = new Date(),
-  options: { graceDays?: number; manualCycleStart?: string } = {}
+  options: { cycleStarts?: Record<string, string> } = {}
 ): { start: Date; end: Date } {
-  const { graceDays = 0, manualCycleStart } = options;
+  const { cycleStarts } = options;
   const today = referenceDate;
   const day = today.getDate();
   const month = today.getMonth();
   const year = today.getFullYear();
 
-  // Shift the threshold earlier by grace days so salary arriving early still
-  // falls into the new cycle.
-  const threshold = Math.max(salaryDay - graceDays, 1);
-
   let cycleStart: Date;
   let cycleEnd: Date;
 
-  if (day >= threshold) {
-    cycleStart = new Date(year, month, threshold);
-    cycleEnd = new Date(year, month + 1, threshold - 1);
+  if (day >= salaryDay) {
+    cycleStart = new Date(year, month, salaryDay);
+    cycleEnd = new Date(year, month + 1, salaryDay - 1);
   } else {
-    cycleStart = new Date(year, month - 1, threshold);
-    cycleEnd = new Date(year, month, threshold - 1);
+    cycleStart = new Date(year, month - 1, salaryDay);
+    cycleEnd = new Date(year, month, salaryDay - 1);
   }
 
-  // Manual override: if the user tapped "salary received" and that date falls
-  // within ±7 days of the auto-calculated cycle start, honour it.
-  if (manualCycleStart) {
-    const manual = parseISO(manualCycleStart);
-    const window = {
-      start: addDays(cycleStart, -7),
-      end: addDays(cycleStart, 7),
-    };
-    if (isWithinInterval(manual, window)) {
-      cycleStart = manual;
+  // Per-cycle manual override: keyed by the auto-computed start date.
+  if (cycleStarts) {
+    const key = format(cycleStart, "yyyy-MM-dd");
+    const manual = cycleStarts[key];
+    if (manual) {
+      const manualDate = parseISO(manual);
+      const window = { start: addDays(cycleStart, -7), end: addDays(cycleStart, 7) };
+      if (isWithinInterval(manualDate, window)) {
+        cycleStart = manualDate;
+      }
     }
   }
 
@@ -501,7 +502,7 @@ export async function getSalaryCycleTransactions(
   userId: string,
   salaryDay: number,
   referenceDate: Date = new Date(),
-  options: { graceDays?: number; manualCycleStart?: string } = {}
+  options: { cycleStarts?: Record<string, string> } = {}
 ): Promise<Transaction[]> {
   const { start, end } = getSalaryCycleRange(salaryDay, referenceDate, options);
   const startStr = format(start, "yyyy-MM-dd");

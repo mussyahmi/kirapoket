@@ -8,7 +8,7 @@ import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowD
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
-import { getSalaryCycleRange } from "@/lib/firestore";
+import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
 import {
   Card,
   CardAction,
@@ -43,11 +43,10 @@ export default function DashboardPage() {
   const [markingReceived, setMarkingReceived] = useState(false);
 
   const salaryDay = userProfile?.salaryDay ?? 25;
-  const graceDays = userProfile?.salaryGraceDays ?? 0;
-  const manualCycleStart = userProfile?.manualCycleStart;
+  const cycleStarts = userProfile?.cycleStarts;
   const hideBalance = userProfile?.hideBalance ?? false;
 
-  const cycleOptions = { graceDays, manualCycleStart };
+  const cycleOptions = { cycleStarts };
 
   // Determine reference date based on offset
   const referenceDate = useMemo(() => {
@@ -57,27 +56,35 @@ export default function DashboardPage() {
     const shifted = addMonths(start, cycleOffset);
     return new Date(shifted.getFullYear(), shifted.getMonth(), salaryDay + 5);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cycleOffset, salaryDay, graceDays, manualCycleStart]);
+  }, [cycleOffset, salaryDay, cycleStarts]);
+
+  // Auto-computed cycle start key (without manual override) — used as the map key.
+  const autoCycleStartKey = useMemo(() => {
+    const { start } = getSalaryCycleRange(salaryDay, referenceDate);
+    return format(start, "yyyy-MM-dd");
+  }, [salaryDay, referenceDate]);
 
   const { start, end } = getSalaryCycleRange(salaryDay, referenceDate, cycleOptions);
   const startStr = format(start, "yyyy-MM-dd");
   const endStr = format(end, "yyyy-MM-dd");
 
-  // Show "salary received?" prompt when today is within salaryDay ± (graceDays + 3)
+  // Show "salary received?" prompt when today is within ±3 days of salary day
   // and we're viewing the current cycle.
   const showSalaryPrompt = useMemo(() => {
     if (cycleOffset !== 0 || !userProfile?.salaryDay) return false;
     const today = new Date();
     const thisMonthSalaryDay = new Date(today.getFullYear(), today.getMonth(), salaryDay);
     const diff = Math.abs(differenceInDays(today, thisMonthSalaryDay));
-    return diff <= graceDays + 3;
-  }, [cycleOffset, salaryDay, graceDays, userProfile?.salaryDay]);
+    return diff <= 3;
+  }, [cycleOffset, salaryDay, userProfile?.salaryDay]);
+
+  const currentCycleManualStart = cycleStarts?.[autoCycleStartKey];
 
   const handleMarkReceived = async () => {
     setMarkingReceived(true);
     try {
       const today = format(new Date(), "yyyy-MM-dd");
-      await saveUserProfile({ manualCycleStart: today });
+      await saveUserProfile({ cycleStarts: { ...cycleStarts, [autoCycleStartKey]: today } });
       toast.success("Cycle start updated.");
     } catch {
       toast.error("Failed to update.");
@@ -88,7 +95,7 @@ export default function DashboardPage() {
 
   const handleClearManualStart = async () => {
     try {
-      await saveUserProfile({ manualCycleStart: undefined });
+      await deleteCycleStart(userProfile!.uid, autoCycleStartKey);
     } catch {
       toast.error("Failed to reset.");
     }
@@ -284,10 +291,10 @@ export default function DashboardPage() {
       {showSalaryPrompt && (
         <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3">
           <BanknoteIcon className="size-4 text-muted-foreground shrink-0" />
-          {manualCycleStart ? (
+          {currentCycleManualStart ? (
             <>
               <p className="flex-1 text-sm text-muted-foreground">
-                Cycle started on <span className="font-medium text-foreground">{format(new Date(manualCycleStart + "T00:00:00"), "d MMM")}</span>.
+                Cycle started on <span className="font-medium text-foreground">{format(new Date(currentCycleManualStart + "T00:00:00"), "d MMM")}</span>.
               </p>
               <button
                 type="button"
