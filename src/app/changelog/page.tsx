@@ -27,6 +27,7 @@ const releases: Release[] = [
       { type: "feat", text: "Each salary cycle now remembers its own manually-marked start date — marking salary received on cycle 2 no longer overwrites cycle 1's record" },
       { type: "fix", text: "Removed Early arrival buffer setting — cycle start is now controlled entirely by the Mark today action" },
       { type: "feat", text: "Cycle start banner now shows on all cycles — navigate to any past cycle and tap Set date to correct its start" },
+      { type: "fix", text: "Cycle end now adjusts to the day before the next cycle's actual start — setting Mar cycle to 27 Mar correctly ends the Feb cycle on 26 Mar" },
     ],
   },
   {

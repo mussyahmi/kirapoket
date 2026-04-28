@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
@@ -304,50 +304,55 @@ export default function DashboardPage() {
 
       {/* Cycle start banner — always visible when salary day is configured */}
       {userProfile?.salaryDay && (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3">
-          <BanknoteIcon className="size-4 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 pl-3 pr-4 py-2.5 border-l-2 border-l-primary">
+          <BanknoteIcon className="size-4 text-primary shrink-0" />
           {editingStart ? (
             <>
               <input
                 type="date"
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
-                className="flex-1 text-sm bg-transparent text-foreground outline-none"
+                className="w-32 text-sm font-medium text-foreground bg-transparent outline-none border-b border-primary/40 focus:border-primary transition-colors [color-scheme:light] dark:[color-scheme:dark]"
               />
+              <div className="flex-1" />
               <button
                 type="button"
                 onClick={handleSetDate}
                 disabled={markingReceived || !editDate}
-                className="text-xs font-medium text-primary shrink-0"
+                className="size-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
+                aria-label="Save"
               >
-                {markingReceived ? "Saving..." : "Set"}
+                <CheckIcon className="size-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setEditingStart(false)}
-                className="text-xs text-muted-foreground underline shrink-0"
+                className="size-6 flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Cancel"
               >
-                Cancel
+                <XIcon className="size-3.5" />
               </button>
             </>
           ) : currentCycleManualStart ? (
             <>
               <p className="flex-1 text-sm text-muted-foreground">
-                Cycle started on <span className="font-medium text-foreground">{format(new Date(currentCycleManualStart + "T00:00:00"), "d MMM")}</span>.
+                Started on <span className="font-medium text-foreground">{format(new Date(currentCycleManualStart + "T00:00:00"), "d MMM yyyy")}</span>
               </p>
               <button
                 type="button"
                 onClick={() => { setEditDate(currentCycleManualStart); setEditingStart(true); }}
-                className="text-xs text-muted-foreground underline shrink-0"
+                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Edit cycle start"
               >
-                Edit
+                <PencilIcon className="size-3.5" />
               </button>
               <button
                 type="button"
                 onClick={handleClearManualStart}
-                className="text-xs text-muted-foreground underline shrink-0"
+                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Reset cycle start"
               >
-                Reset
+                <XIcon className="size-3.5" />
               </button>
             </>
           ) : nearSalaryDay ? (
@@ -357,21 +362,22 @@ export default function DashboardPage() {
                 type="button"
                 onClick={handleMarkReceived}
                 disabled={markingReceived}
-                className="text-xs font-medium text-primary shrink-0"
+                className="text-xs font-medium text-primary shrink-0 disabled:opacity-40"
               >
-                {markingReceived ? "Saving..." : "Mark today"}
+                {markingReceived ? "Saving…" : "Mark today"}
               </button>
               <button
                 type="button"
                 onClick={() => { setEditDate(autoCycleStartKey); setEditingStart(true); }}
-                className="text-xs text-muted-foreground underline shrink-0"
+                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Pick a date"
               >
-                Pick date
+                <PencilIcon className="size-3.5" />
               </button>
             </>
           ) : (
             <>
-              <p className="flex-1 text-sm text-muted-foreground">Cycle start not set.</p>
+              <p className="flex-1 text-sm text-muted-foreground">Cycle start not recorded.</p>
               <button
                 type="button"
                 onClick={() => { setEditDate(autoCycleStartKey); setEditingStart(true); }}

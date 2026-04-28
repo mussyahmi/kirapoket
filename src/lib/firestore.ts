@@ -471,26 +471,36 @@ export function getSalaryCycleRange(
   const month = today.getMonth();
   const year = today.getFullYear();
 
-  let cycleStart: Date;
-  let cycleEnd: Date;
+  // Auto-computed boundaries (used as map keys and fallbacks)
+  const autoCycleStart: Date = day >= salaryDay
+    ? new Date(year, month, salaryDay)
+    : new Date(year, month - 1, salaryDay);
+  const autoNextStart = new Date(autoCycleStart.getFullYear(), autoCycleStart.getMonth() + 1, salaryDay);
 
-  if (day >= salaryDay) {
-    cycleStart = new Date(year, month, salaryDay);
-    cycleEnd = new Date(year, month + 1, salaryDay - 1);
-  } else {
-    cycleStart = new Date(year, month - 1, salaryDay);
-    cycleEnd = new Date(year, month, salaryDay - 1);
-  }
-
-  // Per-cycle manual override: keyed by the auto-computed start date.
+  // Apply manual override for this cycle
+  let cycleStart = autoCycleStart;
   if (cycleStarts) {
-    const key = format(cycleStart, "yyyy-MM-dd");
+    const key = format(autoCycleStart, "yyyy-MM-dd");
     const manual = cycleStarts[key];
     if (manual) {
       const manualDate = parseISO(manual);
-      const window = { start: addDays(cycleStart, -7), end: addDays(cycleStart, 7) };
+      const window = { start: addDays(autoCycleStart, -7), end: addDays(autoCycleStart, 7) };
       if (isWithinInterval(manualDate, window)) {
         cycleStart = manualDate;
+      }
+    }
+  }
+
+  // Cycle ends the day before the next cycle's actual start
+  let cycleEnd = addDays(autoNextStart, -1);
+  if (cycleStarts) {
+    const nextKey = format(autoNextStart, "yyyy-MM-dd");
+    const nextManual = cycleStarts[nextKey];
+    if (nextManual) {
+      const nextManualDate = parseISO(nextManual);
+      const window = { start: addDays(autoNextStart, -7), end: addDays(autoNextStart, 7) };
+      if (isWithinInterval(nextManualDate, window)) {
+        cycleEnd = addDays(nextManualDate, -1);
       }
     }
   }
