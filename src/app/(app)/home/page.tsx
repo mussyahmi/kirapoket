@@ -41,6 +41,8 @@ export default function DashboardPage() {
 
   const [cycleOffset, setCycleOffset] = useState(0);
   const [markingReceived, setMarkingReceived] = useState(false);
+  const [editingStart, setEditingStart] = useState(false);
+  const [editDate, setEditDate] = useState("");
 
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
@@ -68,17 +70,15 @@ export default function DashboardPage() {
   const startStr = format(start, "yyyy-MM-dd");
   const endStr = format(end, "yyyy-MM-dd");
 
-  // Show "salary received?" prompt when today is within ±3 days of salary day
-  // and we're viewing the current cycle.
-  const showSalaryPrompt = useMemo(() => {
+  const currentCycleManualStart = cycleStarts?.[autoCycleStartKey];
+
+  // Near salary day on current cycle — show quick "Mark today" prompt.
+  const nearSalaryDay = useMemo(() => {
     if (cycleOffset !== 0 || !userProfile?.salaryDay) return false;
     const today = new Date();
     const thisMonthSalaryDay = new Date(today.getFullYear(), today.getMonth(), salaryDay);
-    const diff = Math.abs(differenceInDays(today, thisMonthSalaryDay));
-    return diff <= 3;
+    return Math.abs(differenceInDays(today, thisMonthSalaryDay)) <= 3;
   }, [cycleOffset, salaryDay, userProfile?.salaryDay]);
-
-  const currentCycleManualStart = cycleStarts?.[autoCycleStartKey];
 
   const handleMarkReceived = async () => {
     setMarkingReceived(true);
@@ -93,9 +93,24 @@ export default function DashboardPage() {
     }
   };
 
+  const handleSetDate = async () => {
+    if (!editDate) return;
+    setMarkingReceived(true);
+    try {
+      await saveUserProfile({ cycleStarts: { ...cycleStarts, [autoCycleStartKey]: editDate } });
+      setEditingStart(false);
+      toast.success("Cycle start updated.");
+    } catch {
+      toast.error("Failed to update.");
+    } finally {
+      setMarkingReceived(false);
+    }
+  };
+
   const handleClearManualStart = async () => {
     try {
       await deleteCycleStart(userProfile!.uid, autoCycleStartKey);
+      setEditingStart(false);
     } catch {
       toast.error("Failed to reset.");
     }
@@ -270,7 +285,7 @@ export default function DashboardPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCycleOffset((o) => o - 1)}
+          onClick={() => { setCycleOffset((o) => o - 1); setEditingStart(false); }}
           aria-label="Previous cycle"
         >
           <ChevronLeftIcon className="size-4" />
@@ -279,7 +294,7 @@ export default function DashboardPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCycleOffset((o) => o + 1)}
+          onClick={() => { setCycleOffset((o) => o + 1); setEditingStart(false); }}
           aria-label="Next cycle"
           disabled={cycleOffset >= 0}
         >
@@ -287,15 +302,46 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Salary received prompt */}
-      {showSalaryPrompt && (
+      {/* Cycle start banner — always visible when salary day is configured */}
+      {userProfile?.salaryDay && (
         <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3">
           <BanknoteIcon className="size-4 text-muted-foreground shrink-0" />
-          {currentCycleManualStart ? (
+          {editingStart ? (
+            <>
+              <input
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                className="flex-1 text-sm bg-transparent text-foreground outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleSetDate}
+                disabled={markingReceived || !editDate}
+                className="text-xs font-medium text-primary shrink-0"
+              >
+                {markingReceived ? "Saving..." : "Set"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingStart(false)}
+                className="text-xs text-muted-foreground underline shrink-0"
+              >
+                Cancel
+              </button>
+            </>
+          ) : currentCycleManualStart ? (
             <>
               <p className="flex-1 text-sm text-muted-foreground">
                 Cycle started on <span className="font-medium text-foreground">{format(new Date(currentCycleManualStart + "T00:00:00"), "d MMM")}</span>.
               </p>
+              <button
+                type="button"
+                onClick={() => { setEditDate(currentCycleManualStart); setEditingStart(true); }}
+                className="text-xs text-muted-foreground underline shrink-0"
+              >
+                Edit
+              </button>
               <button
                 type="button"
                 onClick={handleClearManualStart}
@@ -304,7 +350,7 @@ export default function DashboardPage() {
                 Reset
               </button>
             </>
-          ) : (
+          ) : nearSalaryDay ? (
             <>
               <p className="flex-1 text-sm text-muted-foreground">Salary arrived early or late?</p>
               <button
@@ -314,6 +360,24 @@ export default function DashboardPage() {
                 className="text-xs font-medium text-primary shrink-0"
               >
                 {markingReceived ? "Saving..." : "Mark today"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditDate(autoCycleStartKey); setEditingStart(true); }}
+                className="text-xs text-muted-foreground underline shrink-0"
+              >
+                Pick date
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="flex-1 text-sm text-muted-foreground">Cycle start not set.</p>
+              <button
+                type="button"
+                onClick={() => { setEditDate(autoCycleStartKey); setEditingStart(true); }}
+                className="text-xs font-medium text-primary shrink-0"
+              >
+                Set date
               </button>
             </>
           )}
