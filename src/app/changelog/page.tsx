@@ -28,6 +28,13 @@ const releases: Release[] = [
       { type: "fix", text: "Removed Early arrival buffer setting — cycle start is now controlled entirely by the Mark today action" },
       { type: "feat", text: "Cycle start banner now shows on all cycles — navigate to any past cycle and tap Set date to correct its start" },
       { type: "fix", text: "Cycle end now adjusts to the day before the next cycle's actual start — setting Mar cycle to 27 Mar correctly ends the Feb cycle on 26 Mar" },
+      { type: "feat", text: "Budget summary now shows a spending progress bar — see what percentage of income is spent and what is left at a glance" },
+      { type: "feat", text: "Unallocated row is highlighted blue when positive and red when negative — immediately obvious when you have overspent your allocations" },
+      { type: "feat", text: "Each top-level category (Needs / Wants / Savings) now shows its total spent vs budgeted inline — no need to expand individual rows" },
+      { type: "feat", text: "Shortcut button next to \"By Category\" heading — tap to jump straight to the Categories page" },
+      { type: "fix", text: "Previous cycle chevron is now hidden when there are no earlier transactions — avoids navigating into empty cycles" },
+      { type: "fix", text: "Next cycle chevron is now hidden on the current cycle instead of shown as disabled" },
+      { type: "fix", text: "Account balances card is hidden when viewing a past cycle — live balances were misleading when reviewing historical spending" },
     ],
   },
   {

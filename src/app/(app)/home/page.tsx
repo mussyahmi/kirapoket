@@ -118,6 +118,11 @@ export default function DashboardPage() {
 
   const cycleLabel = `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;
 
+  // Hide left chevron if no transactions exist before the current cycle's start
+  const hasPrevCycle = useMemo(() => {
+    return transactions.some((t) => t.date < startStr);
+  }, [transactions, startStr]);
+
   // Filter transactions within the current displayed cycle
   const cycleTransactions = useMemo(() => {
     const startStr = format(start, "yyyy-MM-dd");
@@ -282,24 +287,31 @@ export default function DashboardPage() {
 
       {/* Cycle Selector */}
       <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => { setCycleOffset((o) => o - 1); setEditingStart(false); }}
-          aria-label="Previous cycle"
-        >
-          <ChevronLeftIcon className="size-4" />
-        </Button>
+        {hasPrevCycle ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setCycleOffset((o) => o - 1); setEditingStart(false); }}
+            aria-label="Previous cycle"
+          >
+            <ChevronLeftIcon className="size-4" />
+          </Button>
+        ) : (
+          <div className="size-9" />
+        )}
         <div className="text-sm font-medium text-foreground">{cycleLabel}</div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => { setCycleOffset((o) => o + 1); setEditingStart(false); }}
-          aria-label="Next cycle"
-          disabled={cycleOffset >= 0}
-        >
-          <ChevronRightIcon className="size-4" />
-        </Button>
+        {cycleOffset < 0 ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setCycleOffset((o) => o + 1); setEditingStart(false); }}
+            aria-label="Next cycle"
+          >
+            <ChevronRightIcon className="size-4" />
+          </Button>
+        ) : (
+          <div className="size-9" />
+        )}
       </div>
 
       {/* Cycle start banner — always visible when salary day is configured */}
@@ -414,8 +426,8 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Account Balances */}
-      {loadingAccounts ? (
+      {/* Account Balances — only shown for current cycle; balance is live and misleading for past cycles */}
+      {cycleOffset < 0 ? null : loadingAccounts ? (
         <Skeleton className="h-28 rounded-xl" />
       ) : (
       <Card>

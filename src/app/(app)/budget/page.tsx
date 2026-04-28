@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, RefreshCwIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, RefreshCwIcon, TagsIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -664,7 +664,12 @@ export default function BudgetPage() {
                 <span className="font-medium amt tabular-nums text-orange-500"><span className={censored ? "text-foreground/40" : "text-orange-400/60"}>−</span> {fmtAmt(unbudgetedSpending)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm pt-2 border-t font-semibold">
+            <div className={cn(
+              "flex justify-between text-sm pt-2 border-t font-semibold rounded-md px-2 -mx-2 py-1.5",
+              unallocated < 0
+                ? "bg-red-50/60 dark:bg-red-950/20"
+                : "bg-blue-50/50 dark:bg-blue-950/20"
+            )}>
               <span>Unallocated</span>
               <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
                 {fmtAmt(unallocated)}
@@ -682,6 +687,20 @@ export default function BudgetPage() {
                   {fmtAmt(actualRemaining)}
                 </span>
               </div>
+              {effectiveIncome > 0 && (
+                <div className="pt-1 space-y-1">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500", actualRemaining < 0 ? "bg-red-500" : "bg-green-500 dark:bg-green-400")}
+                      style={{ width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground/60 tabular-nums">
+                    <span>{Math.round((totalSpent / effectiveIncome) * 100)}% spent</span>
+                    <span>{Math.max(0, Math.round((actualRemaining / effectiveIncome) * 100))}% left</span>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -689,7 +708,18 @@ export default function BudgetPage() {
         {/* Category Budgets */}
         <Card>
           <CardHeader>
-            <CardTitle>By Category</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>By Category</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={() => router.push("/categories")}
+                aria-label="Go to categories"
+              >
+                <TagsIcon className="size-3.5 text-muted-foreground" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {!hasBudgets ? (
@@ -709,6 +739,8 @@ export default function BudgetPage() {
                 if (l2sVisible.length === 0) return null;
 
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
+                const l1TotalBudget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
+                const l1TotalSpent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
 
                 return (
                   <div key={l1.id} className="space-y-3">
@@ -718,6 +750,11 @@ export default function BudgetPage() {
                         <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         <p className="text-sm font-bold">{l1.name}</p>
                       </div>
+                      {l1TotalBudget > 0 && (
+                        <span className={cn("text-xs tabular-nums amt shrink-0", l1TotalSpent > l1TotalBudget ? "text-red-500" : "text-muted-foreground/70")}>
+                          {fmtAmt(l1TotalSpent)} / {fmtAmt(l1TotalBudget)}
+                        </span>
+                      )}
                     </div>
 
                     {/* L2 rows */}
@@ -757,7 +794,7 @@ export default function BudgetPage() {
                             {/* Progress bar + remaining inline */}
                             {l2pct !== null && (
                               <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                                   <div
                                     className="h-full rounded-full transition-all"
                                     style={{ width: `${l2pct}%`, backgroundColor: l2over ? "#ef4444" : color }}
