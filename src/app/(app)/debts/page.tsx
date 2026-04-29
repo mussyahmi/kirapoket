@@ -331,7 +331,7 @@ export default function DebtsPage() {
     e.preventDefault();
     if (!form.personName.trim()) { toast.error("Person name is required."); return; }
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid amount."); return; }
+    if (isNaN(amount) || amount < 0 || (!editTarget && amount <= 0)) { toast.error("Enter a valid amount."); return; }
 
     setSaving(true);
     try {
@@ -495,7 +495,7 @@ export default function DebtsPage() {
         time: format(new Date(), "HH:mm"),
         accountId: payAccountId,
         categoryId,
-        note: payTarget.note || (isIOwe
+        note: payTarget.note || (isIOwe.
           ? `Payment to ${payTarget.personName}`
           : `Received from ${payTarget.personName}`),
       });
@@ -704,7 +704,7 @@ export default function DebtsPage() {
                 type="number"
                 inputMode="decimal"
                 step="0.01"
-                min="0.01"
+                min={editTarget ? "0" : "0.01"}
                 placeholder="0.00"
                 value={form.amount}
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
