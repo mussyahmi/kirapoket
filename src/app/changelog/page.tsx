@@ -18,7 +18,8 @@ const releases: Release[] = [
     latest: true,
     changes: [
       { type: "feat", text: "AI spending insights on the budget page — personalised summary, do's, and don'ts powered by Gemini; factors in transaction notes for specific tips like 'car service' or 'birthday dinner'" },
-      { type: "feat", text: "Insights are cached per cycle and rate-limited to once per day — the refresh button shows exactly when it unlocks and stays disabled until your data changes" },
+      { type: "feat", text: "Insights are cached as one record per user and rate-limited to once per day — the refresh button shows exactly when it unlocks and stays disabled until your data changes" },
+      { type: "feat", text: "Admin panel now shows each user's UID alongside their email" },
       { type: "feat", text: "Daily budget day-picker now has a Clear all button — deselect all chosen days in one tap" },
       { type: "feat", text: "Each salary cycle remembers its own start date — editing one cycle no longer overwrites another; removed the Early arrival buffer setting" },
       { type: "feat", text: "Cycle start banner on all cycles — tap Set date on any past cycle to correct it; cycle end adjusts to the day before the next cycle's start; home page remembers the last cycle you viewed" },

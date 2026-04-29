@@ -73,6 +73,7 @@ export default function BudgetPage() {
     loadingTransactions,
     loadingProfile,
     saveUserProfile,
+    isImpersonating,
   } = useApp();
 
   const { user } = useAuth();
@@ -360,6 +361,7 @@ export default function BudgetPage() {
   }, [nextRefreshAt]);
 
   const fetchInsights = useCallback(async (force = false) => {
+    if (isImpersonating) return;
     if (fetchingRef.current) return;
     if (insightCategories.length === 0) return;
     if (!user?.uid) return;
@@ -372,7 +374,7 @@ export default function BudgetPage() {
 
     if (!force) {
       try {
-        const stored = await getInsight(uid, startStr);
+        const stored = await getInsight(uid);
         if (stored) {
           const storedAge = Date.now() - stored.generatedAt.toDate().getTime();
           const storedCooldownActive = storedAge < COOLDOWN_MS;
@@ -394,7 +396,7 @@ export default function BudgetPage() {
       setInsights(result);
       setInsightsGeneratedAt(new Date());
       setLastFetchedHash(currentHash);
-      await saveInsight(uid, startStr, currentHash, result.summary, result.dos, result.donts);
+      await saveInsight(uid, currentHash, result.summary, result.dos, result.donts);
     } catch (err) {
       console.error("[AI Insights]", err);
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
@@ -407,7 +409,7 @@ export default function BudgetPage() {
       fetchingRef.current = false;
       setInsightsLoading(false);
     }
-  }, [insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr, cooldownActive, nextRefreshLabel]);
+  }, [isImpersonating, insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr, cooldownActive, nextRefreshLabel]);
 
   const loading = loadingTransactions || loadingProfile;
 

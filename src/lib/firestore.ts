@@ -539,7 +539,6 @@ export async function getSalaryCycleTransactions(
 
 export interface StoredInsight {
   userId: string;
-  cycleStart: string;
   hash: string;
   summary: string;
   dos: string[];
@@ -547,14 +546,14 @@ export interface StoredInsight {
   generatedAt: Timestamp;
 }
 
-export async function getInsight(uid: string, cycleStart: string): Promise<StoredInsight | null> {
-  const ref = doc(db, "insights", `${uid}_${cycleStart}`);
+export async function getInsight(uid: string): Promise<StoredInsight | null> {
+  const ref = doc(db, "insights", uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;
   return snap.data() as StoredInsight;
 }
 
-export async function saveInsight(uid: string, cycleStart: string, hash: string, summary: string, dos: string[], donts: string[]): Promise<void> {
-  const ref = doc(db, "insights", `${uid}_${cycleStart}`);
-  await setDoc(ref, { userId: uid, cycleStart, hash, summary, dos, donts, generatedAt: Timestamp.now() });
+export async function saveInsight(uid: string, hash: string, summary: string, dos: string[], donts: string[]): Promise<void> {
+  const ref = doc(db, "insights", uid);
+  await setDoc(ref, { userId: uid, hash, summary, dos, donts, generatedAt: Timestamp.now() });
 }
