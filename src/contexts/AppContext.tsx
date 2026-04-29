@@ -516,8 +516,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (data: Partial<UserProfile>) => {
       if (!uid) throw new Error("Not authenticated");
       await updateUserProfile(uid, data);
-      const latest = await getUserProfile(uid);
-      if (latest) setUserProfile(latest);
+      setUserProfile((prev) => (prev ? { ...prev, ...data } : prev));
     },
     [uid]
   );

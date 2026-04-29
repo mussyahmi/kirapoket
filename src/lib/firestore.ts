@@ -328,12 +328,13 @@ export async function deleteCategory(id: string): Promise<void> {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-export async function getTransactions(userId: string): Promise<Transaction[]> {
+export async function getTransactions(userId: string, maxDocs = 500): Promise<Transaction[]> {
   const q = query(
     collection(db, "transactions"),
     where("userId", "==", userId),
     orderBy("date", "desc"),
-    orderBy("createdAt", "desc")
+    orderBy("createdAt", "desc"),
+    limit(maxDocs)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Transaction));
