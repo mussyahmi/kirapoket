@@ -100,6 +100,7 @@ const DEFAULT_FORM: CategoryFormData = {
 
 interface L3ItemProps {
   item: Category;
+  l1Type: L1Type;
   openEdit: (cat: Category) => void;
   setDeleteTarget: (cat: Category) => void;
 }
@@ -115,7 +116,7 @@ function fmtItemBudget(c: Category): string | null {
   return `· RM ${amt}`;
 }
 
-function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
+function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const {
     attributes,
@@ -183,32 +184,37 @@ function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{item.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <span className={cn("size-2.5 rounded-full shrink-0", L1_DOT[l1Type])} />
+              {item.name}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {!hasDetails && (
               <p className="text-sm text-muted-foreground">No details added yet.</p>
             )}
             {item.budget !== undefined && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Budget</p>
-                <p className="text-sm">{fmtItemBudget(item)?.replace("· ", "")}</p>
-                {item.budgetType === "daily" && item.budgetDays && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
-                  </p>
-                )}
+              <div className={cn("flex items-center justify-between rounded-lg px-4 py-3", L1_COLORS[l1Type])}>
+                <span className="text-xs uppercase tracking-wide opacity-70">Budget</span>
+                <div className="text-right">
+                  <p className="text-lg font-bold tabular-nums">{fmtItemBudget(item)?.replace("· ", "")}</p>
+                  {item.budgetType === "daily" && item.budgetDays && (
+                    <p className="text-xs opacity-70 mt-0.5">
+                      RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             {item.note && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Note</p>
+              <div className="rounded-lg bg-muted/50 px-4 py-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Note</p>
                 <p className="text-sm whitespace-pre-wrap">{item.note}</p>
               </div>
             )}
             {item.links && item.links.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Links</p>
+              <div className="rounded-lg bg-muted/50 px-4 py-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Links</p>
                 <div className="space-y-1">
                   {item.links.map((link, i) => (
                     <a
@@ -224,21 +230,26 @@ function L3Item({ item, openEdit, setDeleteTarget }: L3ItemProps) {
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
-              <Link
-                href={`/transactions?category=${item.id}`}
-                className="flex-1"
-                onClick={() => setPreviewOpen(false)}
-              >
-                <Button variant="outline" className="w-full">
-                  <ListIcon className="size-4 mr-2" /> Transactions
+            <div className="flex gap-2 pt-1">
+              <Link href={`/transactions?category=${item.id}`} className="flex-1" onClick={() => setPreviewOpen(false)}>
+                <Button variant="outline" className="w-full gap-2">
+                  <ListIcon className="size-4" /> Transactions
                 </Button>
               </Link>
               <Button
-                className="flex-1"
+                variant="outline"
+                className="flex-1 gap-2"
                 onClick={() => { setPreviewOpen(false); openEdit(item); }}
               >
-                <PencilIcon className="size-4 mr-2" /> Edit
+                <PencilIcon className="size-4" /> Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                onClick={() => { setPreviewOpen(false); setDeleteTarget(item); }}
+              >
+                <TrashIcon className="size-4" />
               </Button>
             </div>
           </div>
@@ -379,6 +390,7 @@ function L2Row({
                 <L3Item
                   key={item.id}
                   item={item}
+                  l1Type={l1Type}
                   openEdit={openEdit}
                   setDeleteTarget={setDeleteTarget}
                 />

@@ -13,7 +13,25 @@ import {
   CreditCardIcon,
   SmartphoneIcon,
   CircleEllipsisIcon,
+  GripVerticalIcon,
+  ListIcon,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +73,14 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, React.ElementType> = {
   other: CircleEllipsisIcon,
 };
 
+const ACCOUNT_TYPE_COLORS: Record<AccountType, { bg: string; icon: string; dot: string }> = {
+  bank:    { bg: "bg-blue-100 dark:bg-blue-900/30",   icon: "text-blue-600 dark:text-blue-400",     dot: "#3b82f6" },
+  cash:    { bg: "bg-green-100 dark:bg-green-900/30", icon: "text-green-600 dark:text-green-400",   dot: "#22c55e" },
+  ewallet: { bg: "bg-purple-100 dark:bg-purple-900/30", icon: "text-purple-600 dark:text-purple-400", dot: "#a855f7" },
+  credit:  { bg: "bg-orange-100 dark:bg-orange-900/30", icon: "text-orange-500 dark:text-orange-400", dot: "#f97316" },
+  other:   { bg: "bg-slate-100 dark:bg-slate-800",    icon: "text-slate-500 dark:text-slate-400",   dot: "#94a3b8" },
+};
+
 interface AccountFormData {
   name: string;
   type: AccountType;
@@ -67,8 +93,106 @@ const DEFAULT_FORM: AccountFormData = {
   balance: "0",
 };
 
+function SortableAccountRow({
+  account,
+  formatMoney,
+  onEdit,
+  onDelete,
+}: {
+  account: Account;
+  formatMoney: (n: number) => string;
+  onEdit: (a: Account) => void;
+  onDelete: (a: Account) => void;
+}) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
+  const Icon = ACCOUNT_TYPE_ICONS[account.type];
+  const colors = ACCOUNT_TYPE_COLORS[account.type];
+
+  return (
+    <>
+      <Card
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+        className={cn(isDragging && "opacity-50")}
+      >
+        <CardContent className="flex items-center gap-3 py-3">
+          <button
+            type="button"
+            className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
+            aria-label="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVerticalIcon className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDetailOpen(true)}
+            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+          >
+            <div className={cn("flex items-center justify-center size-9 rounded-lg shrink-0", colors.bg)}>
+              <Icon className={cn("size-4.5", colors.icon)} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{account.name}</p>
+              <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_LABELS[account.type]}</p>
+            </div>
+            <p className="text-sm font-semibold tabular-nums shrink-0">{formatMoney(account.balance)}</p>
+          </button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2.5">
+              <div className={cn("flex items-center justify-center size-8 rounded-lg shrink-0", colors.bg)}>
+                <Icon className={cn("size-4", colors.icon)} />
+              </div>
+              {account.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Balance</span>
+              <span className="text-lg font-bold tabular-nums">{formatMoney(account.balance)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Type</span>
+              <span className="font-medium">{ACCOUNT_TYPE_LABELS[account.type]}</span>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Link href={`/transactions?account=${account.id}`} className="flex-1" onClick={() => setDetailOpen(false)}>
+                <Button variant="outline" className="w-full gap-2">
+                  <ListIcon className="size-4" /> Transactions
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => { setDetailOpen(false); onEdit(account); }}
+              >
+                <PencilIcon className="size-4" /> Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive shrink-0"
+                onClick={() => { setDetailOpen(false); onDelete(account); }}
+              >
+                <TrashIcon className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 export default function AccountsPage() {
-  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount } =
+  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts } =
     useApp();
 
   const hideBalance = userProfile?.hideBalance ?? false;
@@ -80,7 +204,35 @@ export default function AccountsPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = accounts.findIndex((a) => a.id === active.id);
+    const newIndex = accounts.findIndex((a) => a.id === over.id);
+    const reordered = arrayMove(accounts, oldIndex, newIndex);
+    try {
+      await reorderAccounts(reordered.map((a) => a.id));
+    } catch {
+      toast.error("Failed to reorder.");
+    }
+  };
+
   const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+
+  const typeBreakdown = useMemo(() => {
+    const totals: Partial<Record<AccountType, number>> = {};
+    for (const a of accounts) {
+      totals[a.type] = (totals[a.type] ?? 0) + a.balance;
+    }
+    return (Object.entries(totals) as [AccountType, number][])
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a);
+  }, [accounts]);
 
   const formatMoney = (n: number) =>
     hideBalance
@@ -178,16 +330,36 @@ export default function AccountsPage() {
 
       {/* Total Balance */}
       <Card>
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Balance</p>
-              <p className="text-2xl font-bold">{formatMoney(totalBalance)}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Balance</p>
+              <p className="text-2xl font-bold tabular-nums">{formatMoney(totalBalance)}</p>
             </div>
-            {hideBalance && (
-              <EyeOffIcon className="size-5 text-muted-foreground" />
-            )}
+            {hideBalance && <EyeOffIcon className="size-5 text-muted-foreground" />}
           </div>
+          {accounts.length > 0 && totalBalance > 0 && !hideBalance && (
+            <>
+              <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
+                {typeBreakdown.map(([type, val]) => (
+                  <div
+                    key={type}
+                    className="h-full rounded-full"
+                    style={{ width: `${(val / totalBalance) * 100}%`, backgroundColor: ACCOUNT_TYPE_COLORS[type].dot }}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {typeBreakdown.map(([type, val]) => (
+                  <div key={type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: ACCOUNT_TYPE_COLORS[type].dot }} />
+                    <span>{ACCOUNT_TYPE_LABELS[type]}</span>
+                    <span className="tabular-nums font-medium text-foreground">{formatMoney(val)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -203,47 +375,21 @@ export default function AccountsPage() {
           <p className="text-sm">No accounts yet. Add your first one!</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {accounts.map((account) => {
-            const Icon = ACCOUNT_TYPE_ICONS[account.type];
-            return (
-              <Card key={account.id}>
-                <CardContent className="flex items-center gap-4 py-3">
-                  <div className="flex items-center justify-center size-10 rounded-lg bg-muted shrink-0">
-                    <Icon className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{account.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {ACCOUNT_TYPE_LABELS[account.type]}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold">
-                      {formatMoney(account.balance)}
-                    </p>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => openEdit(account)}
-                    >
-                      <PencilIcon className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setDeleteTarget(account)}
-                    >
-                      <TrashIcon className="size-3.5 text-destructive" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={accounts.map((a) => a.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {accounts.map((account) => (
+                <SortableAccountRow
+                  key={account.id}
+                  account={account}
+                  formatMoney={formatMoney}
+                  onEdit={openEdit}
+                  onDelete={setDeleteTarget}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Add / Edit Dialog */}

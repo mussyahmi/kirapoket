@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { InstallAppCard } from "@/components/common/InstallAppCard";
 
 type ThemeOption = "light" | "dark";
 
@@ -215,6 +216,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Install App */}
+      <InstallAppCard />
 
       <Separator />
 

@@ -13,6 +13,7 @@ import {
   addAccount,
   updateAccount,
   deleteAccount,
+  reorderAccounts,
   getCategories,
   addCategory,
   updateCategory,
@@ -71,6 +72,7 @@ interface AppContextValue {
     data: Partial<Omit<Account, "id" | "userId" | "createdAt">>
   ) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
+  reorderAccounts: (ids: string[]) => Promise<void>;
 
   // Categories
   refreshCategories: () => Promise<void>;
@@ -190,12 +192,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [uid, user, impersonatedUid]);
 
+  const sortAccounts = (data: Account[]) =>
+    [...data].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity));
+
   const refreshAccounts = useCallback(async () => {
     if (!uid) return;
     setLoadingAccounts(true);
     try {
       const data = await getAccounts(uid);
-      setAccounts(data);
+      setAccounts(sortAccounts(data));
     } finally {
       setLoadingAccounts(false);
     }
@@ -287,6 +292,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAccounts((prev) => prev.filter((a) => a.id !== id));
     if (acc && uid) void logActivity(uid, "account_delete", `Deleted account "${acc.name}"`);
   }, [accounts, uid]);
+
+  const reorderAccountItems = useCallback(async (ids: string[]) => {
+    setAccounts((prev) => {
+      const updated = prev.map((a) => {
+        const idx = ids.indexOf(a.id);
+        return idx !== -1 ? { ...a, sortOrder: idx } : a;
+      });
+      return [...updated].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity));
+    });
+    await reorderAccounts(ids);
+  }, []);
 
   // ── Category CRUD ─────────────────────────────────────────────────────────
 
@@ -521,6 +537,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createAccount,
         editAccount,
         removeAccount,
+        reorderAccounts: reorderAccountItems,
         refreshCategories,
         createCategory,
         editCategory,

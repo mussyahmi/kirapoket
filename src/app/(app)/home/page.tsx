@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
@@ -25,6 +25,16 @@ const L1_COLORS: Record<string, string> = {
   wants: "#f97316",
   savings: "#60a5fa",
 };
+
+const ACCOUNT_TYPE_DOT: Record<string, string> = {
+  bank:    "#3b82f6",
+  cash:    "#22c55e",
+  ewallet: "#a855f7",
+  credit:  "#f97316",
+  other:   "#94a3b8",
+};
+
+const ACCOUNTS_COLLAPSE = 4;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -47,6 +57,7 @@ export default function DashboardPage() {
   const [markingReceived, setMarkingReceived] = useState(false);
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
 
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
@@ -437,9 +448,14 @@ export default function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Accounts</CardTitle>
-          {hideBalance && <CardAction><EyeOffIcon className="size-4 text-muted-foreground" /></CardAction>}
+          <CardAction className="flex items-center gap-2">
+            {hideBalance && <EyeOffIcon className="size-4 text-muted-foreground" />}
+            <Link href="/accounts" aria-label="Manage accounts">
+              <WalletIcon className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </Link>
+          </CardAction>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2.5">
           {accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No accounts yet.{" "}
@@ -450,17 +466,33 @@ export default function DashboardPage() {
             </p>
           ) : (
             <>
-              {accounts.map((acc) => (
-                <div key={acc.id} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground">{acc.name}</span>
-                  <span className="text-sm font-medium">
+              {(showAllAccounts ? accounts : accounts.slice(0, ACCOUNTS_COLLAPSE)).map((acc) => (
+                <div key={acc.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="size-2 rounded-full shrink-0"
+                      style={{ backgroundColor: ACCOUNT_TYPE_DOT[acc.type] ?? "#94a3b8" }}
+                    />
+                    <span className="text-sm text-foreground truncate">{acc.name}</span>
+                  </div>
+                  <span className="text-sm font-medium tabular-nums shrink-0">
                     {formatMoney(acc.balance)}
                   </span>
                 </div>
               ))}
+              {accounts.length > ACCOUNTS_COLLAPSE && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllAccounts((v) => !v)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDownIcon className={cn("size-3.5 transition-transform", showAllAccounts && "rotate-180")} />
+                  {showAllAccounts ? "Show less" : `${accounts.length - ACCOUNTS_COLLAPSE} more`}
+                </button>
+              )}
               <div className="flex items-center justify-between border-t pt-2">
                 <span className="text-sm font-medium">Total</span>
-                <span className="text-sm font-semibold">
+                <span className="text-sm font-semibold tabular-nums">
                   {formatMoney(totalBalance)}
                 </span>
               </div>

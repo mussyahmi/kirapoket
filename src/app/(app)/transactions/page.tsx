@@ -373,72 +373,79 @@ function TransactionsPage() {
         const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
         const category = tx.categoryId ? categoryMap[tx.categoryId] : null;
         const subcategory = category?.parentId ? categoryMap[category.parentId] : null;
+        const TypeIcon = tx.type === "income" ? ArrowDownRightIcon : tx.type === "transfer" ? ArrowLeftRightIcon : ArrowUpRightIcon;
+        const iconBg = tx.type === "income" ? "bg-green-100 dark:bg-green-900/30" : tx.type === "transfer" ? "bg-blue-100 dark:bg-blue-900/30" : "bg-red-100 dark:bg-red-900/30";
+        const iconColor = tx.type === "income" ? "text-green-600 dark:text-green-400" : tx.type === "transfer" ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400";
+        const title = tx.type === "expense"
+          ? (category?.name ?? "Expense")
+          : tx.type === "income"
+          ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
+          : "Transfer";
         return (
           <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>
-                  {tx.type === "expense"
-                    ? (category?.name ?? "Expense")
-                    : tx.type === "income"
-                    ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
-                    : "Transfer"}
+                <DialogTitle className="flex items-center gap-2.5">
+                  <div className={cn("flex items-center justify-center size-8 rounded-lg shrink-0", iconBg)}>
+                    <TypeIcon className={cn("size-4", iconColor)} />
+                  </div>
+                  {title}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Amount</span>
-                  <span className={cn(
-                    "text-base font-semibold",
-                    tx.type === "income" ? "text-green-600 dark:text-green-400"
-                    : tx.type === "transfer" ? "text-blue-600 dark:text-blue-400"
-                    : "text-red-600 dark:text-red-400"
-                  )}>
+                <div className={cn("flex items-center justify-between rounded-lg px-4 py-3", iconBg)}>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
+                  <span className={cn("text-lg font-bold tabular-nums", iconColor)}>
                     {formatMoney(tx.amount, tx.type)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Date</span>
-                  <span className="text-sm">
-                    {format(parseISO(tx.date), "d MMMM yyyy")}
-                    {tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
-                  </span>
+                <div className="space-y-2.5 px-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Date</span>
+                    <span className="text-sm">
+                      {format(parseISO(tx.date), "d MMMM yyyy")}
+                      {tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
+                    </span>
+                  </div>
+                  {tx.type === "transfer" ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">From → To</span>
+                      <span className="text-sm">{account?.name} → {toAccount?.name ?? "—"}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Account</span>
+                      <span className="text-sm">{account?.name ?? "—"}</span>
+                    </div>
+                  )}
+                  {subcategory && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Subcategory</span>
+                      <span className="text-sm">{subcategory.name}</span>
+                    </div>
+                  )}
+                  {tx.note && tx.type !== "income" && (
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-xs text-muted-foreground shrink-0">Note</span>
+                      <span className="text-sm text-right whitespace-pre-wrap">{tx.note}</span>
+                    </div>
+                  )}
                 </div>
-                {tx.type === "transfer" ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">From → To</span>
-                    <span className="text-sm">{account?.name} → {toAccount?.name ?? "—"}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Account</span>
-                    <span className="text-sm">{account?.name ?? "—"}</span>
-                  </div>
-                )}
-                {subcategory && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Subcategory</span>
-                    <span className="text-sm">{subcategory.name}</span>
-                  </div>
-                )}
-                {tx.note && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Note</p>
-                    <p className="text-sm whitespace-pre-wrap">{tx.note}</p>
-                  </div>
-                )}
-                <Link href={`/transactions/edit?id=${tx.id}`} className="block">
-                  <Button className="w-full" onClick={() => setSelectedTx(null)}>
-                    <PencilIcon className="size-4 mr-2" /> Edit
+                <div className="flex gap-2 pt-1">
+                  <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => setSelectedTx(null)}>
+                    <Button className="w-full gap-2">
+                      <PencilIcon className="size-4" /> Edit
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
+                  >
+                    <TrashIcon className="size-4" />
                   </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
-                >
-                  <TrashIcon className="size-4 mr-2" /> Delete transaction
-                </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

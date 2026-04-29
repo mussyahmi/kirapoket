@@ -45,6 +45,7 @@ export interface Account {
   type: "bank" | "cash" | "ewallet" | "credit" | "other";
   balance: number;
   createdAt: Timestamp | string;
+  sortOrder?: number;
 }
 
 export interface Category {

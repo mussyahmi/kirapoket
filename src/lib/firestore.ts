@@ -280,6 +280,12 @@ export async function deleteAccount(id: string): Promise<void> {
   await deleteDoc(doc(db, "accounts", id));
 }
 
+export async function reorderAccounts(ids: string[]): Promise<void> {
+  await Promise.all(
+    ids.map((id, index) => updateDoc(doc(db, "accounts", id), { sortOrder: index }))
+  );
+}
+
 // ─── Categories ──────────────────────────────────────────────────────────────
 
 export async function getCategories(userId: string): Promise<Category[]> {
@@ -446,7 +452,7 @@ export async function getUserActivities(userId: string, n = 20): Promise<Activit
 }
 
 export async function deleteAllUserData(uid: string): Promise<void> {
-  const collections = ["accounts", "categories", "transactions", "debts"] as const;
+  const collections = ["accounts", "categories", "transactions", "debts", "insights", "activities"] as const;
   for (const col of collections) {
     const q = query(collection(db, col), where("userId", "==", uid));
     const snap = await getDocs(q);
