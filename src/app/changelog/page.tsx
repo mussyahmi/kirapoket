@@ -36,6 +36,7 @@ const releases: Release[] = [
       { type: "fix", text: "Reduced Firestore reads — transaction fetches are now capped at 500 most recent; profile saves no longer trigger an unnecessary re-read" },
       { type: "fix", text: "Debts: settling or paying a debt no longer wipes the note — partial updates now preserve all fields not included in the change" },
       { type: "fix", text: "Debts: payment transaction now inherits the debt note (e.g. 'gula cakery') instead of the generic 'Payment to [person]'" },
+      { type: "fix", text: "Debts: editing a fully-paid debt (amount 0) no longer blocked — 0 is now a valid amount when editing" },
     ],
   },
   {
