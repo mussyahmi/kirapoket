@@ -33,6 +33,7 @@ const releases: Release[] = [
       { type: "feat", text: "Transaction detail modal redesigned — type icon in coloured header, amount in highlight block, compact Edit + Delete footer matching the account and category modals" },
       { type: "fix", text: "AI insights: fixed stale cooldown check, quota errors now show a clear message, stored results are reused during cooldown, and responses are English only" },
       { type: "fix", text: "Prev/next cycle chevrons hidden when irrelevant; account balances hidden on past cycles to avoid confusion" },
+      { type: "fix", text: "Reduced Firestore reads — transaction fetches are now capped at 500 most recent; profile saves no longer trigger an unnecessary re-read" },
     ],
   },
   {
