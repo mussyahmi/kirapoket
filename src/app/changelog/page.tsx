@@ -5,6 +5,7 @@ import { ScrollTextIcon } from "lucide-react";
 interface Release {
   version: string;
   dateRange: string;
+  latest?: boolean;
   changes: { type: "feat" | "fix"; text: string }[];
 }
 
@@ -14,6 +15,7 @@ const releases: Release[] = [
   {
     version: "0.7.x",
     dateRange: "2026-04-27 – present",
+    latest: true,
     changes: [
       { type: "feat", text: "Accounts: drag-to-reorder — grab the handle to rearrange; order persists and reflects in transaction form dropdowns and the home page list" },
       { type: "feat", text: "Accounts: colour-coded type icons — bank (blue), cash (green), e-wallet (purple), credit (orange); total balance card shows a proportional type breakdown bar" },
@@ -183,6 +185,9 @@ export default function ChangelogPage() {
               <div className="space-y-2">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-foreground">{release.version}</span>
+                  {release.latest && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground leading-tight">Latest</span>
+                  )}
                   <span className="text-xs text-muted-foreground">{release.dateRange}</span>
                 </div>
 
