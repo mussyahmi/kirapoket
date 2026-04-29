@@ -34,6 +34,8 @@ const releases: Release[] = [
       { type: "fix", text: "AI insights: fixed stale cooldown check, quota errors now show a clear message, stored results are reused during cooldown, and responses are English only" },
       { type: "fix", text: "Prev/next cycle chevrons hidden when irrelevant; account balances hidden on past cycles to avoid confusion" },
       { type: "fix", text: "Reduced Firestore reads — transaction fetches are now capped at 500 most recent; profile saves no longer trigger an unnecessary re-read" },
+      { type: "fix", text: "Debts: settling or paying a debt no longer wipes the note — partial updates now preserve all fields not included in the change" },
+      { type: "fix", text: "Debts: payment transaction now inherits the debt note (e.g. 'gula cakery') instead of the generic 'Payment to [person]'" },
     ],
   },
   {

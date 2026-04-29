@@ -495,9 +495,9 @@ export default function DebtsPage() {
         time: format(new Date(), "HH:mm"),
         accountId: payAccountId,
         categoryId,
-        note: isIOwe
+        note: payTarget.note || (isIOwe
           ? `Payment to ${payTarget.personName}`
-          : `Received from ${payTarget.personName}`,
+          : `Received from ${payTarget.personName}`),
       });
 
       // Reduce debt amount

@@ -405,7 +405,7 @@ export async function updateDebt(
 ): Promise<void> {
   const payload: Record<string, unknown> = { ...data };
   for (const key of ["note", "dueDate", "settledDate", "accountId", "transactionLinked"] as const) {
-    if (payload[key] === undefined) payload[key] = deleteField();
+    if (key in data && payload[key] === undefined) payload[key] = deleteField();
   }
   await updateDoc(doc(db, "debts", id), payload);
 }
