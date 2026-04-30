@@ -817,8 +817,9 @@ export default function BudgetPage() {
       </div>
 
       {/* L3 category detail modal */}
-      {selectedL3 && (() => {
+      {(() => {
         const l3 = selectedL3;
+        if (!l3) return null;
         const l3budget = effectiveCatBudget(l3);
         const l3spent = l3SpendingMap[l3.id] ?? 0;
         const l3over = l3budget > 0 && l3spent > l3budget;
@@ -828,48 +829,33 @@ export default function BudgetPage() {
         });
         const color = L1_COLORS[l1?.type ?? ""] ?? "#94a3b8";
         return (
-          <div
-            className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center p-4"
-            onClick={() => setSelectedL3(null)}
-          >
-            <div
-              className="bg-background rounded-2xl w-full max-w-sm shadow-xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <div className="flex items-center gap-2">
+          <Dialog open={!!selectedL3} onOpenChange={(open) => { if (!open) setSelectedL3(null); }}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
                   <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  <p className="font-semibold text-base">{l3.name}</p>
-                </div>
-                <button type="button" onClick={() => setSelectedL3(null)} className="text-muted-foreground hover:text-foreground transition-colors">
-                  <XIcon className="size-4" />
-                </button>
-              </div>
-
-              <div className="p-4 space-y-3">
-                {/* Budget */}
+                  {l3.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
                 {l3budget > 0 && (
                   <div className={cn("rounded-xl px-4 py-3 flex items-center justify-between", l3over ? "bg-red-50 dark:bg-red-950/30" : "bg-green-50 dark:bg-green-950/30")}>
                     <p className={cn("text-xs font-semibold tracking-widest uppercase", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>Budget</p>
                     <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>{fmt(l3budget)}</p>
                   </div>
                 )}
-                {/* Spent */}
                 {l3spent > 0 && (
                   <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Spent</p>
                     <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-foreground")}>{fmt(l3spent)}</p>
                   </div>
                 )}
-                {/* Note */}
                 {l3.note && (
                   <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1">
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Note</p>
                     <p className="text-sm whitespace-pre-wrap">{l3.note}</p>
                   </div>
                 )}
-                {/* Links */}
                 {l3.links && l3.links.length > 0 && (
                   <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1.5">
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Links</p>
@@ -878,27 +864,17 @@ export default function BudgetPage() {
                     ))}
                   </div>
                 )}
+                <div className="flex items-center gap-2 pt-1">
+                  <Button variant="outline" className="flex-1 gap-1.5" onClick={() => { setSelectedL3(null); router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`); }}>
+                    <ListIcon className="size-3.5" /> Transactions
+                  </Button>
+                  <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openL3Edit(l3)}>
+                    <PencilIcon className="size-3.5" /> Edit
+                  </Button>
+                </div>
               </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2 px-4 pb-4">
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5"
-                  onClick={() => { setSelectedL3(null); router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`); }}
-                >
-                  <ListIcon className="size-3.5" /> Transactions
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-1.5"
-                  onClick={() => openL3Edit(l3)}
-                >
-                  <PencilIcon className="size-3.5" /> Edit
-                </Button>
-              </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         );
       })()}
 
