@@ -1,23 +1,24 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback, useEffect } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { format, differenceInDays } from "date-fns";
+import { format } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, RefreshCwIcon, TagsIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSalaryCycleRange, getInsight, saveInsight } from "@/lib/firestore";
-import { getSpendingInsights, hashInsightInput, type SpendingInsights, type CategoryInsightInput, type L3InsightInput, type TransactionNoteInput } from "@/lib/gemini";
+import { getSalaryCycleRange } from "@/lib/firestore";
+import { type SpendingInsights } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import SupportButton from "@/components/common/SupportButton";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
 
 const L1_COLORS: Record<string, string> = {
@@ -40,7 +41,6 @@ const fmt = (n: number) =>
   }).format(n);
 
 const CENSORED = "RM ••••";
-const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 function SortableForecastItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -98,10 +98,9 @@ export default function BudgetPage() {
 
   const [insights, setInsights] = useState<SpendingInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
-  const [lastFetchedHash, setLastFetchedHash] = useState<string | null>(null);
-  const fetchingRef = useRef(false);
-  const insightsInitialized = useRef(false);
+
 
   const handleAddItem = async () => {
     const amount = parseFloat(newAmount);
@@ -301,123 +300,7 @@ export default function BudgetPage() {
     [l2BudgetMap]
   );
 
-  const insightCategories = useMemo<CategoryInsightInput[]>(() => {
-    const result: CategoryInsightInput[] = [];
-    for (const l2 of categories.filter((c) => c.level === 2)) {
-      const budget = l2BudgetMap[l2.id] ?? 0;
-      const totalSpent = l2SpendingMap[l2.id] ?? 0;
-      if (budget === 0 && totalSpent === 0) continue;
-      const l1 = categories.find((c) => c.id === l2.parentId);
-      const l3s = categories.filter((c) => c.level === 3 && c.parentId === l2.id);
-      const budgetedSpent = l3s.reduce((s, l3) => effectiveCatBudget(l3) > 0 ? s + (l3SpendingMap[l3.id] ?? 0) : s, 0);
-      const unbudgetedSpent = totalSpent - budgetedSpent;
-      const subcategories: L3InsightInput[] = l3s
-        .filter((l3) => effectiveCatBudget(l3) > 0 || (l3SpendingMap[l3.id] ?? 0) > 0)
-        .map((l3) => ({ name: l3.name, budget: effectiveCatBudget(l3), spent: l3SpendingMap[l3.id] ?? 0 }));
-      result.push({
-        name: l2.name,
-        type: (l1?.type ?? "needs") as "needs" | "wants" | "savings",
-        budget,
-        budgetedSpent,
-        unbudgetedSpent,
-        pctUsed: budget > 0 ? (budgetedSpent / budget) * 100 : 0,
-        subcategories,
-      });
-    }
-    return result;
-  }, [categories, l2BudgetMap, l2SpendingMap]);
-
-  const insightNotes = useMemo<TransactionNoteInput[]>(() => {
-    return cycleTransactions
-      .filter((t) => t.type === "expense" && t.note?.trim())
-      .map((t) => {
-        const cat = t.categoryId ? categoryMap[t.categoryId] : undefined;
-        const catName = cat?.name ?? "Other";
-        return { date: t.date, amount: t.amount, categoryName: catName, note: t.note!.trim() };
-      })
-      .sort((a, b) => b.amount - a.amount);
-  }, [cycleTransactions, categoryMap]);
-
-  const daysLeft = differenceInDays(end, new Date());
-
-  const cooldownActive = useMemo(() => {
-    if (!insightsGeneratedAt) return false;
-    return Date.now() - insightsGeneratedAt.getTime() < COOLDOWN_MS;
-  }, [insightsGeneratedAt, COOLDOWN_MS]);
-
-  const nextRefreshAt = useMemo(() => {
-    if (!insightsGeneratedAt) return null;
-    return new Date(insightsGeneratedAt.getTime() + COOLDOWN_MS);
-  }, [insightsGeneratedAt, COOLDOWN_MS]);
-
-  const nextRefreshLabel = useMemo(() => {
-    if (!nextRefreshAt) return null;
-    const now = new Date();
-    const timeStr = nextRefreshAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" });
-    const tomorrowStr = new Date(now.getTime() + 86400000).toDateString();
-    if (nextRefreshAt.toDateString() === now.toDateString()) return `Unlock today at ${timeStr}`;
-    if (nextRefreshAt.toDateString() === tomorrowStr) return `Unlock tomorrow at ${timeStr}`;
-    return `Unlock ${nextRefreshAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })} at ${timeStr}`;
-  }, [nextRefreshAt]);
-
-  const fetchInsights = useCallback(async (force = false) => {
-    if (isImpersonating) return;
-    if (fetchingRef.current) return;
-    if (insightCategories.length === 0) return;
-    if (!user?.uid) return;
-    if (force && cooldownActive) {
-      toast.info(nextRefreshLabel ?? "You can only refresh AI insights once per day.");
-      return;
-    }
-    const uid = user.uid;
-    const currentHash = hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes);
-
-    if (!force) {
-      try {
-        const stored = await getInsight(uid);
-        if (stored) {
-          const storedAge = Date.now() - stored.generatedAt.toDate().getTime();
-          const storedCooldownActive = storedAge < COOLDOWN_MS;
-          // Reuse stored insight if hash matches OR if cooldown is still active
-          if (stored.hash === currentHash || storedCooldownActive) {
-            setInsights({ summary: stored.summary, dos: stored.dos, donts: stored.donts });
-            setInsightsGeneratedAt(stored.generatedAt.toDate());
-            setLastFetchedHash(stored.hash);
-            return;
-          }
-        }
-      } catch { /* ignore — fall through to Gemini */ }
-    }
-
-    fetchingRef.current = true;
-    setInsightsLoading(true);
-    try {
-      const result = await getSpendingInsights(insightCategories, daysLeft, actualIncome, totalSpent, insightNotes);
-      setInsights(result);
-      setInsightsGeneratedAt(new Date());
-      setLastFetchedHash(currentHash);
-      await saveInsight(uid, currentHash, result.summary, result.dos, result.donts);
-    } catch (err) {
-      console.error("[AI Insights]", err);
-      const msg = err instanceof Error ? err.message.toLowerCase() : "";
-      if (msg.includes("429") || msg.includes("quota") || msg.includes("resource_exhausted")) {
-        toast.error("Daily AI limit reached. Try again tomorrow.");
-      } else {
-        toast.error("Failed to get insights. Try again later.");
-      }
-    } finally {
-      fetchingRef.current = false;
-      setInsightsLoading(false);
-    }
-  }, [isImpersonating, insightCategories, insightNotes, daysLeft, actualIncome, totalSpent, user, startStr, cooldownActive, nextRefreshLabel]);
-
   const loading = loadingTransactions || loadingProfile;
-
-  useEffect(() => {
-    if (loading || insightsInitialized.current) return;
-    insightsInitialized.current = true;
-    fetchInsights();
-  }, [loading, fetchInsights]);
 
   if (loading) {
     return (
@@ -455,18 +338,20 @@ export default function BudgetPage() {
 
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => fetchInsights(true)}
-            disabled={insightsLoading || (!cooldownActive && lastFetchedHash === hashInsightInput(insightCategories, actualIncome, totalSpent, insightNotes))}
-            className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 transition-colors disabled:opacity-40"
-            aria-label="Refresh insights"
-          >
-            <RefreshCwIcon className={cn("size-3.5", insightsLoading && "animate-spin")} />
-          </button>
+          {!insights && !insightsLoading && (
+            <>
+              <button
+                onClick={() => setSupportOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors" style={{ backgroundColor: "#FFDD00", color: "#1a1a1a" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#f5d000")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "#FFDD00")}
+              >
+                <CoffeeIcon className="size-3.5 shrink-0" /> Buy Me a Coffee
+              </button>
+              <SupportButton dialogOnly open={supportOpen} onOpenChange={setSupportOpen} />
+            </>
+          )}
         </div>
         <div className="p-4 bg-card space-y-4">
-          {insightsLoading || !insights ? (
+          {insightsLoading ? (
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Skeleton className="h-3.5 w-full" />
@@ -485,6 +370,15 @@ export default function BudgetPage() {
                 <Skeleton className="h-3.5 w-10/12" />
                 <Skeleton className="h-3.5 w-3/5" />
               </div>
+            </div>
+          ) : !insights ? (
+            <div className="space-y-2 py-2">
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                AI Insights is temporarily unavailable and will be back on <span className="font-semibold text-amber-500 dark:text-amber-400">28 May 2026</span>. Sorry for the inconvenience!
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                If you&apos;d like to help keep this feature running, you&apos;re welcome to buy me a coffee — every bit helps!
+              </p>
             </div>
           ) : (
             <div className="space-y-4">

@@ -37,6 +37,7 @@ const releases: Release[] = [
       { type: "fix", text: "Debts: settling or paying a debt no longer wipes the note — partial updates now preserve all fields not included in the change" },
       { type: "fix", text: "Debts: payment transaction now inherits the debt note (e.g. 'gula cakery') instead of the generic 'Payment to [person]'" },
       { type: "fix", text: "Debts: editing a fully-paid debt (amount 0) no longer blocked — 0 is now a valid amount when editing" },
+      { type: "fix", text: "AI Insights temporarily unavailable until 28 May 2026 — a friendly message is shown with a Buy Me a Coffee button to help keep the feature running; skeleton no longer shows indefinitely when insights can't load" },
     ],
   },
   {
