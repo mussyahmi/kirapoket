@@ -4,7 +4,7 @@ import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -15,11 +15,24 @@ import { getSalaryCycleRange } from "@/lib/firestore";
 import { type SpendingInsights } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import SupportButton from "@/components/common/SupportButton";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
+
+interface L3EditForm {
+  name: string;
+  budgetType: "cycle" | "daily";
+  budget: string;
+  budgetSelectedDates: Date[];
+  note: string;
+  links: string[];
+}
 
 const L1_COLORS: Record<string, string> = {
   needs: "#4ade80",
@@ -73,6 +86,7 @@ export default function BudgetPage() {
     loadingTransactions,
     loadingProfile,
     saveUserProfile,
+    editCategory,
     isImpersonating,
   } = useApp();
 
@@ -100,7 +114,57 @@ export default function BudgetPage() {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
+  const [selectedL3, setSelectedL3] = useState<Category | null>(null);
 
+  const [l3EditOpen, setL3EditOpen] = useState(false);
+  const [l3EditTarget, setL3EditTarget] = useState<Category | null>(null);
+  const [l3EditForm, setL3EditForm] = useState<L3EditForm>({ name: "", budgetType: "cycle", budget: "", budgetSelectedDates: [], note: "", links: [] });
+  const [l3EditSaving, setL3EditSaving] = useState(false);
+
+  const openL3Edit = (cat: Category) => {
+    setSelectedL3(null);
+    setL3EditTarget(cat);
+    setL3EditForm({
+      name: cat.name,
+      budgetType: cat.budgetType ?? "cycle",
+      budget: cat.budget !== undefined ? String(cat.budget) : "",
+      budgetSelectedDates: cat.budgetSelectedDates
+        ? cat.budgetSelectedDates.map(s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); })
+        : [],
+      note: cat.note ?? "",
+      links: cat.links ?? [],
+    });
+    setL3EditOpen(true);
+  };
+
+  const handleL3Save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!l3EditTarget || !l3EditForm.name.trim()) return;
+    const budget = l3EditForm.budget.trim() ? parseFloat(l3EditForm.budget) : undefined;
+    if (l3EditForm.budget.trim() && (isNaN(budget!) || budget! < 0)) { toast.error("Invalid budget amount."); return; }
+    const budgetType = l3EditForm.budget.trim() ? l3EditForm.budgetType : undefined;
+    const budgetDays = budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0 ? l3EditForm.budgetSelectedDates.length : undefined;
+    const budgetSelectedDates = budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
+      ? l3EditForm.budgetSelectedDates.map(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`) : undefined;
+    setL3EditSaving(true);
+    try {
+      await editCategory(l3EditTarget.id, {
+        name: l3EditForm.name.trim(),
+        budget,
+        budgetType,
+        budgetDays,
+        budgetSelectedDates,
+        note: l3EditForm.note.trim() || undefined,
+        links: l3EditForm.links.filter(l => l.trim()).length > 0 ? l3EditForm.links.filter(l => l.trim()) : undefined,
+      });
+      toast.success("Category updated.");
+      setL3EditOpen(false);
+    } catch {
+      toast.error("Failed to save.");
+    } finally {
+      setL3EditSaving(false);
+    }
+  };
 
   const handleAddItem = async () => {
     const amount = parseFloat(newAmount);
@@ -719,7 +783,7 @@ export default function BudgetPage() {
                                     <div key={l3.id} className="flex items-center justify-between gap-2 text-xs">
                                       <button
                                         type="button"
-                                        onClick={() => router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`)}
+                                        onClick={() => setSelectedL3(l3)}
                                         className={cn("text-muted-foreground/80 text-left hover:underline hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}
                                       >
                                         {l3.name}
@@ -752,7 +816,207 @@ export default function BudgetPage() {
         </Card>
       </div>
 
+      {/* L3 category detail modal */}
+      {selectedL3 && (() => {
+        const l3 = selectedL3;
+        const l3budget = effectiveCatBudget(l3);
+        const l3spent = l3SpendingMap[l3.id] ?? 0;
+        const l3over = l3budget > 0 && l3spent > l3budget;
+        const l1 = categories.find((c) => {
+          const l2 = categories.find((x) => x.id === l3.parentId);
+          return l2 && c.id === l2.parentId;
+        });
+        const color = L1_COLORS[l1?.type ?? ""] ?? "#94a3b8";
+        return (
+          <div
+            className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center p-4"
+            onClick={() => setSelectedL3(null)}
+          >
+            <div
+              className="bg-background rounded-2xl w-full max-w-sm shadow-xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <p className="font-semibold text-base">{l3.name}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedL3(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <XIcon className="size-4" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-3">
+                {/* Budget */}
+                {l3budget > 0 && (
+                  <div className={cn("rounded-xl px-4 py-3 flex items-center justify-between", l3over ? "bg-red-50 dark:bg-red-950/30" : "bg-green-50 dark:bg-green-950/30")}>
+                    <p className={cn("text-xs font-semibold tracking-widest uppercase", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>Budget</p>
+                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>{fmt(l3budget)}</p>
+                  </div>
+                )}
+                {/* Spent */}
+                {l3spent > 0 && (
+                  <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Spent</p>
+                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-foreground")}>{fmt(l3spent)}</p>
+                  </div>
+                )}
+                {/* Note */}
+                {l3.note && (
+                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Note</p>
+                    <p className="text-sm whitespace-pre-wrap">{l3.note}</p>
+                  </div>
+                )}
+                {/* Links */}
+                {l3.links && l3.links.length > 0 && (
+                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1.5">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Links</p>
+                    {l3.links.map((link, i) => (
+                      <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline truncate">{link}</a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 px-4 pb-4">
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-1.5"
+                  onClick={() => { setSelectedL3(null); router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`); }}
+                >
+                  <ListIcon className="size-3.5" /> Transactions
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-1.5"
+                  onClick={() => openL3Edit(l3)}
+                >
+                  <PencilIcon className="size-3.5" /> Edit
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Image preview modal (iOS long-press to copy/save) */}
+      {/* L3 Edit Dialog */}
+      <Dialog open={l3EditOpen} onOpenChange={setL3EditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleL3Save} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="l3-name">Name</Label>
+              <Input
+                id="l3-name"
+                value={l3EditForm.name}
+                onChange={(e) => setL3EditForm({ ...l3EditForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Budget (optional)</Label>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                {(["cycle", "daily"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setL3EditForm({ ...l3EditForm, budgetType: t })}
+                    className={cn(
+                      "flex-1 py-1.5 text-sm font-medium transition-colors",
+                      l3EditForm.budgetType === t ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {t === "cycle" ? "Per Cycle" : "Per Day"}
+                  </button>
+                ))}
+              </div>
+              {l3EditForm.budgetType === "cycle" ? (
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={l3EditForm.budget}
+                  onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    placeholder="Amount / day"
+                    value={l3EditForm.budget}
+                    onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
+                  />
+                  <div className="rounded-xl border border-border">
+                    <Calendar
+                      mode="multiple"
+                      selected={l3EditForm.budgetSelectedDates}
+                      onSelect={(dates: Date[] | undefined) => setL3EditForm({ ...l3EditForm, budgetSelectedDates: dates ?? [] })}
+                      className="w-full"
+                    />
+                  </div>
+                  {l3EditForm.budget && parseFloat(l3EditForm.budget) > 0 && l3EditForm.budgetSelectedDates.length > 0 && (
+                    <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                      <span className="text-xs text-muted-foreground">{l3EditForm.budgetSelectedDates.length} days selected</span>
+                      <span className="text-sm font-semibold">RM {(parseFloat(l3EditForm.budget) * l3EditForm.budgetSelectedDates.length).toLocaleString("ms-MY", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="l3-note">Note (optional)</Label>
+              <Textarea
+                id="l3-note"
+                placeholder="Add a note..."
+                rows={3}
+                value={l3EditForm.note}
+                onChange={(e) => setL3EditForm({ ...l3EditForm, note: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Links (optional)</Label>
+              <div className="space-y-2">
+                {l3EditForm.links.map((link, i) => (
+                  <div key={i} className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="https://..."
+                      value={link}
+                      onChange={(e) => {
+                        const updated = [...l3EditForm.links];
+                        updated[i] = e.target.value;
+                        setL3EditForm({ ...l3EditForm, links: updated });
+                      }}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setL3EditForm({ ...l3EditForm, links: l3EditForm.links.filter((_, j) => j !== i) })}>
+                      <Trash2Icon className="size-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setL3EditForm({ ...l3EditForm, links: [...l3EditForm.links, ""] })}>
+                  <PlusIcon className="size-4 mr-1.5" /> Add link
+                </Button>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setL3EditOpen(false)} disabled={l3EditSaving}>Cancel</Button>
+              <Button type="submit" disabled={l3EditSaving}>{l3EditSaving ? "Saving..." : "Save"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {previewUrl && (
         <div
           className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center p-4 gap-4"

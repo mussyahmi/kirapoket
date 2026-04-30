@@ -31,6 +31,7 @@ const ACCOUNT_TYPE_DOT: Record<string, string> = {
   cash:    "#22c55e",
   ewallet: "#a855f7",
   credit:  "#f97316",
+  savings: "#14b8a6",
   other:   "#94a3b8",
 };
 
@@ -467,7 +468,12 @@ export default function DashboardPage() {
           ) : (
             <>
               {(showAllAccounts ? accounts : accounts.slice(0, ACCOUNTS_COLLAPSE)).map((acc) => (
-                <div key={acc.id} className="flex items-center justify-between gap-2">
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => router.push(`/transactions?account=${acc.id}`)}
+                  className="flex items-center justify-between gap-2 w-full hover:opacity-70 transition-opacity"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <span
                       className="size-2 rounded-full shrink-0"
@@ -478,7 +484,7 @@ export default function DashboardPage() {
                   <span className="text-sm font-medium tabular-nums shrink-0">
                     {formatMoney(acc.balance)}
                   </span>
-                </div>
+                </button>
               ))}
               {accounts.length > ACCOUNTS_COLLAPSE && (
                 <button

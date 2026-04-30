@@ -42,7 +42,7 @@ export interface Account {
   id: string;
   userId: string;
   name: string;
-  type: "bank" | "cash" | "ewallet" | "credit" | "other";
+  type: "bank" | "cash" | "ewallet" | "credit" | "savings" | "other";
   balance: number;
   createdAt: Timestamp | string;
   sortOrder?: number;

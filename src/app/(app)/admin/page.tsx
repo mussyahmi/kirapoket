@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDownIcon, ChevronUpIcon, ShieldAlertIcon, UserIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import type { Activity, UserProfile } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
 
@@ -158,7 +159,14 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{u.displayName ?? "—"}</p>
                         <p className="text-xs text-muted-foreground truncate">{u.email ?? "—"}</p>
-                        <p className="text-xs text-muted-foreground/40 truncate font-mono">{u.uid}</p>
+                        <p
+                          className="text-xs text-muted-foreground/40 truncate font-mono cursor-pointer hover:text-muted-foreground/70 transition-colors"
+                          title="Click to copy UID"
+                          onClick={() => {
+                            navigator.clipboard.writeText(u.uid);
+                            toast.success("UID copied");
+                          }}
+                        >{u.uid}</p>
                         {u.lastLogin && (
                           <p className="text-xs text-muted-foreground/50 truncate mt-0.5">
                             Last login · {formatTimestamp(u.lastLogin)}

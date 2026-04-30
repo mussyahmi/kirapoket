@@ -12,6 +12,7 @@ import {
   WalletIcon,
   CreditCardIcon,
   SmartphoneIcon,
+  PiggyBankIcon,
   CircleEllipsisIcon,
   GripVerticalIcon,
   ListIcon,
@@ -62,6 +63,7 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   cash: "Cash",
   ewallet: "E-Wallet",
   credit: "Credit Card",
+  savings: "Savings",
   other: "Other",
 };
 
@@ -70,6 +72,7 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, React.ElementType> = {
   cash: WalletIcon,
   ewallet: SmartphoneIcon,
   credit: CreditCardIcon,
+  savings: PiggyBankIcon,
   other: CircleEllipsisIcon,
 };
 
@@ -78,6 +81,7 @@ const ACCOUNT_TYPE_COLORS: Record<AccountType, { bg: string; icon: string; dot: 
   cash:    { bg: "bg-green-100 dark:bg-green-900/30", icon: "text-green-600 dark:text-green-400",   dot: "#22c55e" },
   ewallet: { bg: "bg-purple-100 dark:bg-purple-900/30", icon: "text-purple-600 dark:text-purple-400", dot: "#a855f7" },
   credit:  { bg: "bg-orange-100 dark:bg-orange-900/30", icon: "text-orange-500 dark:text-orange-400", dot: "#f97316" },
+  savings: { bg: "bg-teal-100 dark:bg-teal-900/30",   icon: "text-teal-600 dark:text-teal-400",     dot: "#14b8a6" },
   other:   { bg: "bg-slate-100 dark:bg-slate-800",    icon: "text-slate-500 dark:text-slate-400",   dot: "#94a3b8" },
 };
 
@@ -405,7 +409,7 @@ export default function AccountsPage() {
               <Label htmlFor="account-name">Name</Label>
               <Input
                 id="account-name"
-                placeholder="e.g. Maybank Savings"
+                placeholder="e.g. Maybank"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
