@@ -20,7 +20,6 @@ const releases: Release[] = [
       { type: "feat", text: "Accounts: added Savings type (piggy bank icon, teal colour) — great for Maybank Tabung, ASB, and other savings pockets" },
       { type: "feat", text: "Home page: tap any account row to jump straight to its filtered transaction list" },
       { type: "feat", text: "Budget page: tap an L3 category item to open a detail modal — budget, spent, note, and links shown; Edit opens the full edit form inline; Transactions navigates pre-filtered to that category and cycle" },
-      { type: "feat", text: "Admin panel: tap a user's UID to copy it to clipboard" },
       { type: "feat", text: "AI spending insights on the budget page — personalised summary, do's, and don'ts powered by Gemini; factors in transaction notes for specific tips like 'car service' or 'birthday dinner'" },
       { type: "feat", text: "Insights are cached as one record per user and rate-limited to once per day — the refresh button shows exactly when it unlocks and stays disabled until your data changes" },
       { type: "feat", text: "Admin panel now shows each user's UID alongside their email" },
