@@ -411,7 +411,7 @@ export default function LandingPage() {
 
   const greeting = userProfile?.salaryDay ? "Welcome back," : "Welcome,";
   const typedGreeting = useTyping(user ? greeting : "", 55, 500);
-  const displayName = user ? (user.displayName ?? user.email ?? "") : "";
+  const displayName = user ? (userProfile?.displayName ?? user.displayName ?? user.email ?? "") : "";
   const nameDelay = 500 + greeting.length * 55 + 80;
   const typedName = useTyping(displayName, 55, nameDelay);
   const buttonsDelay = nameDelay + displayName.length * 55 + 150;

@@ -132,12 +132,12 @@ export default function SettingsPage() {
         <CardContent className="flex items-center gap-4 py-5">
           <Avatar size="lg" className="shrink-0 shadow-sm">
             {user?.photoURL ? (
-              <AvatarImage src={user.photoURL} alt={user.displayName ?? "User"} />
+              <AvatarImage src={user.photoURL} alt={userProfile?.displayName ?? user.displayName ?? "User"} />
             ) : null}
-            <AvatarFallback className="text-sm font-semibold">{getInitials(user?.displayName)}</AvatarFallback>
+            <AvatarFallback className="text-sm font-semibold">{getInitials(userProfile?.displayName ?? user?.displayName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold truncate leading-tight">{user?.displayName ?? "User"}</p>
+            <p className="font-semibold truncate leading-tight">{userProfile?.displayName ?? user?.displayName ?? "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
           <button
