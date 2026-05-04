@@ -13,9 +13,18 @@ interface Release {
 // Patch is bumped on every commit — individual patches are not listed.
 const releases: Release[] = [
   {
-    version: "0.7.x",
-    dateRange: "2026-04-27 – present",
+    version: "0.8.x",
+    dateRange: "2026-05-04 – present",
     latest: true,
+    changes: [
+      { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
+      { type: "fix", text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh" },
+    ],
+  },
+  {
+    version: "0.7.x",
+    dateRange: "2026-04-27 – 2026-05-04",
+    latest: false,
     changes: [
       { type: "feat", text: "Accounts: added Savings type (piggy bank icon, teal colour) — great for Maybank Tabung, ASB, and other savings pockets" },
       { type: "feat", text: "Home page: tap any account row to jump straight to its filtered transaction list" },
