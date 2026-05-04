@@ -227,6 +227,7 @@ async function main() {
     inviterName: HUSBAND.displayName,
     inviteeEmail: WIFE.email,
     inviteeUid: WIFE.uid,
+    inviteeName: WIFE.displayName,
     status: "active",
     createdAt: Timestamp.now(),
     acceptedAt: Timestamp.now(),

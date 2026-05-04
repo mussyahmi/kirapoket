@@ -608,13 +608,12 @@ export async function getPartnershipForInvitee(email: string): Promise<Partnersh
 
 export async function acceptPartnership(
   partnershipId: string,
-  inviteeUid: string
+  inviteeUid: string,
+  inviteeName?: string | null
 ): Promise<void> {
-  await updateDoc(doc(db, "partnerships", partnershipId), {
-    inviteeUid,
-    status: "active",
-    acceptedAt: Timestamp.now(),
-  });
+  const update: Record<string, unknown> = { inviteeUid, status: "active", acceptedAt: Timestamp.now() };
+  if (inviteeName) update.inviteeName = inviteeName;
+  await updateDoc(doc(db, "partnerships", partnershipId), update);
   await setDoc(doc(db, "users", inviteeUid), { partnershipId }, { merge: true });
 }
 

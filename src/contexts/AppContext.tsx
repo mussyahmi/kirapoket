@@ -206,8 +206,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const acceptInvite = useCallback(async () => {
     if (!user || !pendingInvite) return;
-    await acceptPartnership(pendingInvite.id, user.uid);
-    const updated = { ...pendingInvite, status: "active" as const, inviteeUid: user.uid };
+    const inviteeName = userProfile?.displayName ?? user.displayName ?? undefined;
+    await acceptPartnership(pendingInvite.id, user.uid, inviteeName);
+    const updated = { ...pendingInvite, status: "active" as const, inviteeUid: user.uid, inviteeName };
     setPartnership(updated);
     setPendingInvite(null);
     setViewingPartnerUid(pendingInvite.inviterUid);

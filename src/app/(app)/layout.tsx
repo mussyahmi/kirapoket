@@ -58,7 +58,7 @@ export default function AppLayout({
             <HeartHandshakeIcon className="size-3.5" />
             Viewing{" "}
             {partnership.inviterUid === user?.uid
-              ? partnership.inviteeEmail
+              ? (partnership.inviteeName ?? partnership.inviteeEmail)
               : (partnership.inviterName ?? partnership.inviterEmail)}
             &apos;s finances — read only
           </span>

@@ -90,6 +90,7 @@ export interface Partnership {
   inviterName: string | null;
   inviteeEmail: string;
   inviteeUid?: string;
+  inviteeName?: string | null;
   status: "pending" | "active" | "stopped";
   createdAt: Timestamp | string;
   acceptedAt?: Timestamp | string;
