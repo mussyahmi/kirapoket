@@ -64,14 +64,15 @@ export function PartnerBanner() {
               <Button size="sm" onClick={handleAccept} disabled={loading}>
                 {loading ? "Accepting…" : "Accept"}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setDeclineOpen(true)}
-                disabled={loading}
-              >
-                Decline
-              </Button>
+              {!loading && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDeclineOpen(true)}
+                >
+                  Decline
+                </Button>
+              )}
             </div>
           </div>
         </div>
