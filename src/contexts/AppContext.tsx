@@ -200,7 +200,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const invitePartner = useCallback(async (inviteeEmail: string) => {
     if (!user) throw new Error("Not authenticated");
-    const p = await sendPartnerInvite(user.uid, user.email ?? "", user.displayName, inviteeEmail);
+    const p = await sendPartnerInvite(user.uid, user.email ?? "", userProfile?.displayName ?? user.displayName, inviteeEmail);
     setPartnership(p);
   }, [user]);
 
