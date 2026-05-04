@@ -383,10 +383,10 @@ export default function SettingsPage() {
         <Separator />
 
         <Card className="border-destructive/30">
-          <CardHeader className="pb-2 pt-4">
+          <CardHeader className="pb-3">
             <CardTitle className="text-destructive text-sm">Danger Zone</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 pb-4">
+          <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
               Permanently deletes your account, all transactions, accounts, and categories. Cannot be undone.
             </p>

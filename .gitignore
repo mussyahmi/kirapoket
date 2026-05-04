@@ -54,3 +54,6 @@ next-env.d.ts
 
 # claude code
 .claude/
+
+# seed scripts — service account key must never be committed
+scripts/serviceAccount.json
