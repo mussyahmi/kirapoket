@@ -155,7 +155,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [viewingPartnerUid, setViewingPartnerUid] = useState<string | null>(null);
   const partnerViewPaused = useRef(
-    typeof window !== "undefined" && sessionStorage.getItem("partnerViewPaused") === "1"
+    typeof window !== "undefined" && localStorage.getItem("partnerViewPaused") === "1"
   );
   const uid = viewingPartnerUid ?? impersonatedUid ?? user?.uid;
 
@@ -221,7 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const pausePartnerView = useCallback(() => {
     partnerViewPaused.current = true;
-    sessionStorage.setItem("partnerViewPaused", "1");
+    localStorage.setItem("partnerViewPaused", "1");
     setViewingPartnerUid(null);
   }, []);
 
@@ -230,7 +230,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const partnerUid = partnership.inviterUid === user?.uid ? partnership.inviteeUid : partnership.inviterUid;
     if (partnerUid) {
       partnerViewPaused.current = false;
-      sessionStorage.removeItem("partnerViewPaused");
+      localStorage.removeItem("partnerViewPaused");
       setViewingPartnerUid(partnerUid);
     }
   }, [partnership, user]);
@@ -239,7 +239,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!partnership || !user) return;
     await stopPartnership(partnership.id, user.uid);
     partnerViewPaused.current = false;
-    sessionStorage.removeItem("partnerViewPaused");
+    localStorage.removeItem("partnerViewPaused");
     setPartnership(null);
     setViewingPartnerUid(null);
   }, [partnership, user]);
