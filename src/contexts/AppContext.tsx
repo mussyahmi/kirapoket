@@ -202,7 +202,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!user) throw new Error("Not authenticated");
     const p = await sendPartnerInvite(user.uid, user.email ?? "", userProfile?.displayName ?? user.displayName, inviteeEmail);
     setPartnership(p);
-  }, [user]);
+  }, [user, userProfile]);
 
   const acceptInvite = useCallback(async () => {
     if (!user || !pendingInvite) return;
@@ -212,7 +212,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPartnership(updated);
     setPendingInvite(null);
     setViewingPartnerUid(pendingInvite.inviterUid);
-  }, [user, pendingInvite]);
+  }, [user, userProfile, pendingInvite]);
 
   const declineInvite = useCallback(async () => {
     if (!pendingInvite) return;
