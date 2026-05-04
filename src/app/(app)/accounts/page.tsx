@@ -102,11 +102,13 @@ function SortableAccountRow({
   formatMoney,
   onEdit,
   onDelete,
+  readOnly,
 }: {
   account: Account;
   formatMoney: (n: number) => string;
-  onEdit: (a: Account) => void;
-  onDelete: (a: Account) => void;
+  onEdit?: (a: Account) => void;
+  onDelete?: (a: Account) => void;
+  readOnly?: boolean;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: account.id });
@@ -121,15 +123,17 @@ function SortableAccountRow({
         className={cn(isDragging && "opacity-50")}
       >
         <CardContent className="flex items-center gap-3 py-3">
-          <button
-            type="button"
-            className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
-            aria-label="Drag to reorder"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVerticalIcon className="size-4" />
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
+              aria-label="Drag to reorder"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVerticalIcon className="size-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDetailOpen(true)}
@@ -167,26 +171,30 @@ function SortableAccountRow({
               <span className="font-medium">{ACCOUNT_TYPE_LABELS[account.type]}</span>
             </div>
             <div className="flex gap-2 pt-1">
-              <Link href={`/transactions?account=${account.id}`} className="flex-1" onClick={() => setDetailOpen(false)}>
+              <Link href={`/transactions?account=${account.id}`} className={onEdit ? "flex-1" : "w-full"} onClick={() => setDetailOpen(false)}>
                 <Button variant="outline" className="w-full gap-2">
                   <ListIcon className="size-4" /> Transactions
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => { setDetailOpen(false); onEdit(account); }}
-              >
-                <PencilIcon className="size-4" /> Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive shrink-0"
-                onClick={() => { setDetailOpen(false); onDelete(account); }}
-              >
-                <TrashIcon className="size-4" />
-              </Button>
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => { setDetailOpen(false); onEdit(account); }}
+                >
+                  <PencilIcon className="size-4" /> Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive shrink-0"
+                  onClick={() => { setDetailOpen(false); onDelete(account); }}
+                >
+                  <TrashIcon className="size-4" />
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -196,9 +204,10 @@ function SortableAccountRow({
 }
 
 export default function AccountsPage() {
-  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts } =
+  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts, isViewingPartner, isImpersonating } =
     useApp();
 
+  const isReadOnly = isViewingPartner || isImpersonating;
   const hideBalance = userProfile?.hideBalance ?? false;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -327,9 +336,11 @@ export default function AccountsPage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Accounts</h1>
-        <Button size="sm" onClick={openCreate} className="gap-1.5">
-          <PlusIcon className="size-4" /> Add
-        </Button>
+        {!isReadOnly && (
+          <Button size="sm" onClick={openCreate} className="gap-1.5">
+            <PlusIcon className="size-4" /> Add
+          </Button>
+        )}
       </div>
 
       {/* Total Balance */}
@@ -387,8 +398,9 @@ export default function AccountsPage() {
                   key={account.id}
                   account={account}
                   formatMoney={formatMoney}
-                  onEdit={openEdit}
-                  onDelete={setDeleteTarget}
+                  onEdit={isReadOnly ? undefined : openEdit}
+                  onDelete={isReadOnly ? undefined : setDeleteTarget}
+                  readOnly={isReadOnly}
                 />
               ))}
             </div>

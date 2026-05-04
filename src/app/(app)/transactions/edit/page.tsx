@@ -21,7 +21,12 @@ function EditTransactionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
-  const { accounts, categories, transactions, loadingTransactions, editTransaction } = useApp();
+  const { accounts, categories, transactions, loadingTransactions, editTransaction, isViewingPartner, isImpersonating } = useApp();
+
+  if (isViewingPartner || isImpersonating) {
+    router.replace("/transactions");
+    return null;
+  }
 
   const tx = useMemo(() => transactions.find((t) => t.id === id), [transactions, id]);
 
@@ -219,7 +224,7 @@ function EditTransactionForm() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date</Label>
-          <div className="rounded-xl border border-border min-h-[420px]">
+          <div className="rounded-xl border border-border min-h-[450px]">
             <Calendar
               mode="single"
               selected={selectedDate}

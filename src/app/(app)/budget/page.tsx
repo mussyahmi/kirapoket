@@ -88,7 +88,9 @@ export default function BudgetPage() {
     saveUserProfile,
     editCategory,
     isImpersonating,
+    isViewingPartner,
   } = useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
 
   const { user } = useAuth();
 
@@ -704,9 +706,6 @@ export default function BudgetPage() {
                 if (l2sVisible.length === 0) return null;
 
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
-                const l1TotalBudget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
-                const l1TotalSpent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
-
                 return (
                   <div key={l1.id} className="space-y-3">
                     {/* L1 header */}
@@ -715,11 +714,6 @@ export default function BudgetPage() {
                         <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         <p className="text-sm font-bold">{l1.name}</p>
                       </div>
-                      {l1TotalBudget > 0 && (
-                        <span className={cn("text-xs tabular-nums amt shrink-0", l1TotalSpent > l1TotalBudget ? "text-red-500" : "text-muted-foreground/70")}>
-                          {fmtAmt(l1TotalSpent)} / {fmtAmt(l1TotalBudget)}
-                        </span>
-                      )}
                     </div>
 
                     {/* L2 rows */}
@@ -839,15 +833,20 @@ export default function BudgetPage() {
               </DialogHeader>
               <div className="space-y-3">
                 {l3budget > 0 && (
-                  <div className={cn("rounded-xl px-4 py-3 flex items-center justify-between", l3over ? "bg-red-50 dark:bg-red-950/30" : "bg-green-50 dark:bg-green-950/30")}>
-                    <p className={cn("text-xs font-semibold tracking-widest uppercase", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>Budget</p>
-                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>{fmt(l3budget)}</p>
+                  <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Budget</p>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-foreground">{fmt(l3budget)}</p>
+                      {l3.budgetType === "daily" && l3.budget !== undefined && l3.budgetDays && (
+                        <p className="text-xs text-muted-foreground">{fmt(l3.budget)}/day × {l3.budgetDays} days</p>
+                      )}
+                    </div>
                   </div>
                 )}
                 {l3spent > 0 && (
-                  <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Spent</p>
-                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-foreground")}>{fmt(l3spent)}</p>
+                  <div className={cn("rounded-xl px-4 py-3 flex items-center justify-between", l3over ? "bg-red-50 dark:bg-red-950/30" : "bg-green-50 dark:bg-green-950/30")}>
+                    <p className={cn("text-xs font-semibold tracking-widest uppercase", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>Spent</p>
+                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>{fmt(l3spent)}</p>
                   </div>
                 )}
                 {l3.note && (
@@ -868,9 +867,11 @@ export default function BudgetPage() {
                   <Button variant="outline" className="flex-1 gap-1.5" onClick={() => { setSelectedL3(null); router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`); }}>
                     <ListIcon className="size-3.5" /> Transactions
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openL3Edit(l3)}>
-                    <PencilIcon className="size-3.5" /> Edit
-                  </Button>
+                  {!isReadOnly && (
+                    <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openL3Edit(l3)}>
+                      <PencilIcon className="size-3.5" /> Edit
+                    </Button>
+                  )}
                 </div>
               </div>
             </DialogContent>
@@ -895,51 +896,73 @@ export default function BudgetPage() {
                 required
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Budget (optional)</Label>
-              <div className="flex rounded-lg border border-border overflow-hidden">
-                {(["cycle", "daily"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setL3EditForm({ ...l3EditForm, budgetType: t })}
-                    className={cn(
-                      "flex-1 py-1.5 text-sm font-medium transition-colors",
-                      l3EditForm.budgetType === t ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {t === "cycle" ? "Per Cycle" : "Per Day"}
-                  </button>
-                ))}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Budget (optional)</Label>
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  {(["cycle", "daily"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setL3EditForm({ ...l3EditForm, budgetType: t })}
+                      className={cn(
+                        "flex-1 py-1.5 text-sm font-medium transition-colors",
+                        l3EditForm.budgetType === t ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {t === "cycle" ? "Per Cycle" : "Per Day"}
+                    </button>
+                  ))}
+                </div>
               </div>
               {l3EditForm.budgetType === "cycle" ? (
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={l3EditForm.budget}
-                  onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
-                />
-              ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
+                  <Label>Amount (MYR)</Label>
                   <Input
                     type="number"
                     inputMode="decimal"
                     step="0.01"
                     min="0"
-                    placeholder="Amount / day"
+                    placeholder="0.00"
                     value={l3EditForm.budget}
                     onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
                   />
-                  <div className="rounded-xl border border-border">
-                    <Calendar
-                      mode="multiple"
-                      selected={l3EditForm.budgetSelectedDates}
-                      onSelect={(dates: Date[] | undefined) => setL3EditForm({ ...l3EditForm, budgetSelectedDates: dates ?? [] })}
-                      className="w-full"
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="space-y-1.5">
+                    <Label>Amount / day (MYR)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={l3EditForm.budget}
+                      onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-1.5 mt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Select days this cycle</Label>
+                      {l3EditForm.budgetSelectedDates.length > 0 && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                          onClick={() => setL3EditForm({ ...l3EditForm, budgetSelectedDates: [] })}
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                    <div className="rounded-xl border border-border min-h-[420px]">
+                      <Calendar
+                        mode="multiple"
+                        selected={l3EditForm.budgetSelectedDates}
+                        onSelect={(dates: Date[] | undefined) => setL3EditForm({ ...l3EditForm, budgetSelectedDates: dates ?? [] })}
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                   {l3EditForm.budget && parseFloat(l3EditForm.budget) > 0 && l3EditForm.budgetSelectedDates.length > 0 && (
                     <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">

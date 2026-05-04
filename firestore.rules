@@ -7,16 +7,37 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == "UG4u9m0jkUh5xqqloijX1zeprXi2";
     }
 
-    // User profile document
+    // Returns true if the requesting user is an active partner of the document owner.
+    // Reads the owner's profile to get their partnershipId, then verifies the partnership
+    // doc is active and lists the requester. Each user only ever writes their own profile,
+    // so both sides can read each other's data immediately after acceptance.
+    function isActivePartner(ownerUid) {
+      let ownerProfile = get(/databases/$(database)/documents/users/$(ownerUid)).data;
+      let pid = ownerProfile.get('partnershipId', null);
+      return pid != null
+          && exists(/databases/$(database)/documents/partnerships/$(pid))
+          && get(/databases/$(database)/documents/partnerships/$(pid)).data.status == 'active'
+          && (get(/databases/$(database)/documents/partnerships/$(pid)).data.inviterUid == request.auth.uid
+              || get(/databases/$(database)/documents/partnerships/$(pid)).data.inviteeUid == request.auth.uid);
+    }
+
+    // User profile document.
+    // get() is open to any authenticated user because isActivePartner() needs to read
+    // the owner's profile to find their partnershipId — restricting to uid-only would
+    // cause the partner check to always return null and deny access.
     match /users/{uid} {
-      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow get: if request.auth != null;
       allow list: if isAdmin();
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Flat collections — only the owner (matched via userId field) may access
+    // Flat collections — owner or active partner may read; only owner may write
     match /accounts/{docId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAdmin()
+        || isActivePartner(resource.data.userId)
+      );
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update: if request.auth != null && request.auth.uid == resource.data.userId
@@ -24,7 +45,11 @@ service cloud.firestore {
     }
 
     match /categories/{docId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAdmin()
+        || isActivePartner(resource.data.userId)
+      );
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update: if request.auth != null && request.auth.uid == resource.data.userId
@@ -32,7 +57,11 @@ service cloud.firestore {
     }
 
     match /transactions/{docId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAdmin()
+        || isActivePartner(resource.data.userId)
+      );
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update: if request.auth != null && request.auth.uid == resource.data.userId
@@ -40,7 +69,11 @@ service cloud.firestore {
     }
 
     match /debts/{docId} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAdmin()
+        || isActivePartner(resource.data.userId)
+      );
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update: if request.auth != null && request.auth.uid == resource.data.userId
@@ -49,13 +82,56 @@ service cloud.firestore {
 
     match /activities/{docId} {
       allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
-      allow list: if isAdmin();
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
 
     match /insights/{docId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
       allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Partnerships — inviter creates; inviter or invitee (by email/uid) may read and update status
+    match /partnerships/{docId} {
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.inviterUid;
+
+      allow read: if request.auth != null
+                  && (
+                    request.auth.uid == resource.data.inviterUid
+                    || request.auth.token.email == resource.data.inviteeEmail
+                    || request.auth.uid == resource.data.inviteeUid
+                  );
+
+      // Any authenticated user may run queries. Firestore rules cannot inspect
+      // query filter values, so this cannot be scoped further without Cloud Functions.
+      // Acceptable for this personal app — partnerships expose only emails/UIDs, not financial data.
+      allow list: if request.auth != null;
+
+      // Either party may update (accept, decline, stop) — core identity fields are immutable
+      allow update: if request.auth != null
+                    && (
+                      request.auth.uid == resource.data.inviterUid
+                      || request.auth.token.email == resource.data.inviteeEmail
+                      || request.auth.uid == resource.data.inviteeUid
+                    )
+                    && request.resource.data.inviterUid == resource.data.inviterUid
+                    && request.resource.data.inviterEmail == resource.data.inviterEmail
+                    && request.resource.data.inviteeEmail == resource.data.inviteeEmail;
+
+      // Either party may delete (cancel invite, decline, stop partnership)
+      allow delete: if request.auth != null
+                    && (
+                      request.auth.uid == resource.data.inviterUid
+                      || request.auth.token.email == resource.data.inviteeEmail
+                      || request.auth.uid == resource.data.inviteeUid
+                    );
+    }
+
+    // Cross-user notifications (e.g. partner declined invite).
+    // Any authenticated user may write; only the owner may read or delete.
+    match /notifications/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null;
     }
 
     // Deny everything else

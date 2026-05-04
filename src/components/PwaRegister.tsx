@@ -7,18 +7,19 @@ export function PwaRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
-    // When the SW controller changes (new SW took over via SKIP_WAITING + clients.claim),
-    // reload every tab — not just the one that clicked the toast.
     let reloading = false;
-    const onControllerChange = () => {
+    // On iOS standalone PWA, window.location.reload() is a soft reload that keeps
+    // the old JS heap alive. window.location.replace() forces a true navigation,
+    // resetting the JS context so all pages see the new bundle.
+    const hardNav = () => {
       if (reloading) return;
       reloading = true;
-      window.location.reload();
+      window.location.replace(window.location.href);
     };
-    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+
+    navigator.serviceWorker.addEventListener("controllerchange", hardNav);
 
     navigator.serviceWorker.register("/sw.js").then((reg) => {
-      // Check for updates every time the page gains focus
       const checkUpdate = () => reg.update().catch(() => {});
       window.addEventListener("focus", checkUpdate);
 
@@ -27,7 +28,6 @@ export function PwaRegister() {
         if (!newSW) return;
 
         newSW.addEventListener("statechange", () => {
-          // New SW installed and waiting — a previous SW was controlling the page
           if (newSW.state === "installed" && navigator.serviceWorker.controller) {
             toast("New version available", {
               description: "Refresh to get the latest update.",
@@ -35,8 +35,9 @@ export function PwaRegister() {
               action: {
                 label: "Refresh",
                 onClick: () => {
-                  // SKIP_WAITING → SW activates → clients.claim() → controllerchange fires on all tabs → all reload
                   newSW.postMessage({ type: "SKIP_WAITING" });
+                  // Fallback: iOS may not fire controllerchange reliably
+                  setTimeout(hardNav, 1500);
                 },
               },
             });
@@ -48,7 +49,7 @@ export function PwaRegister() {
     }).catch(() => {});
 
     return () => {
-      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      navigator.serviceWorker.removeEventListener("controllerchange", hardNav);
     };
   }, []);
 

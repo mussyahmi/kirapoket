@@ -44,7 +44,7 @@ const menuItems = [
 // Desktop sidebar — all pages
 const allNavItems = [...bottomNavItems, ...menuItems];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
   const { userProfile, accounts, debts } = useApp();
   const { user } = useAuth();
@@ -161,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col min-w-0">
         {/* Mobile Header */}
         <header className={cn(
-          "md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-40 transition-transform duration-300",
+          "md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-[60] transition-transform duration-300",
           navVisible ? "translate-y-0" : "-translate-y-full"
         )}>
           <Link href="/" className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <MenuIcon className="size-4" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-50">
+                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-[60]">
                   {menuItems.map(({ href, label, icon: Icon }) => (
                     <Link
                       key={href}
@@ -244,6 +244,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SupportButton dialogOnly open={supportOpen} onOpenChange={setSupportOpen} />
 
         {/* Page Content */}
+        {banner}
         <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
       </div>
 

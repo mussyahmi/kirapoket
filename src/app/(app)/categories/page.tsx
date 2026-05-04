@@ -103,6 +103,7 @@ interface L3ItemProps {
   l1Type: L1Type;
   openEdit: (cat: Category) => void;
   setDeleteTarget: (cat: Category) => void;
+  readOnly?: boolean;
 }
 
 function fmtItemBudget(c: Category): string | null {
@@ -116,7 +117,7 @@ function fmtItemBudget(c: Category): string | null {
   return `· RM ${amt}`;
 }
 
-function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
+function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const {
     attributes,
@@ -140,16 +141,18 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
         }}
         className="flex items-center gap-1 py-1.5 pr-2 hover:bg-muted/50 rounded-lg group"
       >
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          tabIndex={-1}
-          aria-label="Drag to reorder"
-          className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
-        >
-          <GripVerticalIcon className="size-3.5" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            tabIndex={-1}
+            aria-label="Drag to reorder"
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+          >
+            <GripVerticalIcon className="size-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPreviewOpen(true)}
@@ -162,23 +165,25 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
             </span>
           )}
         </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
-            <MoreHorizontalIcon className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={() => openEdit(item)}>
-              <PencilIcon className="size-3.5 mr-2" /> Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => setDeleteTarget(item)}
-            >
-              <TrashIcon className="size-3.5 mr-2" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!readOnly && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
+              <MoreHorizontalIcon className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => openEdit(item)}>
+                <PencilIcon className="size-3.5 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setDeleteTarget(item)}
+              >
+                <TrashIcon className="size-3.5 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -194,12 +199,12 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
               <p className="text-sm text-muted-foreground">No details added yet.</p>
             )}
             {item.budget !== undefined && (
-              <div className={cn("flex items-center justify-between rounded-lg px-4 py-3", L1_COLORS[l1Type])}>
-                <span className="text-xs uppercase tracking-wide opacity-70">Budget</span>
+              <div className="flex items-center justify-between rounded-lg px-4 py-3 bg-muted/50">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Budget</span>
                 <div className="text-right">
                   <p className="text-lg font-bold tabular-nums">{fmtItemBudget(item)?.replace("· ", "")}</p>
                   {item.budgetType === "daily" && item.budgetDays && (
-                    <p className="text-xs opacity-70 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
                     </p>
                   )}
@@ -236,21 +241,25 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget }: L3ItemProps) {
                   <ListIcon className="size-4" /> Transactions
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => { setPreviewOpen(false); openEdit(item); }}
-              >
-                <PencilIcon className="size-4" /> Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                onClick={() => { setPreviewOpen(false); setDeleteTarget(item); }}
-              >
-                <TrashIcon className="size-4" />
-              </Button>
+              {!readOnly && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => { setPreviewOpen(false); openEdit(item); }}
+                  >
+                    <PencilIcon className="size-4" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    onClick={() => { setPreviewOpen(false); setDeleteTarget(item); }}
+                  >
+                    <TrashIcon className="size-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -274,6 +283,7 @@ interface L2RowProps {
   openCreate: (level: 1 | 2 | 3, parentId: string | null, type?: L1Type) => void;
   openEdit: (cat: Category) => void;
   setDeleteTarget: (cat: Category) => void;
+  readOnly?: boolean;
 }
 
 function L2Row({
@@ -289,6 +299,7 @@ function L2Row({
   openCreate,
   openEdit,
   setDeleteTarget,
+  readOnly,
 }: L2RowProps) {
   const {
     attributes,
@@ -314,16 +325,18 @@ function L2Row({
       }}
     >
       <div className="flex items-center gap-1 py-2 pl-2 pr-2 hover:bg-muted/50 rounded-lg group">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          tabIndex={-1}
-          aria-label="Drag to reorder"
-          className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
-        >
-          <GripVerticalIcon className="size-4" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            tabIndex={-1}
+            aria-label="Drag to reorder"
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+          >
+            <GripVerticalIcon className="size-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => toggleExpand(cat.id)}
@@ -346,30 +359,32 @@ function L2Row({
             </span>
           )}
         </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
-            <MoreHorizontalIcon className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={() => openCreate(3, cat.id, l1Type)}>
-              <PlusIcon className="size-3.5 mr-2" /> Add item
-            </DropdownMenuItem>
-            {!isProtected && (
-              <>
-                <DropdownMenuItem onClick={() => openEdit(cat)}>
-                  <PencilIcon className="size-3.5 mr-2" /> Rename
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => setDeleteTarget(cat)}
-                >
-                  <TrashIcon className="size-3.5 mr-2" /> Delete
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!readOnly && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
+              <MoreHorizontalIcon className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => openCreate(3, cat.id, l1Type)}>
+                <PlusIcon className="size-3.5 mr-2" /> Add item
+              </DropdownMenuItem>
+              {!isProtected && (
+                <>
+                  <DropdownMenuItem onClick={() => openEdit(cat)}>
+                    <PencilIcon className="size-3.5 mr-2" /> Rename
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDeleteTarget(cat)}
+                  >
+                    <TrashIcon className="size-3.5 mr-2" /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {isOpen && l3.length > 0 && (
@@ -393,6 +408,7 @@ function L2Row({
                   l1Type={l1Type}
                   openEdit={openEdit}
                   setDeleteTarget={setDeleteTarget}
+                  readOnly={readOnly}
                 />
               ))}
             </div>
@@ -414,7 +430,10 @@ export default function CategoriesPage() {
     editCategory,
     removeCategory,
     reorderCategoryItems,
+    isViewingPartner,
+    isImpersonating,
   } = useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -489,13 +508,20 @@ export default function CategoriesPage() {
     parentId: string | null,
     type?: L1Type
   ) => {
+    if (isReadOnly) return;
     setEditTarget(null);
     setForm(DEFAULT_FORM);
     setDialogContext({ level, parentId, type });
     setDialogOpen(true);
   };
 
+  const guardedSetDeleteTarget = (cat: Category) => {
+    if (isReadOnly) return;
+    setDeleteTarget(cat);
+  };
+
   const openEdit = (cat: Category) => {
+    if (isReadOnly) return;
     setEditTarget(cat);
     setForm({
       name: cat.name,
@@ -687,13 +713,15 @@ export default function CategoriesPage() {
                         ) : null;
                       })()}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => openCreate(2, l1.id, l1Type)}
-                      className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:bg-accent transition-colors shrink-0"
-                    >
-                      <PlusIcon className="size-4" />
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => openCreate(2, l1.id, l1Type)}
+                        className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:bg-accent transition-colors shrink-0"
+                      >
+                        <PlusIcon className="size-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* L2 + L3 */}
@@ -722,7 +750,8 @@ export default function CategoriesPage() {
                               onDragEnd={handleDragEnd}
                               openCreate={openCreate}
                               openEdit={openEdit}
-                              setDeleteTarget={setDeleteTarget}
+                              setDeleteTarget={guardedSetDeleteTarget}
+                              readOnly={isReadOnly}
                             />
                           ))}
                           {l2.length === 0 && (

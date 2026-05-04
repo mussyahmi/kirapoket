@@ -60,9 +60,9 @@ interface DebtCardProps {
   debt: Debt;
   hidePersonName?: boolean;
   flat?: boolean;
-  onSettle: (debt: Debt) => void;
-  onEdit: (debt: Debt) => void;
-  onDelete: (debt: Debt) => void;
+  onSettle?: (debt: Debt) => void;
+  onEdit?: (debt: Debt) => void;
+  onDelete?: (debt: Debt) => void;
   onPay?: (debt: Debt) => void;
   onCollect?: (debt: Debt) => void;
   onRecord?: (debt: Debt) => void;
@@ -142,39 +142,49 @@ function DebtCard({ debt, hidePersonName, flat, onSettle, onEdit, onDelete, onPa
             <HandCoinsIcon className="size-3.5" />
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => onSettle(debt)}
-          className={cn(
-            "size-7 rounded-lg flex items-center justify-center transition-colors",
-            debt.settled ? "text-muted-foreground hover:bg-muted" : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-          )}
-          title={debt.settled ? "Mark unsettled" : "Mark settled"}
-        >
-          {debt.settled ? <RotateCcwIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
-        </button>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
-            <MoreHorizontalIcon className="size-3.5" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={() => onEdit(debt)}>
-              <PencilIcon className="size-3.5 mr-2" /> Edit
-            </DropdownMenuItem>
-            {onRecord && !debt.transactionLinked && (
-              <DropdownMenuItem onClick={() => onRecord(debt)}>
-                <ReceiptIcon className="size-3.5 mr-2" /> Record transaction
-              </DropdownMenuItem>
+        {onSettle && (
+          <button
+            type="button"
+            onClick={() => onSettle(debt)}
+            className={cn(
+              "size-7 rounded-lg flex items-center justify-center transition-colors",
+              debt.settled ? "text-muted-foreground hover:bg-muted" : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(debt)}
-            >
-              <TrashIcon className="size-3.5 mr-2" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            title={debt.settled ? "Mark unsettled" : "Mark settled"}
+          >
+            {debt.settled ? <RotateCcwIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
+          </button>
+        )}
+        {(onEdit || onDelete || onRecord) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+              <MoreHorizontalIcon className="size-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(debt)}>
+                  <PencilIcon className="size-3.5 mr-2" /> Edit
+                </DropdownMenuItem>
+              )}
+              {onRecord && !debt.transactionLinked && (
+                <DropdownMenuItem onClick={() => onRecord(debt)}>
+                  <ReceiptIcon className="size-3.5 mr-2" /> Record transaction
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(debt)}
+                  >
+                    <TrashIcon className="size-3.5 mr-2" /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );
@@ -184,12 +194,12 @@ interface DebtGroupCardProps {
   group: { key: string; displayName: string; debts: Debt[] };
   expandedGroups: Set<string>;
   onToggle: (key: string) => void;
-  onSettle: (debt: Debt) => void;
-  onEdit: (debt: Debt) => void;
-  onDelete: (debt: Debt) => void;
-  onPay: (debt: Debt) => void;
-  onCollect: (debt: Debt) => void;
-  onRecord: (debt: Debt) => void;
+  onSettle?: (debt: Debt) => void;
+  onEdit?: (debt: Debt) => void;
+  onDelete?: (debt: Debt) => void;
+  onPay?: (debt: Debt) => void;
+  onCollect?: (debt: Debt) => void;
+  onRecord?: (debt: Debt) => void;
 }
 
 function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDelete, onPay, onCollect, onRecord }: DebtGroupCardProps) {
@@ -237,7 +247,8 @@ function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDe
 }
 
 export default function DebtsPage() {
-  const { debts, loadingDebts, createDebt, editDebt, removeDebt, accounts, createTransaction, categories, createCategory } = useApp();
+  const { debts, loadingDebts, createDebt, editDebt, removeDebt, accounts, createTransaction, categories, createCategory, isViewingPartner, isImpersonating } = useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Debt | null>(null);
@@ -573,9 +584,11 @@ export default function DebtsPage() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Debts</h1>
-        <Button size="sm" onClick={openCreate} className="gap-1.5">
-          <PlusIcon className="size-4" /> Add
-        </Button>
+        {!isReadOnly && (
+          <Button size="sm" onClick={openCreate} className="gap-1.5">
+            <PlusIcon className="size-4" /> Add
+          </Button>
+        )}
       </div>
 
       {/* Summary */}
@@ -606,8 +619,8 @@ export default function DebtsPage() {
         <div className="space-y-2">
           {unsettledGroups.map((g) =>
             g.debts.length === 1
-              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} onPay={openPay} onCollect={openPay} onRecord={(d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
-              : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} onPay={openPay} onCollect={openPay} onRecord={(d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
+              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} onPay={isReadOnly ? undefined : openPay} onCollect={isReadOnly ? undefined : openPay} onRecord={isReadOnly ? undefined : (d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
+              : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} onPay={isReadOnly ? undefined : openPay} onCollect={isReadOnly ? undefined : openPay} onRecord={isReadOnly ? undefined : (d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
           )}
         </div>
       )}
@@ -624,7 +637,7 @@ export default function DebtsPage() {
           </button>
           {showSettled && (
             <div className="space-y-2">
-              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} onSettle={handleSettle} onEdit={openEdit} onDelete={setDeleteTarget} />)}
+              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />)}
               {settledVisible < settled.length && (
                 <button
                   type="button"

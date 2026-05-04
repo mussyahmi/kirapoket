@@ -48,7 +48,10 @@ export default function DashboardPage() {
     loadingAccounts,
     loadingProfile,
     saveUserProfile,
+    isViewingPartner,
+    isImpersonating,
   } = useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
 
   const [cycleOffset, setCycleOffset] = useState(() => {
     if (typeof window === "undefined") return 0;
@@ -330,8 +333,8 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Cycle start banner — always visible when salary day is configured */}
-      {userProfile?.salaryDay && (
+      {/* Cycle start banner — hidden in read-only mode */}
+      {!isReadOnly && userProfile?.salaryDay && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 pl-3 pr-4 py-2.5 border-l-2 border-l-primary">
           <BanknoteIcon className="size-4 text-primary shrink-0" />
           {editingStart ? (
@@ -637,10 +640,10 @@ export default function DashboardPage() {
           {recentTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No transactions yet.{" "}
-              <Link href="/transactions/new" className="underline">
-                Add one
-              </Link>
-              .
+              {!isReadOnly && (
+                <Link href="/transactions/new" className="underline">Add one</Link>
+              )}
+              {!isReadOnly && "."}
             </p>
           ) : (
             recentTransactions.map((tx) => {

@@ -38,8 +38,9 @@ import type { Transaction } from "@/lib/types";
 type FilterType = "all" | "expense" | "income" | "transfer";
 
 function TransactionsPage() {
-  const { transactions, accounts, categories, loadingTransactions, removeTransaction } =
+  const { transactions, accounts, categories, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
     useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
 
   const searchParams = useSearchParams();
 
@@ -140,11 +141,13 @@ function TransactionsPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Transactions</h1>
-        <Link href="/transactions/new">
-          <Button size="sm" className="gap-1.5">
-            <PlusIcon className="size-4" /> Add
-          </Button>
-        </Link>
+        {!isReadOnly && (
+          <Link href="/transactions/new">
+            <Button size="sm" className="gap-1.5">
+              <PlusIcon className="size-4" /> Add
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -293,6 +296,7 @@ function TransactionsPage() {
                 <CardContent className="divide-y divide-border p-0">
                   {txs.map((tx) => {
                     const account = accounts.find((a) => a.id === tx.accountId);
+                    const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
                     const category = tx.categoryId
                       ? categoryMap[tx.categoryId]
                       : null;
@@ -329,7 +333,9 @@ function TransactionsPage() {
                               : "Transfer"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {tx.type === "income"
+                            {tx.type === "transfer"
+                              ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}`
+                              : tx.type === "income"
                               ? account?.name
                               : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
                           </p>
@@ -431,21 +437,23 @@ function TransactionsPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => setSelectedTx(null)}>
-                    <Button className="w-full gap-2">
-                      <PencilIcon className="size-4" /> Edit
+                {!isReadOnly && (
+                  <div className="flex gap-2 pt-1">
+                    <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => setSelectedTx(null)}>
+                      <Button className="w-full gap-2">
+                        <PencilIcon className="size-4" /> Edit
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
+                    >
+                      <TrashIcon className="size-4" />
                     </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
-                  >
-                    <TrashIcon className="size-4" />
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>

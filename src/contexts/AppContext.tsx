@@ -4,10 +4,11 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
-import type { Account, Category, Transaction, UserProfile, Debt } from "@/lib/types";
+import type { Account, Category, Transaction, UserProfile, Debt, Partnership } from "@/lib/types";
 import {
   getAccounts,
   addAccount,
@@ -33,6 +34,14 @@ import {
   applySeedV2,
   applySeedV3,
   logActivity,
+  sendPartnerInvite,
+  getPartnershipForInviter,
+  getPartnershipForInvitee,
+  acceptPartnership,
+  declinePartnership,
+  stopPartnership,
+  getPartnerDeclinedNotification,
+  clearPartnerDeclinedFlag,
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -106,6 +115,20 @@ interface AppContextValue {
   // Profile
   refreshProfile: () => Promise<void>;
   saveUserProfile: (data: Partial<UserProfile>) => Promise<void>;
+
+  // Partnership
+  partnership: Partnership | null;
+  pendingInvite: Partnership | null;  // incoming invite awaiting acceptance
+  isViewingPartner: boolean;
+  invitePartner: (inviteeEmail: string) => Promise<void>;
+  acceptInvite: () => Promise<void>;
+  declineInvite: () => Promise<void>;
+  pausePartnerView: () => void;
+  resumePartnerView: () => void;
+  terminatePartnership: () => Promise<void>;
+  cancelInvite: () => Promise<void>;
+  partnerDeclinedAlert: boolean;
+  clearPartnerDeclinedAlert: () => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -123,13 +146,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingDebts, setLoadingDebts] = useState(true);
+  const [partnerDeclinedAlert, setPartnerDeclinedAlert] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [impersonatedUid, setImpersonatedUid] = useState<string | null>(() => {
     if (typeof window !== "undefined") return sessionStorage.getItem("impersonatedUid");
     return null;
   });
-  const uid = impersonatedUid ?? user?.uid;
+  const [viewingPartnerUid, setViewingPartnerUid] = useState<string | null>(null);
+  const partnerViewPaused = useRef(
+    typeof window !== "undefined" && sessionStorage.getItem("partnerViewPaused") === "1"
+  );
+  const uid = viewingPartnerUid ?? impersonatedUid ?? user?.uid;
 
   const impersonate = useCallback((targetUid: string) => {
     sessionStorage.setItem("impersonatedUid", targetUid);
@@ -141,6 +169,87 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const isImpersonating = impersonatedUid !== null;
 
+  // ── Partnership ───────────────────────────────────────────────────────────
+  const [partnership, setPartnership] = useState<Partnership | null>(null);
+  const [pendingInvite, setPendingInvite] = useState<Partnership | null>(null);
+  const isViewingPartner = viewingPartnerUid !== null;
+
+  const refreshPartnership = useCallback(async (currentUser: { uid: string; email: string | null }) => {
+    // Check if we are the inviter
+    const asInviter = await getPartnershipForInviter(currentUser.uid);
+    if (asInviter) {
+      setPartnership(asInviter);
+      if (asInviter.status === "active" && asInviter.inviteeUid && !partnerViewPaused.current) {
+        setViewingPartnerUid(asInviter.inviteeUid);
+      }
+      return;
+    }
+    // Check if we are the invitee
+    if (currentUser.email) {
+      const asInvitee = await getPartnershipForInvitee(currentUser.email);
+      if (asInvitee) {
+        if (asInvitee.status === "pending") {
+          setPendingInvite(asInvitee);
+        } else if (asInvitee.status === "active") {
+          setPartnership(asInvitee);
+          if (!partnerViewPaused.current) setViewingPartnerUid(asInvitee.inviterUid);
+        }
+      }
+    }
+  }, []);
+
+  const invitePartner = useCallback(async (inviteeEmail: string) => {
+    if (!user) throw new Error("Not authenticated");
+    const p = await sendPartnerInvite(user.uid, user.email ?? "", user.displayName, inviteeEmail);
+    setPartnership(p);
+  }, [user]);
+
+  const acceptInvite = useCallback(async () => {
+    if (!user || !pendingInvite) return;
+    await acceptPartnership(pendingInvite.id, user.uid);
+    const updated = { ...pendingInvite, status: "active" as const, inviteeUid: user.uid };
+    setPartnership(updated);
+    setPendingInvite(null);
+    setViewingPartnerUid(pendingInvite.inviterUid);
+  }, [user, pendingInvite]);
+
+  const declineInvite = useCallback(async () => {
+    if (!pendingInvite) return;
+    await declinePartnership(pendingInvite.id);
+    setPendingInvite(null);
+  }, [pendingInvite]);
+
+  const pausePartnerView = useCallback(() => {
+    partnerViewPaused.current = true;
+    sessionStorage.setItem("partnerViewPaused", "1");
+    setViewingPartnerUid(null);
+  }, []);
+
+  const resumePartnerView = useCallback(() => {
+    if (!partnership) return;
+    const partnerUid = partnership.inviterUid === user?.uid ? partnership.inviteeUid : partnership.inviterUid;
+    if (partnerUid) {
+      partnerViewPaused.current = false;
+      sessionStorage.removeItem("partnerViewPaused");
+      setViewingPartnerUid(partnerUid);
+    }
+  }, [partnership, user]);
+
+  const terminatePartnership = useCallback(async () => {
+    if (!partnership || !user) return;
+    await stopPartnership(partnership.id, user.uid);
+    partnerViewPaused.current = false;
+    sessionStorage.removeItem("partnerViewPaused");
+    setPartnership(null);
+    setViewingPartnerUid(null);
+  }, [partnership, user]);
+
+  const cancelInvite = useCallback(async () => {
+    if (!partnership || !user) return;
+    await stopPartnership(partnership.id, user.uid);
+    setPartnership(null);
+  }, [partnership, user]);
+
   const refreshProfile = useCallback(async () => {
     if (!uid) return;
     setLoadingProfile(true);
@@ -149,7 +258,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (profile) {
         setUserProfile(profile);
         // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
-        if (!impersonatedUid) {
+        if (!impersonatedUid && !viewingPartnerUid) {
+          getPartnerDeclinedNotification(uid).then((declined) => {
+            if (declined) {
+              setPartnerDeclinedAlert(true);
+              clearPartnerDeclinedFlag(uid);
+            }
+          });
           updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
           // Re-seed if a previous seeding attempt was incomplete or never flagged as done
           if (!profile.categoriesSeeded) {
@@ -169,7 +284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }
           }
         }
-      } else if (!impersonatedUid) {
+      } else if (!impersonatedUid && !viewingPartnerUid) {
         // Bootstrap profile only for the real user, not impersonated targets
         const bootstrapped: UserProfile = {
           uid,
@@ -190,7 +305,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoadingProfile(false);
     }
-  }, [uid, user, impersonatedUid]);
+  }, [uid, user, impersonatedUid, viewingPartnerUid]);
 
   const sortAccounts = (data: Account[]) =>
     [...data].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity));
@@ -246,19 +361,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshCategories();
       refreshTransactions();
       refreshDebts();
+      if (user && !impersonatedUid) {
+        refreshPartnership({ uid: user.uid, email: user.email });
+      }
     } else if (!authLoading) {
       setAccounts([]);
       setCategories([]);
       setTransactions([]);
       setDebts([]);
       setUserProfile(null);
+      setPartnership(null);
+      setPendingInvite(null);
+      setViewingPartnerUid(null);
       setLoadingAccounts(false);
       setLoadingCategories(false);
       setLoadingTransactions(false);
       setLoadingDebts(false);
       setLoadingProfile(false);
     }
-  }, [uid, authLoading, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts]);
+  }, [uid, authLoading, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts, refreshPartnership, user, impersonatedUid]);
 
   // ── Account CRUD ──────────────────────────────────────────────────────────
 
@@ -557,6 +678,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isImpersonating,
         impersonate,
         stopImpersonating,
+        partnership,
+        pendingInvite,
+        isViewingPartner,
+        invitePartner,
+        acceptInvite,
+        declineInvite,
+        pausePartnerView,
+        resumePartnerView,
+        terminatePartnership,
+        cancelInvite,
+        partnerDeclinedAlert,
+        clearPartnerDeclinedAlert: () => setPartnerDeclinedAlert(false),
       }}
     >
       {children}

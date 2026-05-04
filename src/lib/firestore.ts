@@ -558,3 +558,90 @@ export async function saveInsight(uid: string, hash: string, summary: string, do
   const ref = doc(db, "insights", uid);
   await setDoc(ref, { userId: uid, hash, summary, dos, donts, generatedAt: Timestamp.now() });
 }
+
+// ─── Partnerships ─────────────────────────────────────────────────────────────
+
+import type { Partnership } from "./types";
+
+export async function sendPartnerInvite(
+  inviterUid: string,
+  inviterEmail: string,
+  inviterName: string | null,
+  inviteeEmail: string
+): Promise<Partnership> {
+  const data = {
+    inviterUid,
+    inviterEmail,
+    inviterName,
+    inviteeEmail: inviteeEmail.trim().toLowerCase(),
+    status: "pending" as const,
+    createdAt: Timestamp.now(),
+  };
+  const ref = await addDoc(collection(db, "partnerships"), data);
+  await setDoc(doc(db, "users", inviterUid), { partnershipId: ref.id }, { merge: true });
+  return { id: ref.id, ...data };
+}
+
+export async function getPartnershipForInviter(uid: string): Promise<Partnership | null> {
+  const q = query(
+    collection(db, "partnerships"),
+    where("inviterUid", "==", uid),
+    where("status", "in", ["pending", "active"])
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as Partnership;
+}
+
+export async function getPartnershipForInvitee(email: string): Promise<Partnership | null> {
+  const q = query(
+    collection(db, "partnerships"),
+    where("inviteeEmail", "==", email.trim().toLowerCase()),
+    where("status", "in", ["pending", "active"])
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as Partnership;
+}
+
+export async function acceptPartnership(
+  partnershipId: string,
+  inviteeUid: string
+): Promise<void> {
+  await updateDoc(doc(db, "partnerships", partnershipId), {
+    inviteeUid,
+    status: "active",
+    acceptedAt: Timestamp.now(),
+  });
+  await setDoc(doc(db, "users", inviteeUid), { partnershipId }, { merge: true });
+}
+
+export async function declinePartnership(partnershipId: string): Promise<void> {
+  const ref = doc(db, "partnerships", partnershipId);
+  const snap = await getDoc(ref);
+  const data = snap.data();
+  await deleteDoc(ref);
+  if (data?.inviterUid) {
+    await setDoc(doc(db, "notifications", data.inviterUid), { partnerDeclined: true }, { merge: true });
+  }
+}
+
+export async function stopPartnership(
+  partnershipId: string,
+  callerUid: string
+): Promise<void> {
+  const ref = doc(db, "partnerships", partnershipId);
+  await deleteDoc(ref);
+  await setDoc(doc(db, "users", callerUid), { partnershipId: deleteField() }, { merge: true });
+}
+
+export async function getPartnerDeclinedNotification(uid: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, "notifications", uid));
+  return snap.exists() && snap.data()?.partnerDeclined === true;
+}
+
+export async function clearPartnerDeclinedFlag(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "notifications", uid));
+}

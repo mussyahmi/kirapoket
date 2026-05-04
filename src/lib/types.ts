@@ -36,6 +36,7 @@ export interface UserProfile {
   lastLogin?: Timestamp | null;
   categoriesSeeded?: boolean;
   categoriesSeedVersion?: number;
+  partnershipId?: string | null;
 }
 
 export interface Account {
@@ -80,6 +81,18 @@ export interface Debt {
   settled: boolean;
   settledDate?: string;
   createdAt: Timestamp | string;
+}
+
+export interface Partnership {
+  id: string;
+  inviterUid: string;
+  inviterEmail: string;
+  inviterName: string | null;
+  inviteeEmail: string;
+  inviteeUid?: string;
+  status: "pending" | "active" | "stopped";
+  createdAt: Timestamp | string;
+  acceptedAt?: Timestamp | string;
 }
 
 export interface Transaction {

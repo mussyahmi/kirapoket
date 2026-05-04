@@ -111,14 +111,6 @@ export default function AdminPage() {
         <h1 className="text-xl font-semibold">Admin</h1>
       </div>
 
-      {isImpersonating && (
-        <div className="rounded-lg bg-orange-500/10 border border-orange-500/30 px-3 py-2 flex items-center justify-between">
-          <p className="text-xs text-orange-500 font-medium">Currently viewing as another user</p>
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleStop}>
-            Stop
-          </Button>
-        </div>
-      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

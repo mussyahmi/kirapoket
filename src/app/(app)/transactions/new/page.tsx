@@ -19,10 +19,16 @@ type TxType = "expense" | "income" | "transfer";
 
 export default function NewTransactionPage() {
   const router = useRouter();
-  const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts } = useApp();
+  const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
 
+  const isReadOnly = isViewingPartner || isImpersonating;
   const setupLoading = loadingProfile || loadingAccounts;
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+
+  if (isReadOnly) {
+    router.replace("/transactions");
+    return null;
+  }
 
   if (!setupLoading && !setupComplete) {
     return (
@@ -308,7 +314,7 @@ export default function NewTransactionPage() {
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date</Label>
-          <div className="rounded-xl border border-border min-h-[420px]">
+          <div className="rounded-xl border border-border min-h-[450px]">
             <Calendar
               mode="single"
               selected={selectedDate}
