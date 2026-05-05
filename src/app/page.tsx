@@ -537,7 +537,7 @@ export default function LandingPage() {
                   <InAppBrowserBanner />
                 </div>
               ) : (
-                <div className="flex flex-col gap-2 anim-fade-up" style={{ animationDelay: "340ms" }}>
+                <div className="flex flex-col gap-2 anim-fade-up md:w-fit" style={{ animationDelay: "340ms" }}>
                   <Button
                     onClick={handleSignIn}
                     size="lg"
@@ -546,7 +546,7 @@ export default function LandingPage() {
                     <GoogleIcon />
                     Continue with Google
                   </Button>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed text-center">
                     By signing in you agree to our{" "}
                     <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">
                       privacy policy
