@@ -11,6 +11,14 @@ interface Release {
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
+//
+// ORDERING RULES (follow these when adding entries):
+// • Array order: OLDEST version at index 0, NEWEST at the end — the page renders top→bottom.
+// • Within each version's `changes` array: list all `feat` entries first, then all `fix` entries.
+//   (The render already sorts by type, but keep the source consistent too.)
+// • Always set `latest: true` only on the most recent release entry.
+// • Aim for 4–8 bullets per minor version; combine related fixes into one sentence.
+// • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
     version: "0.8.x",
@@ -19,13 +27,12 @@ const releases: Release[] = [
     changes: [
       { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
       { type: "feat", text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite" },
+      { type: "feat", text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used" },
+      { type: "feat", text: "Edit your display name from Settings — tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly; profile card shows a skeleton while loading" },
       { type: "fix", text: "Your saved display name is now used consistently in partner invites, the landing page, and Settings instead of defaulting to the Google account name" },
       { type: "fix", text: "Partner view paused/resumed state now persists across app restarts" },
       { type: "fix", text: "Decline button is hidden while an invite acceptance is in progress to prevent a UI glitch" },
       { type: "fix", text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh" },
-      { type: "feat", text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used" },
-      { type: "feat", text: "Edit your display name from Settings — tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly" },
-      { type: "fix", text: "Settings profile card now shows a smooth loading skeleton instead of a blank while your profile data loads" },
     ],
   },
   {
