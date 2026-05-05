@@ -63,6 +63,7 @@ interface AppContextValue {
   categories: Category[];
   transactions: Transaction[];
   userProfile: UserProfile | null;
+  ownProfile: UserProfile | null;
   loadingAccounts: boolean;
   loadingCategories: boolean;
   loadingTransactions: boolean;
@@ -141,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [ownProfile, setOwnProfile] = useState<UserProfile | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -258,6 +260,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const profile = await getUserProfile(uid);
       if (profile) {
         setUserProfile(profile);
+        if (!impersonatedUid && !viewingPartnerUid) setOwnProfile(profile);
         // Update lastLogin and photoURL for the real user only (not when viewing as someone else)
         if (!impersonatedUid && !viewingPartnerUid) {
           getPartnerDeclinedNotification(uid).then((declined) => {
@@ -298,6 +301,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         await updateUserProfile(uid, bootstrapped);
         setUserProfile(bootstrapped);
+        setOwnProfile(bootstrapped);
         await ensureDefaultCategories(uid);
         await updateUserProfile(uid, { categoriesSeeded: true, categoriesSeedVersion: 3 });
         const seeded = await getCategories(uid);
@@ -364,6 +368,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshDebts();
       if (user && !impersonatedUid) {
         refreshPartnership({ uid: user.uid, email: user.email });
+      } else if (impersonatedUid) {
+        setPartnership(null);
+        setPendingInvite(null);
       }
     } else if (!authLoading) {
       setAccounts([]);
@@ -381,6 +388,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLoadingProfile(false);
     }
   }, [uid, authLoading, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts, refreshPartnership, user, impersonatedUid]);
+
+  useEffect(() => {
+    if (!impersonatedUid || !userProfile) return;
+    getPartnershipForInviter(impersonatedUid).then((asInviter) => {
+      if (asInviter) { setPartnership(asInviter); return; }
+      if (userProfile.email) {
+        getPartnershipForInvitee(userProfile.email).then((asInvitee) => {
+          if (asInvitee) setPartnership(asInvitee);
+        });
+      }
+    });
+  }, [impersonatedUid, userProfile]);
 
   // ── Account CRUD ──────────────────────────────────────────────────────────
 
@@ -639,6 +658,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       await updateUserProfile(uid, data);
       setUserProfile((prev) => (prev ? { ...prev, ...data } : prev));
+      if (!viewingPartnerUid && !impersonatedUid) {
+        setOwnProfile((prev) => (prev ? { ...prev, ...data } : prev));
+      }
     },
     [uid]
   );
@@ -650,6 +672,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         categories,
         transactions,
         userProfile,
+        ownProfile,
         loadingAccounts,
         loadingCategories,
         loadingTransactions,

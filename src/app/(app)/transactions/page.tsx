@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -12,6 +12,7 @@ import {
   ArrowLeftRightIcon,
   TrashIcon,
   PencilIcon,
+  XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
@@ -44,19 +45,41 @@ function TransactionsPage() {
 
   const searchParams = useSearchParams();
 
-  const [filterType, setFilterType] = useState<FilterType>("all");
-  const [filterAccount, setFilterAccount] = useState<string>(
-    () => searchParams.get("account") ?? "all"
-  );
-  const [filterCategory, setFilterCategory] = useState<string>(
-    () => searchParams.get("category") ?? "all"
-  );
-  const [dateFrom, setDateFrom] = useState(
-    () => searchParams.get("from") ?? ""
-  );
-  const [dateTo, setDateTo] = useState(
-    () => searchParams.get("to") ?? ""
-  );
+  const STORAGE_KEY = "txFilters";
+
+  const loadStored = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  };
+
+  const [filterType, setFilterType] = useState<FilterType>(() => {
+    const stored = loadStored();
+    return stored?.filterType ?? "all";
+  });
+  const [filterAccount, setFilterAccount] = useState<string>(() => {
+    const stored = loadStored();
+    return stored?.filterAccount ?? searchParams.get("account") ?? "all";
+  });
+  const [filterCategory, setFilterCategory] = useState<string>(() => {
+    const stored = loadStored();
+    return stored?.filterCategory ?? searchParams.get("category") ?? "all";
+  });
+  const [dateFrom, setDateFrom] = useState(() => {
+    const stored = loadStored();
+    return stored?.dateFrom ?? searchParams.get("from") ?? "";
+  });
+  const [dateTo, setDateTo] = useState(() => {
+    const stored = loadStored();
+    return stored?.dateTo ?? searchParams.get("to") ?? "";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ filterType, filterAccount, filterCategory, dateFrom, dateTo }));
+    } catch { /* ignore */ }
+  }, [filterType, filterAccount, filterCategory, dateFrom, dateTo]);
 
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -64,6 +87,18 @@ function TransactionsPage() {
   const GROUPS_PAGE = 10;
   const [visibleGroups, setVisibleGroups] = useState(GROUPS_PAGE);
   const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
+
+  const hasActiveFilters = filterType !== "all" || filterAccount !== "all" || filterCategory !== "all" || dateFrom !== "" || dateTo !== "";
+
+  const clearFilters = () => {
+    setFilterType("all");
+    setFilterAccount("all");
+    setFilterCategory("all");
+    setDateFrom("");
+    setDateTo("");
+    resetVisible();
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  };
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
@@ -141,13 +176,20 @@ function TransactionsPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Transactions</h1>
-        {!isReadOnly && (
-          <Link href="/transactions/new">
-            <Button size="sm" className="gap-1.5">
-              <PlusIcon className="size-4" /> Add
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={clearFilters}>
+              <XIcon className="size-3.5" /> Clear filters
             </Button>
-          </Link>
-        )}
+          )}
+          {!isReadOnly && (
+            <Link href="/transactions/new">
+              <Button size="sm" className="gap-1.5">
+                <PlusIcon className="size-4" /> Add
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

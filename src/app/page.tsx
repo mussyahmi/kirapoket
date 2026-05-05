@@ -12,7 +12,6 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { isInAppBrowser } from "@/lib/utils";
 import {
   Wallet,
-  PieChart,
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
@@ -21,6 +20,10 @@ import {
   ExternalLink,
   Smartphone,
   Download,
+  Sparkles,
+  HandCoins,
+  Target,
+  Users,
 } from "lucide-react";
 
 // ─── Google logo SVG ─────────────────────────────────────────────────────────
@@ -48,9 +51,11 @@ const MOCK_PIE = [
 const MOCK_PIE_TOTAL = MOCK_PIE.reduce((s, d) => s + d.value, 0);
 
 const MOCK_ACCOUNTS = [
-  { name: "Maybank", balance: "RM 2,840.00" },
-  { name: "Touch 'n Go", balance: "RM 150.00" },
+  { name: "Maybank", balance: "RM 2,840.00", color: "#3b82f6" },
+  { name: "Touch 'n Go", balance: "RM 150.00", color: "#a855f7" },
+  { name: "Tabung ASB", balance: "RM 4,200.00", color: "#14b8a6" },
 ];
+
 
 const MOCK_L1 = [
   {
@@ -128,15 +133,18 @@ function MockDashboard() {
       {/* accounts */}
       <MockCard title="Accounts">
         <div className="space-y-2">
-          {MOCK_ACCOUNTS.map(({ name, balance }) => (
+          {MOCK_ACCOUNTS.map(({ name, balance, color }) => (
             <div key={name} className="flex items-center justify-between">
-              <span className="text-[10px] text-foreground">{name}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className="text-[10px] text-foreground">{name}</span>
+              </div>
               <span className="text-[10px] font-medium">{balance}</span>
             </div>
           ))}
           <div className="flex items-center justify-between border-t border-border pt-2">
             <span className="text-[10px] font-medium">Total</span>
-            <span className="text-[10px] font-semibold">RM 2,990.00</span>
+            <span className="text-[10px] font-semibold">RM 7,190.00</span>
           </div>
         </div>
       </MockCard>
@@ -199,9 +207,9 @@ function MockDashboard() {
       <MockCard title="Recent Transactions">
         <div className="space-y-3">
           {[
-            { name: "Work Meals", sub: "Maybank · 26 Mar 2026, 1:12 PM", amount: "-RM 18.50", income: false },
-            { name: "Salary", sub: "Maybank · 25 Mar 2026, 9:00 AM", amount: "+RM 4,500", income: true },
-            { name: "Fuel", sub: "Maybank · 24 Mar 2026, 7:34 AM", amount: "-RM 60.00", income: false },
+            { name: "Work Meals", sub: "Maybank · 4 May 2026, 1:12 PM", amount: "-RM 18.50", income: false },
+            { name: "Salary", sub: "Maybank · 25 Apr 2026, 9:00 AM", amount: "+RM 4,500", income: true },
+            { name: "Grab", sub: "Touch 'n Go · 3 May 2026, 8:22 PM", amount: "-RM 12.00", income: false },
           ].map(({ name, sub, amount, income }) => (
             <div key={name} className="flex items-center gap-2.5">
               <div className={`size-7 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
@@ -218,6 +226,7 @@ function MockDashboard() {
           ))}
         </div>
       </MockCard>
+
     </div>
   );
 }
@@ -411,7 +420,7 @@ export default function LandingPage() {
 
   const greeting = userProfile?.salaryDay ? "Welcome back," : "Welcome,";
   const typedGreeting = useTyping(user ? greeting : "", 55, 500);
-  const displayName = user ? (userProfile?.displayName ?? user.displayName ?? user.email ?? "") : "";
+  const displayName = user ? (user.displayName ?? userProfile?.displayName ?? user.email ?? "") : "";
   const nameDelay = 500 + greeting.length * 55 + 80;
   const typedName = useTyping(displayName, 55, nameDelay);
   const buttonsDelay = nameDelay + displayName.length * 55 + 150;
@@ -508,13 +517,13 @@ export default function LandingPage() {
               <div className="flex flex-col gap-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card w-fit text-xs text-muted-foreground anim-fade-up" style={{ animationDelay: "0ms" }}>
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Personal expense tracker
+                  Free · Malaysian-made · v{process.env.NEXT_PUBLIC_APP_VERSION}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground leading-tight anim-fade-up" style={{ animationDelay: "100ms" }}>
                   Know where your<br className="hidden md:block" /> money goes.
                 </h1>
                 <p className="text-base text-muted-foreground leading-relaxed max-w-sm anim-fade-up" style={{ animationDelay: "220ms" }}>
-                  Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets.
+                  Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets, AI insights, and a shared partner view.
                 </p>
               </div>
 
@@ -540,19 +549,28 @@ export default function LandingPage() {
               )}
 
               {/* Features */}
-              <div className="space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="anim-fade-up" style={{ animationDelay: "460ms" }}>
                   <FeatureCard icon={RefreshCw} title="Salary cycle tracking" desc="All summaries scoped to your pay cycle, not the calendar month." />
                 </div>
-                <div className="anim-fade-up" style={{ animationDelay: "560ms" }}>
-                  <FeatureCard icon={PieChart} title="Needs · Wants · Savings" desc="Organise every cent into three buckets with optional budgets per category." />
+                <div className="anim-fade-up" style={{ animationDelay: "520ms" }}>
+                  <FeatureCard icon={Target} title="Budgets" desc="Set spending targets per category and track progress in real time." />
                 </div>
-                <div className="anim-fade-up" style={{ animationDelay: "660ms" }}>
-                  <FeatureCard icon={Wallet} title="Multiple accounts" desc="Maybank, Cash, Touch 'n Go, credit cards — all in one place." />
+                <div className="anim-fade-up" style={{ animationDelay: "580ms" }}>
+                  <FeatureCard icon={Sparkles} title="AI Spending Insights" desc="Gemini-powered tips personalised to your actual spending each cycle." />
+                </div>
+                <div className="anim-fade-up" style={{ animationDelay: "640ms" }}>
+                  <FeatureCard icon={HandCoins} title="Debt Tracker" desc="Track what you owe and what's owed to you — with Pay and Collect flows." />
+                </div>
+                <div className="anim-fade-up" style={{ animationDelay: "700ms" }}>
+                  <FeatureCard icon={Wallet} title="Multiple accounts" desc="Bank, cash, e-wallet, credit, savings — all in one place with colour coding." />
                 </div>
                 <div className="anim-fade-up" style={{ animationDelay: "760ms" }}>
-                  <InstallBanner />
+                  <FeatureCard icon={Users} title="Partner view" desc="Invite your partner to see your finances in read-only mode. Pause anytime." />
                 </div>
+              </div>
+              <div className="anim-fade-up" style={{ animationDelay: "820ms" }}>
+                <InstallBanner />
               </div>
             </div>
 

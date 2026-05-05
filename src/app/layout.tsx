@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 import { Toaster } from "@/components/ui/sonner";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ThemeColorSync } from "@/components/ThemeColorSync";
 
 const nunito = Nunito({
   variable: "--font-sans",
@@ -13,7 +14,7 @@ const nunito = Nunito({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#DC5028",
+  themeColor: "#fefdf9",
   maximumScale: 1,
   userScalable: false,
 };
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black",
     title: "KiraPoket",
   },
   formatDetection: { telephone: false },
@@ -43,6 +44,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <ThemeColorSync />
           <AuthProvider>
             <AppProvider>
               {children}

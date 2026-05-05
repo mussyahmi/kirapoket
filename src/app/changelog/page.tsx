@@ -18,6 +18,10 @@ const releases: Release[] = [
     latest: true,
     changes: [
       { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
+      { type: "feat", text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite" },
+      { type: "fix", text: "Your saved display name is now used consistently in partner invites, the landing page, and Settings instead of defaulting to the Google account name" },
+      { type: "fix", text: "Partner view paused/resumed state now persists across app restarts" },
+      { type: "fix", text: "Decline button is hidden while an invite acceptance is in progress to prevent a UI glitch" },
       { type: "fix", text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh" },
     ],
   },

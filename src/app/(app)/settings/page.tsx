@@ -32,7 +32,7 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ElementTyp
 export default function SettingsPage() {
   const { user, signOut, deleteUserAccount } = useAuth();
   const {
-    userProfile, saveUserProfile, partnership, isViewingPartner, isImpersonating,
+    userProfile, ownProfile, saveUserProfile, partnership, isViewingPartner, isImpersonating,
     invitePartner, cancelInvite, pausePartnerView, resumePartnerView, terminatePartnership,
   } = useApp();
   const { resolvedTheme, setTheme } = useTheme();
@@ -46,6 +46,7 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [removePartnerDialogOpen, setRemovePartnerDialogOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -132,12 +133,12 @@ export default function SettingsPage() {
         <CardContent className="flex items-center gap-4 py-5">
           <Avatar size="lg" className="shrink-0 shadow-sm">
             {user?.photoURL ? (
-              <AvatarImage src={user.photoURL} alt={userProfile?.displayName ?? user.displayName ?? "User"} />
+              <AvatarImage src={user.photoURL} alt={ownProfile?.displayName ?? user.displayName ?? "User"} />
             ) : null}
-            <AvatarFallback className="text-sm font-semibold">{getInitials(userProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+            <AvatarFallback className="text-sm font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold truncate leading-tight">{userProfile?.displayName ?? user?.displayName ?? "User"}</p>
+            <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
           <button
@@ -152,7 +153,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Salary Cycle */}
-      {!isReadOnly && <Card>
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle>Salary Cycle</CardTitle>
         </CardHeader>
@@ -165,12 +166,20 @@ export default function SettingsPage() {
               <button
                 key={day}
                 type="button"
-                onClick={() => handleSelectDay(day)}
+                onClick={() => {
+                  if (isReadOnly) {
+                    toast.info("You can't change your partner's salary date.");
+                    return;
+                  }
+                  handleSelectDay(day);
+                }}
                 className={cn(
                   "h-9 rounded-lg text-sm font-medium transition-all",
                   salaryDay === day
                     ? "bg-primary text-primary-foreground shadow-sm scale-105"
-                    : "bg-muted text-foreground hover:bg-muted/70"
+                    : isReadOnly
+                      ? "bg-muted text-muted-foreground cursor-not-allowed"
+                      : "bg-muted text-foreground hover:bg-muted/70"
                 )}
               >
                 {day}
@@ -183,10 +192,10 @@ export default function SettingsPage() {
               : "Pick your salary day to start tracking cycles."}
           </p>
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* Appearance */}
-      {!isReadOnly && <Card>
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle>Appearance</CardTitle>
         </CardHeader>
@@ -238,10 +247,10 @@ export default function SettingsPage() {
             </div>
           )}
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* Privacy */}
-      {!isReadOnly && <Card>
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle>Privacy</CardTitle>
         </CardHeader>
@@ -275,10 +284,10 @@ export default function SettingsPage() {
             </div>
           </button>
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* Partner Access */}
-      {!(mounted && isImpersonating) && <Card>
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle>Partner Access</CardTitle>
         </CardHeader>
@@ -295,10 +304,10 @@ export default function SettingsPage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleInvitePartner()}
-                  disabled={inviting}
+                  disabled={inviting || isImpersonating}
                   className="flex-1"
                 />
-                <Button size="sm" onClick={handleInvitePartner} disabled={inviting || !inviteEmail.trim()}>
+                <Button size="sm" onClick={handleInvitePartner} disabled={inviting || !inviteEmail.trim() || isImpersonating}>
                   <SendIcon className="size-3.5 mr-1.5" />
                   {inviting ? "Sending…" : "Invite"}
                 </Button>
@@ -322,6 +331,7 @@ export default function SettingsPage() {
                 size="sm"
                 variant="ghost"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full border border-destructive/30"
+                disabled={isImpersonating}
                 onClick={async () => { await cancelInvite(); toast.success("Invite cancelled."); }}
               >
                 <XCircleIcon className="size-3.5 mr-1.5" />
@@ -344,6 +354,7 @@ export default function SettingsPage() {
                   size="sm"
                   variant="outline"
                   className="w-full"
+                  disabled={isImpersonating}
                   onClick={() => { pausePartnerView(); toast.success("Switched back to your data."); }}
                 >
                   <StopCircleIcon className="size-3.5 mr-1.5" />
@@ -354,6 +365,7 @@ export default function SettingsPage() {
                   size="sm"
                   variant="outline"
                   className="w-full"
+                  disabled={isImpersonating}
                   onClick={() => { resumePartnerView(); toast.success("Viewing partner's finances."); }}
                 >
                   <HeartHandshakeIcon className="size-3.5 mr-1.5" />
@@ -365,7 +377,8 @@ export default function SettingsPage() {
                   size="sm"
                   variant="ghost"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full border border-destructive/30"
-                  onClick={async () => { await terminatePartnership(); toast.success("Partner access removed."); }}
+                  disabled={isImpersonating}
+                  onClick={() => setRemovePartnerDialogOpen(true)}
                 >
                   <StopCircleIcon className="size-3.5 mr-1.5" />
                   Remove Partner Access
@@ -374,7 +387,7 @@ export default function SettingsPage() {
             </div>
           )}
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* Install App */}
       <InstallAppCard />
@@ -406,6 +419,30 @@ export default function SettingsPage() {
       <p className="text-center text-xs text-muted-foreground/40 pb-2">
         v{process.env.NEXT_PUBLIC_APP_VERSION}
       </p>
+
+      <Dialog open={removePartnerDialogOpen} onOpenChange={setRemovePartnerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove partner access?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You and your partner will no longer be able to view each other&apos;s finances. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemovePartnerDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setRemovePartnerDialogOpen(false);
+                await terminatePartnership();
+                toast.success("Partner access removed.");
+              }}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={signOutDialogOpen} onOpenChange={setSignOutDialogOpen}>
         <DialogContent>
