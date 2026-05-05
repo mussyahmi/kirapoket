@@ -482,6 +482,10 @@ export default function LandingPage() {
             <Link href="/changelog" className="hover:text-muted-foreground transition-colors">
               v{process.env.NEXT_PUBLIC_APP_VERSION}
             </Link>
+            <span>·</span>
+            <Link href="/privacy" className="hover:text-muted-foreground transition-colors">
+              Privacy Policy
+            </Link>
           </footer>
         </div>
       </div>
@@ -543,7 +547,11 @@ export default function LandingPage() {
                     Continue with Google
                   </Button>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    By signing in you agree to our terms of service and privacy policy.
+                    By signing in you agree to our{" "}
+                    <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                      privacy policy
+                    </Link>
+                    .
                   </p>
                 </div>
               )}
@@ -587,8 +595,12 @@ export default function LandingPage() {
           <span>KiraPoket &copy; {new Date().getFullYear()}</span>
           <span>·</span>
           <Link href="/changelog" className="hover:text-muted-foreground transition-colors">
-              v{process.env.NEXT_PUBLIC_APP_VERSION}
-            </Link>
+            v{process.env.NEXT_PUBLIC_APP_VERSION}
+          </Link>
+          <span>·</span>
+          <Link href="/privacy" className="hover:text-muted-foreground transition-colors">
+            Privacy Policy
+          </Link>
         </footer>
 
       </div>

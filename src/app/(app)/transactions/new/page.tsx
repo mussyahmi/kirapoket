@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
+import { ChevronRightIcon, ArrowLeftIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,8 +34,8 @@ export default function NewTransactionPage() {
     return (
       <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <Button variant="ghost" size="icon" type="button" onClick={() => router.back()}>
-            <ChevronLeftIcon className="size-4" />
+          <Button variant="ghost" size="sm" type="button" className="h-8 w-8 p-0" onClick={() => router.back()}>
+            <ArrowLeftIcon className="size-4" />
           </Button>
           <h1 className="text-xl font-semibold">New Transaction</h1>
         </div>
@@ -255,11 +255,12 @@ export default function NewTransactionPage() {
       <div className="flex items-center gap-2 mb-6">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           type="button"
+          className="h-8 w-8 p-0"
           onClick={() => router.back()}
         >
-          <ChevronLeftIcon className="size-4" />
+          <ArrowLeftIcon className="size-4" />
         </Button>
         <h1 className="text-xl font-semibold">New Transaction</h1>
       </div>

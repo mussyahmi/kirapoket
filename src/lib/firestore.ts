@@ -440,6 +440,14 @@ export async function getRecentActivities(n = 50): Promise<Activity[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Activity));
 }
 
+export async function getUserStats(userId: string): Promise<{ transactions: number; accounts: number }> {
+  const [txSnap, accSnap] = await Promise.all([
+    getDocs(query(collection(db, "transactions"), where("userId", "==", userId))),
+    getDocs(query(collection(db, "accounts"), where("userId", "==", userId))),
+  ]);
+  return { transactions: txSnap.size, accounts: accSnap.size };
+}
+
 /** Latest activities for a single user — for admin per-user drill-down. */
 export async function getUserActivities(userId: string, n = 20): Promise<Activity[]> {
   const q = query(
@@ -643,4 +651,13 @@ export async function getPartnerDeclinedNotification(uid: string): Promise<boole
 
 export async function clearPartnerDeclinedFlag(uid: string): Promise<void> {
   await deleteDoc(doc(db, "notifications", uid));
+}
+
+export async function updatePartnershipName(
+  partnershipId: string,
+  role: "inviter" | "invitee",
+  name: string
+): Promise<void> {
+  const field = role === "inviter" ? "inviterName" : "inviteeName";
+  await updateDoc(doc(db, "partnerships", partnershipId), { [field]: name });
 }

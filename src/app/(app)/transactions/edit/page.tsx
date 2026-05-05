@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { ChevronLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,8 +175,8 @@ function EditTransactionForm() {
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" type="button" onClick={() => router.back()}>
-          <ChevronLeftIcon className="size-4" />
+        <Button variant="ghost" size="sm" type="button" className="h-8 w-8 p-0" onClick={() => router.back()}>
+          <ArrowLeftIcon className="size-4" />
         </Button>
         <h1 className="text-xl font-semibold">Edit Transaction</h1>
       </div>

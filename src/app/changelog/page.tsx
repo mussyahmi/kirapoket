@@ -23,6 +23,9 @@ const releases: Release[] = [
       { type: "fix", text: "Partner view paused/resumed state now persists across app restarts" },
       { type: "fix", text: "Decline button is hidden while an invite acceptance is in progress to prevent a UI glitch" },
       { type: "fix", text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh" },
+      { type: "feat", text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used" },
+      { type: "feat", text: "Edit your display name from Settings — tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly" },
+      { type: "fix", text: "Settings profile card now shows a smooth loading skeleton instead of a blank while your profile data loads" },
     ],
   },
   {

@@ -42,6 +42,7 @@ import {
   stopPartnership,
   getPartnerDeclinedNotification,
   clearPartnerDeclinedFlag,
+  updatePartnershipName,
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
@@ -204,6 +205,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!user) throw new Error("Not authenticated");
     const p = await sendPartnerInvite(user.uid, user.email ?? "", userProfile?.displayName ?? user.displayName, inviteeEmail);
     setPartnership(p);
+    void logActivity(user.uid, "partner_invite", `Invited partner ${inviteeEmail}`);
   }, [user, userProfile]);
 
   const acceptInvite = useCallback(async () => {
@@ -214,13 +216,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPartnership(updated);
     setPendingInvite(null);
     setViewingPartnerUid(pendingInvite.inviterUid);
+    void logActivity(user.uid, "partner_accept", `Accepted partner invite from ${pendingInvite.inviterEmail}`);
   }, [user, userProfile, pendingInvite]);
 
   const declineInvite = useCallback(async () => {
-    if (!pendingInvite) return;
+    if (!pendingInvite || !user) return;
     await declinePartnership(pendingInvite.id);
     setPendingInvite(null);
-  }, [pendingInvite]);
+    void logActivity(user.uid, "partner_decline", `Declined partner invite from ${pendingInvite.inviterEmail}`);
+  }, [pendingInvite, user]);
 
   const pausePartnerView = useCallback(() => {
     partnerViewPaused.current = true;
@@ -245,11 +249,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("partnerViewPaused");
     setPartnership(null);
     setViewingPartnerUid(null);
+    const partnerEmail = partnership.inviterUid === user.uid ? partnership.inviteeEmail : partnership.inviterEmail;
+    void logActivity(user.uid, "partner_disconnect", `Disconnected from partner ${partnerEmail}`);
   }, [partnership, user]);
 
   const cancelInvite = useCallback(async () => {
     if (!partnership || !user) return;
     await stopPartnership(partnership.id, user.uid);
+    void logActivity(user.uid, "partner_cancel", `Cancelled partner invite to ${partnership.inviteeEmail}`);
     setPartnership(null);
   }, [partnership, user]);
 
@@ -401,6 +408,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [impersonatedUid, userProfile]);
 
+  // Returns "L1 > L2 > L3" for a given categoryId, or "" if not found
+  const categoryPath = useCallback((categoryId: string | undefined, cats: Category[]): string => {
+    if (!categoryId) return "";
+    const cat = cats.find((c) => c.id === categoryId);
+    if (!cat) return "";
+    if (cat.level === 1) return cat.name;
+    const parent = cats.find((c) => c.id === cat.parentId);
+    if (!parent) return cat.name;
+    if (parent.level === 1) return `${parent.name} > ${cat.name}`;
+    const grandparent = cats.find((c) => c.id === parent.parentId);
+    return grandparent ? `${grandparent.name} > ${parent.name} > ${cat.name}` : `${parent.name} > ${cat.name}`;
+  }, []);
+
   // ── Account CRUD ──────────────────────────────────────────────────────────
 
   const createAccount = useCallback(
@@ -489,7 +509,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       const tx = await addTransaction(uid, data);
       setTransactions((prev) => sortTransactions([tx, ...prev]));
-      void logActivity(uid, "transaction_add", `Added ${data.type} RM ${data.amount.toFixed(2)}`);
+      const path = categoryPath(data.categoryId, categories);
+      void logActivity(uid, "transaction_add", `Added ${data.type} RM ${data.amount.toFixed(2)}${path ? ` · ${path}` : ""}`);
 
       // Update account balance(s)
       setAccounts((prev) =>
@@ -527,7 +548,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       return tx;
     },
-    [uid, accounts]
+    [uid, accounts, categories, categoryPath]
   );
 
   const editTransaction = useCallback(
@@ -572,15 +593,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const acc = accounts.find((a) => a.id === accId);
         if (acc) await updateAccount(accId, { balance: acc.balance + delta });
       }
+
+      if (uid) {
+        const path = categoryPath(updated.categoryId, categories);
+        const amountChanged = old.amount !== updated.amount ? ` RM ${old.amount.toFixed(2)} → RM ${updated.amount.toFixed(2)}` : ` RM ${updated.amount.toFixed(2)}`;
+        void logActivity(uid, "transaction_edit", `Edited ${updated.type}${amountChanged}${path ? ` · ${path}` : ""}`);
+      }
     },
-    [transactions, accounts]
+    [transactions, accounts, uid, categories, categoryPath]
   );
 
   const removeTransaction = useCallback(async (id: string) => {
     const tx = transactions.find((t) => t.id === id);
     await deleteTransaction(id);
     setTransactions((prev) => prev.filter((t) => t.id !== id));
-    if (tx && uid) void logActivity(uid, "transaction_delete", `Deleted ${tx.type} RM ${tx.amount.toFixed(2)}`);
+    if (tx && uid) {
+      const path = categoryPath(tx.categoryId, categories);
+      void logActivity(uid, "transaction_delete", `Deleted ${tx.type} RM ${tx.amount.toFixed(2)}${path ? ` · ${path}` : ""}`);
+    }
 
     if (!tx) return;
 
@@ -617,7 +647,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (from) await updateAccount(tx.accountId, { balance: from.balance + tx.amount });
       if (to && tx.toAccountId) await updateAccount(tx.toAccountId, { balance: to.balance - tx.amount });
     }
-  }, [transactions, accounts, uid]);
+  }, [transactions, accounts, uid, categories, categoryPath]);
 
   // ── Debt CRUD ─────────────────────────────────────────────────────────────
 
@@ -661,8 +691,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!viewingPartnerUid && !impersonatedUid) {
         setOwnProfile((prev) => (prev ? { ...prev, ...data } : prev));
       }
+      if (data.displayName && partnership?.id) {
+        const role = partnership.inviterUid === uid ? "inviter" : "invitee";
+        await updatePartnershipName(partnership.id, role, data.displayName);
+        setPartnership((prev) => prev ? {
+          ...prev,
+          ...(role === "inviter" ? { inviterName: data.displayName! } : { inviteeName: data.displayName }),
+        } : prev);
+      }
     },
-    [uid]
+    [uid, partnership]
   );
 
   return (

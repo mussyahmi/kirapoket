@@ -3,12 +3,18 @@ import { Timestamp } from "firebase/firestore";
 export type ActivityType =
   | "login"
   | "transaction_add"
+  | "transaction_edit"
   | "transaction_delete"
   | "account_add"
   | "account_delete"
   | "debt_add"
   | "debt_settle"
-  | "debt_delete";
+  | "debt_delete"
+  | "partner_invite"
+  | "partner_accept"
+  | "partner_decline"
+  | "partner_cancel"
+  | "partner_disconnect";
 
 export interface Activity {
   id: string;

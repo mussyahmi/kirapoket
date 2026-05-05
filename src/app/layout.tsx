@@ -7,6 +7,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { Toaster } from "@/components/ui/sonner";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ThemeColorSync } from "@/components/ThemeColorSync";
+import { SuppressNextThemesWarning } from "@/components/SuppressNextThemesWarning";
 
 const nunito = Nunito({
   variable: "--font-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <ThemeColorSync />
+          <SuppressNextThemesWarning />
           <AuthProvider>
             <AppProvider>
               {children}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -7,7 +8,7 @@ import {
   LogOutIcon, SunIcon, MoonIcon, TrashIcon,
   HeartHandshakeIcon, SendIcon, XCircleIcon,
   StopCircleIcon, CheckCircle2Icon, EyeOffIcon, EyeIcon,
-  ClockIcon,
+  ClockIcon, PencilIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
@@ -32,7 +33,7 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ElementTyp
 export default function SettingsPage() {
   const { user, signOut, deleteUserAccount } = useAuth();
   const {
-    userProfile, ownProfile, saveUserProfile, partnership, isViewingPartner, isImpersonating,
+    userProfile, ownProfile, saveUserProfile, loadingProfile, partnership, isViewingPartner, isImpersonating,
     invitePartner, cancelInvite, pausePartnerView, resumePartnerView, terminatePartnership,
   } = useApp();
   const { resolvedTheme, setTheme } = useTheme();
@@ -40,6 +41,9 @@ export default function SettingsPage() {
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
   const [hideBalance, setHideBalance] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [editNameDialogOpen, setEditNameDialogOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const isReadOnly = mounted && (isViewingPartner || isImpersonating);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -73,6 +77,26 @@ export default function SettingsPage() {
       await saveUserProfile({ hideBalance: next });
     } catch {
       toast.error("Failed to save preference.");
+    }
+  };
+
+  const handleOpenEditName = () => {
+    setNameInput(ownProfile?.displayName ?? user?.displayName ?? "");
+    setEditNameDialogOpen(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed) { toast.error("Name can't be empty."); return; }
+    setSavingName(true);
+    try {
+      await saveUserProfile({ displayName: trimmed });
+      setEditNameDialogOpen(false);
+      toast.success("Name updated.");
+    } catch {
+      toast.error("Failed to update name.");
+    } finally {
+      setSavingName(false);
     }
   };
 
@@ -131,15 +155,38 @@ export default function SettingsPage() {
       {/* Profile */}
       <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
         <CardContent className="flex items-center gap-4 py-5">
-          <Avatar size="lg" className="shrink-0 shadow-sm">
-            {user?.photoURL ? (
-              <AvatarImage src={user.photoURL} alt={ownProfile?.displayName ?? user.displayName ?? "User"} />
-            ) : null}
-            <AvatarFallback className="text-sm font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
-          </Avatar>
+          {loadingProfile ? (
+            <div className="size-10 shrink-0 rounded-full bg-muted animate-pulse" />
+          ) : (
+            <Avatar size="lg" className="shrink-0 shadow-sm">
+              {user?.photoURL ? (
+                <AvatarImage src={user.photoURL} alt={ownProfile?.displayName ?? user.displayName ?? "User"} />
+              ) : null}
+              <AvatarFallback className="text-sm font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+            </Avatar>
+          )}
           <div className="min-w-0 flex-1">
-            <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            {loadingProfile ? (
+              <div className="space-y-2">
+                <div className="h-4 w-32 rounded-md bg-muted animate-pulse" />
+                <div className="h-3 w-44 rounded-md bg-muted animate-pulse" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenEditName}
+                    title="Edit name"
+                    className="shrink-0 rounded-md p-1 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <PencilIcon className="size-3" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              </>
+            )}
           </div>
           <button
             type="button"
@@ -416,9 +463,41 @@ export default function SettingsPage() {
         </Card>
       </>}
 
-      <p className="text-center text-xs text-muted-foreground/40 pb-2">
-        v{process.env.NEXT_PUBLIC_APP_VERSION}
+      <p className="text-center text-xs text-muted-foreground/40 pb-2 space-x-2">
+        <span>KiraPoket &copy; {new Date().getFullYear()}</span>
+        <span>·</span>
+        <Link href="/changelog" className="hover:text-muted-foreground transition-colors">
+          v{process.env.NEXT_PUBLIC_APP_VERSION}
+        </Link>
+        <span>·</span>
+        <Link href="/privacy" className="hover:text-muted-foreground transition-colors">
+          Privacy Policy
+        </Link>
       </p>
+
+      <Dialog open={editNameDialogOpen} onOpenChange={(o) => !savingName && setEditNameDialogOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit display name</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+            disabled={savingName}
+            placeholder="Your name"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditNameDialogOpen(false)} disabled={savingName}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveName} disabled={savingName || !nameInput.trim()}>
+              {savingName ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={removePartnerDialogOpen} onOpenChange={setRemovePartnerDialogOpen}>
         <DialogContent>
