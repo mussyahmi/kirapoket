@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isToday, isYesterday } from "date-fns";
 import {
   PlusIcon,
   ArrowUpRightIcon,
@@ -54,25 +54,32 @@ function TransactionsPage() {
     } catch { return null; }
   };
 
+  const hasUrlParams = searchParams.get("account") !== null || searchParams.get("category") !== null || searchParams.get("from") !== null || searchParams.get("to") !== null;
+
   const [filterType, setFilterType] = useState<FilterType>(() => {
+    if (hasUrlParams) return "all";
     const stored = loadStored();
     return stored?.filterType ?? "all";
   });
   const [filterAccount, setFilterAccount] = useState<string>(() => {
+    if (hasUrlParams) return searchParams.get("account") ?? "all";
     const stored = loadStored();
-    return stored?.filterAccount ?? searchParams.get("account") ?? "all";
+    return stored?.filterAccount ?? "all";
   });
   const [filterCategory, setFilterCategory] = useState<string>(() => {
+    if (hasUrlParams) return searchParams.get("category") ?? "all";
     const stored = loadStored();
-    return stored?.filterCategory ?? searchParams.get("category") ?? "all";
+    return stored?.filterCategory ?? "all";
   });
   const [dateFrom, setDateFrom] = useState(() => {
+    if (hasUrlParams) return searchParams.get("from") ?? "";
     const stored = loadStored();
-    return stored?.dateFrom ?? searchParams.get("from") ?? "";
+    return stored?.dateFrom ?? "";
   });
   const [dateTo, setDateTo] = useState(() => {
+    if (hasUrlParams) return searchParams.get("to") ?? "";
     const stored = loadStored();
-    return stored?.dateTo ?? searchParams.get("to") ?? "";
+    return stored?.dateTo ?? "";
   });
 
   useEffect(() => {
@@ -311,7 +318,7 @@ function TransactionsPage() {
             <div key={date}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium text-muted-foreground">
-                  {format(parseISO(date), "EEEE, d MMMM yyyy")}
+                  {isToday(parseISO(date)) ? "Today" : isYesterday(parseISO(date)) ? "Yesterday" : format(parseISO(date), "EEEE, d MMMM yyyy")}
                 </p>
                 {(() => {
                   const net = txs.reduce((sum, t) => {

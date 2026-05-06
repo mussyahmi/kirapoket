@@ -26,6 +26,10 @@ const releases: Release[] = [
     latest: true,
     changes: [
       { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
+      { type: "feat", text: "Recent transactions on the home page and the full transactions list are now grouped by date — today's and yesterday's entries show as 'Today' and 'Yesterday' instead of the full date" },
+      { type: "feat", text: "Support dialog on mobile: QR codes are now shown as a swipeable carousel with previous/next arrows and dot indicators, so the dialog is less cramped on small screens" },
+      { type: "fix", text: "Tapping a link on the home page to view transactions filtered by account or category no longer merges with previously saved filter state — URL params always take full priority" },
+      { type: "fix", text: "Transaction subtitle on the home page now shows the note instead of the date, since date is already shown in the group header" },
       { type: "feat", text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite" },
       { type: "feat", text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used" },
       { type: "feat", text: "Edit your display name from Settings — tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly; profile card shows a skeleton while loading" },

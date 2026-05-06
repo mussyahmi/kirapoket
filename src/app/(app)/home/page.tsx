@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format, addMonths, differenceInDays, parseISO } from "date-fns";
+import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApp } from "@/contexts/AppContext";
@@ -645,64 +645,74 @@ export default function DashboardPage() {
               )}
               {!isReadOnly && "."}
             </p>
-          ) : (
-            recentTransactions.map((tx) => {
-              const account = accounts.find((a) => a.id === tx.accountId);
-              const category = tx.categoryId
-                ? categoryMap[tx.categoryId]
-                : null;
-              return (
-                <div
-                  key={tx.id}
-                  className="flex items-center gap-3 py-1.5"
-                >
-                  <div
-                    className={cn(
-                      "flex items-center justify-center size-8 rounded-full shrink-0",
-                      tx.type === "income"
-                        ? "bg-green-100 text-green-600 dark:bg-green-900/30"
-                        : tx.type === "transfer"
-                        ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                        : "bg-red-100 text-red-600 dark:bg-red-900/30"
-                    )}
-                  >
-                    {tx.type === "income" ? (
-                      <ArrowDownRightIcon className="size-4" />
-                    ) : tx.type === "transfer" ? (
-                      <ArrowLeftRightIcon className="size-4" />
-                    ) : (
-                      <ArrowUpRightIcon className="size-4" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {tx.type === "expense"
-                        ? (category?.name ?? "Expense")
-                        : tx.type === "income"
-                        ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
-                        : "Transfer"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {account?.name} · {format(parseISO(tx.date), "d MMM yyyy")}{tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm font-semibold shrink-0",
-                      tx.type === "income"
-                        ? "text-green-600 dark:text-green-400"
-                        : tx.type === "transfer"
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-red-600 dark:text-red-400"
-                    )}
-                  >
-                    {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
-                    {formatMoney(tx.amount)}
-                  </span>
+          ) : (() => {
+            const groups: { label: string; txs: typeof recentTransactions }[] = [];
+            for (const tx of recentTransactions) {
+              const d = parseISO(tx.date);
+              const label = isToday(d) ? "Today" : isYesterday(d) ? "Yesterday" : format(d, "EEEE, d MMM yyyy");
+              const last = groups[groups.length - 1];
+              if (last?.label === label) last.txs.push(tx);
+              else groups.push({ label, txs: [tx] });
+            }
+            return groups.map(({ label, txs }) => (
+              <div key={label}>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5 mt-3 first:mt-0">{label}</p>
+                <div className="space-y-0.5">
+                  {txs.map((tx) => {
+                    const account = accounts.find((a) => a.id === tx.accountId);
+                    const category = tx.categoryId ? categoryMap[tx.categoryId] : null;
+                    return (
+                      <div key={tx.id} className="flex items-center gap-3 py-1.5">
+                        <div
+                          className={cn(
+                            "flex items-center justify-center size-8 rounded-full shrink-0",
+                            tx.type === "income"
+                              ? "bg-green-100 text-green-600 dark:bg-green-900/30"
+                              : tx.type === "transfer"
+                              ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
+                              : "bg-red-100 text-red-600 dark:bg-red-900/30"
+                          )}
+                        >
+                          {tx.type === "income" ? (
+                            <ArrowDownRightIcon className="size-4" />
+                          ) : tx.type === "transfer" ? (
+                            <ArrowLeftRightIcon className="size-4" />
+                          ) : (
+                            <ArrowUpRightIcon className="size-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {tx.type === "expense"
+                              ? (category?.name ?? "Expense")
+                              : tx.type === "income"
+                              ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
+                              : "Transfer"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {account?.name}{tx.note ? ` · ${tx.note}` : ""}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "text-sm font-semibold shrink-0",
+                            tx.type === "income"
+                              ? "text-green-600 dark:text-green-400"
+                              : tx.type === "transfer"
+                              ? "text-blue-600 dark:text-blue-400"
+                              : "text-red-600 dark:text-red-400"
+                          )}
+                        >
+                          {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
+                          {formatMoney(tx.amount)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })
-          )}
+              </div>
+            ));
+          })()}
         </CardContent>
       </Card>
       )}

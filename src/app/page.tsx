@@ -205,23 +205,34 @@ function MockDashboard() {
 
       {/* recent transactions */}
       <MockCard title="Recent Transactions">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[
-            { name: "Work Meals", sub: "Maybank · 4 May 2026, 1:12 PM", amount: "-RM 18.50", income: false },
-            { name: "Salary", sub: "Maybank · 25 Apr 2026, 9:00 AM", amount: "+RM 4,500", income: true },
-            { name: "Grab", sub: "Touch 'n Go · 3 May 2026, 8:22 PM", amount: "-RM 12.00", income: false },
-          ].map(({ name, sub, amount, income }) => (
-            <div key={name} className="flex items-center gap-2.5">
-              <div className={`size-7 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
-                {income ? <ArrowDownRight className="size-3.5" /> : <ArrowUpRight className="size-3.5" />}
+            { group: "Today", txs: [
+              { name: "Work Meals", sub: "Maybank · Office lunch", amount: "-RM 18.50", income: false },
+              { name: "Parking", sub: "Maybank · Mrt sungai buloh", amount: "-RM 10.00", income: false },
+            ]},
+            { group: "Yesterday", txs: [
+              { name: "Snacks & Drinks", sub: "Maybank · Zus coffee", amount: "-RM 27.60", income: false },
+            ]},
+          ].map(({ group, txs }) => (
+            <div key={group}>
+              <p className="text-[9px] font-medium text-muted-foreground mb-1">{group}</p>
+              <div className="space-y-1.5">
+                {txs.map(({ name, sub, amount, income }) => (
+                  <div key={name + sub} className="flex items-center gap-2.5">
+                    <div className={`size-7 rounded-full shrink-0 flex items-center justify-center ${income ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
+                      {income ? <ArrowDownRight className="size-3.5" /> : <ArrowUpRight className="size-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-medium text-foreground truncate">{name}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">{sub}</p>
+                    </div>
+                    <span className={`text-[10px] font-semibold shrink-0 ${income ? "text-green-600" : "text-red-500"}`}>
+                      {amount}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-medium text-foreground truncate">{name}</p>
-                <p className="text-[9px] text-muted-foreground">{sub}</p>
-              </div>
-              <span className={`text-[10px] font-semibold shrink-0 ${income ? "text-green-600" : "text-red-500"}`}>
-                {amount}
-              </span>
             </div>
           ))}
         </div>
