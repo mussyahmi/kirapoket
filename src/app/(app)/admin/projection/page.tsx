@@ -28,14 +28,14 @@ const MILESTONE_DEFS = [
     step: "02",
     phase: "Early Adopter Pricing",
     mau: "100+ MAU",
-    action: "Launch Pro at RM 29/year — locked forever. First 50 users only. Half the regular price.",
+    action: "Open 50 early adopter slots at RM 29/year — price locked forever as long as they keep renewing. No feature restrictions yet, free tier stays unlimited. People pay to support + secure the deal. RM 59/year exists but nobody has a reason to pay it here — don't push it. After 50 slots fill, new subscribers pay RM 59/year or RM 6.90/month.",
     threshold: 100,
   },
   {
     step: "03",
     phase: "Full Monetize",
     mau: "500+ MAU",
-    action: "Activate freemium paywall at RM 59/year.",
+    action: "Flip on the freemium paywall — free tier now has real limits (3 accounts max, AI insights rate-limited, etc). This is when RM 59/year or RM 6.90/month actually has value. Existing free users grandfathered: fully functional but can't create more than 3 accounts. Early adopters keep renewing at RM 29/year — if they cancel and return, they lose the price lock.",
     threshold: 500,
   },
 ];
@@ -43,7 +43,7 @@ const MILESTONE_DEFS = [
 const FREE_FEATURES = [
   "1 partner link",
   "AI insights once per 24 hours",
-  "Up to 3 accounts",
+  "Up to 3 accounts (cap activates at Stage 03)",
   "Core transactions & budgeting",
 ];
 
@@ -242,14 +242,6 @@ export default function ProjectionPage() {
           </div>
         </div>
 
-        <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Early adopter note</p>
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Early adopter pricing is <span className="font-semibold text-foreground">annual only (RM 29/yr)</span> — no monthly option.
-            Annual gives committed cash upfront and "locked forever" only makes sense as a yearly deal.
-            Add monthly billing later when launching regular Pro.
-          </p>
-        </div>
 
         <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">
           Why RM 59/year — Malaysian users resist monthly subs but accept annual if value is clear.

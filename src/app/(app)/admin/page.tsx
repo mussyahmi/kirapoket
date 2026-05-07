@@ -157,6 +157,11 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* MAU calculation note */}
+          <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg px-3 py-2 leading-relaxed">
+            MAU = <span className="font-semibold">login-based</span>. Switch to activity-based at ~50 MAU before the 100 MAU milestone locks in early adopter pricing.
+          </p>
+
           {/* Progress to 500 MAU */}
           <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-2">
             <div className="flex items-center justify-between">
