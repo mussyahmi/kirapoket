@@ -36,6 +36,7 @@ const releases: Release[] = [
       { type: "fix", text: "Decline button is hidden while an invite acceptance is in progress to prevent a UI glitch" },
       { type: "fix", text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh" },
       { type: "fix", text: "Tapping a filtered-transactions link on the home page no longer merges with previously saved filter state; transaction subtitle now shows the note instead of the date" },
+      { type: "fix", text: "Home dashboard summary: renamed 'Savings' to 'Balance' — the figure is income minus expenses for the cycle, not intentional savings" },
     ],
   },
   {
