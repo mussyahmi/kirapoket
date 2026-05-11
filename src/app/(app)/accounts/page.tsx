@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -205,7 +205,7 @@ function SortableAccountRow({
   );
 }
 
-export default function AccountsPage() {
+function AccountsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts, isViewingPartner, isImpersonating } =
@@ -550,4 +550,8 @@ export default function AccountsPage() {
       />
     </div>
   );
+}
+
+export default function AccountsPageWrapper() {
+  return <Suspense><AccountsPage /></Suspense>;
 }

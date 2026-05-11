@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
@@ -38,7 +38,7 @@ const ACCOUNT_TYPE_DOT: Record<string, string> = {
 
 const ACCOUNTS_COLLAPSE = 4;
 
-export default function DashboardPage() {
+function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -763,4 +763,8 @@ export default function DashboardPage() {
       </Dialog>
     </div>
   );
+}
+
+export default function DashboardPageWrapper() {
+  return <Suspense><DashboardPage /></Suspense>;
 }

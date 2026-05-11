@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import type { Category } from "@/lib/types";
 
 type TxType = "expense" | "income" | "transfer";
 
-export default function NewTransactionPage() {
+function NewTransactionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
@@ -410,4 +410,8 @@ export default function NewTransactionPage() {
       </form>
     </div>
   );
+}
+
+export default function NewTransactionPageWrapper() {
+  return <Suspense><NewTransactionPage /></Suspense>;
 }

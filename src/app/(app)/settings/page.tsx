@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ElementTyp
   { value: "dark", label: "Dark", icon: MoonIcon },
 ];
 
-export default function SettingsPage() {
+function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, signOut, deleteUserAccount } = useAuth();
@@ -576,4 +576,8 @@ export default function SettingsPage() {
       />
     </div>
   );
+}
+
+export default function SettingsPageWrapper() {
+  return <Suspense><SettingsPage /></Suspense>;
 }
