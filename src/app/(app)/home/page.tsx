@@ -318,8 +318,8 @@ export default function DashboardPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">{activeStep.description}</p>
                   </div>
                 </div>
-                <Button size="sm" className="w-full" asChild>
-                  <Link href={activeStep.href}>{activeStep.cta}</Link>
+                <Button size="sm" className="w-full" onClick={() => router.push(activeStep.href)}>
+                  {activeStep.cta}
                 </Button>
               </div>
             </CardContent>
