@@ -83,6 +83,7 @@ service cloud.firestore {
     match /activities/{docId} {
       allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
     match /insights/{docId} {

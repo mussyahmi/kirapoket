@@ -141,8 +141,8 @@ function EditTransactionForm() {
       });
       toast.success("Transaction updated.");
       router.push("/transactions");
-    } catch {
-      toast.error("Failed to update transaction.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update transaction.");
     } finally {
       setSubmitting(false);
     }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const L1_COLORS: Record<string, string> = {
@@ -39,6 +40,7 @@ const ACCOUNTS_COLLAPSE = 4;
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     userProfile,
     accounts,
@@ -62,6 +64,7 @@ export default function DashboardPage() {
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [showAllAccounts, setShowAllAccounts] = useState(false);
+  const [onboardingDoneOpen, setOnboardingDoneOpen] = useState(() => searchParams.get("onboarding") === "done");
 
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
@@ -236,32 +239,39 @@ export default function DashboardPage() {
     [transactions]
   );
 
-  const formatMoney = (n: number) =>
-    hideBalance
-      ? "••••"
-      : new Intl.NumberFormat("ms-MY", {
-          style: "currency",
-          currency: "MYR",
-          minimumFractionDigits: 2,
-        }).format(n);
+  const formatMoney = (n: number) => {
+    if (hideBalance) return "••••";
+    const v = parseFloat(n.toFixed(2));
+    return new Intl.NumberFormat("ms-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+    }).format(v === 0 ? 0 : v);
+  };
 
   const loading = loadingTransactions || loadingAccounts || loadingProfile;
 
   const onboardingSteps = [
     {
       label: "Set your salary day",
+      description: "So we know your spending cycle.",
+      cta: "Go to Settings",
       done: userProfile?.salaryDay != null,
-      href: "/settings",
+      href: "/settings?from=onboarding",
     },
     {
       label: "Add your first account",
+      description: "Track your cash, bank, and e-wallet balances.",
+      cta: "Add Account",
       done: accounts.length > 0,
-      href: "/accounts",
+      href: "/accounts?from=onboarding",
     },
-{
+    {
       label: "Record your first transaction",
+      description: "Log an expense or income to start tracking.",
+      cta: "Add Transaction",
       done: transactions.length > 0,
-      href: "/transactions/new",
+      href: "/transactions/new?from=onboarding",
     },
   ];
 
@@ -270,39 +280,52 @@ export default function DashboardPage() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
       {/* Onboarding Checklist */}
-      {!loading && !onboardingComplete && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-base">Get started</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Complete these steps to set up KiraPoket.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {onboardingSteps.map(({ label, done, href }) => (
-              <Link
-                key={label}
-                href={done ? "#" : href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                  done
-                    ? "opacity-50 cursor-default"
-                    : "hover:bg-primary/10 cursor-pointer"
-                )}
-              >
-                {done ? (
-                  <CheckCircle2Icon className="size-4 text-primary shrink-0" />
-                ) : (
-                  <CircleIcon className="size-4 text-muted-foreground shrink-0" />
-                )}
-                <span className={cn(done && "line-through text-muted-foreground")}>
-                  {label}
+      {!loading && !onboardingComplete && (() => {
+        const doneSteps = onboardingSteps.filter((s) => s.done);
+        const activeStep = onboardingSteps.find((s) => !s.done)!;
+        return (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-base">Get started</CardTitle>
+              <CardAction>
+                <span className="text-xs text-muted-foreground font-medium">
+                  {doneSteps.length} of {onboardingSteps.length} done
                 </span>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              </CardAction>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="h-1 rounded-full bg-primary/15 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${(doneSteps.length / onboardingSteps.length) * 100}%` }}
+                />
+              </div>
+              {doneSteps.length > 0 && (
+                <div className="space-y-1.5">
+                  {doneSteps.map(({ label }) => (
+                    <div key={label} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2Icon className="size-3.5 text-primary shrink-0" />
+                      <span>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="rounded-lg bg-background border border-border p-3 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <CircleIcon className="size-4 text-primary shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{activeStep.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{activeStep.description}</p>
+                  </div>
+                </div>
+                <Button size="sm" className="w-full" asChild>
+                  <Link href={activeStep.href}>{activeStep.cta}</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Cycle Selector */}
       <div className="flex items-center justify-between">
@@ -660,6 +683,7 @@ export default function DashboardPage() {
                 <div className="space-y-0.5">
                   {txs.map((tx) => {
                     const account = accounts.find((a) => a.id === tx.accountId);
+                    const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
                     const category = tx.categoryId ? categoryMap[tx.categoryId] : null;
                     return (
                       <div key={tx.id} className="flex items-center gap-3 py-1.5">
@@ -690,7 +714,9 @@ export default function DashboardPage() {
                               : "Transfer"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {account?.name}{tx.note ? ` · ${tx.note}` : ""}
+                            {tx.type === "transfer"
+                              ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}${tx.note ? ` · ${tx.note}` : ""}`
+                              : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
                           </p>
                         </div>
                         <span
@@ -716,6 +742,25 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
       )}
+      <Dialog open={onboardingDoneOpen} onOpenChange={setOnboardingDoneOpen}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="flex flex-col items-center gap-3 py-2">
+            <span className="text-4xl">🎉</span>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">You&apos;re all set!</h2>
+              <p className="text-sm text-muted-foreground">
+                KiraPoket is ready. Start tracking your spending and take control of your finances.
+              </p>
+            </div>
+            <Button className="w-full mt-2" onClick={() => {
+              setOnboardingDoneOpen(false);
+              router.replace("/home");
+            }}>
+              Let&apos;s go!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

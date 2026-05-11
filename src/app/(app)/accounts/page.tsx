@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { OnboardingNextModal } from "@/components/common/OnboardingNextModal";
 import {
   PlusIcon,
   PencilIcon,
@@ -204,10 +206,13 @@ function SortableAccountRow({
 }
 
 export default function AccountsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts, isViewingPartner, isImpersonating } =
     useApp();
 
   const isReadOnly = isViewingPartner || isImpersonating;
+  const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const hideBalance = userProfile?.hideBalance ?? false;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -247,14 +252,15 @@ export default function AccountsPage() {
       .sort(([, a], [, b]) => b - a);
   }, [accounts]);
 
-  const formatMoney = (n: number) =>
-    hideBalance
-      ? "••••"
-      : new Intl.NumberFormat("ms-MY", {
-          style: "currency",
-          currency: "MYR",
-          minimumFractionDigits: 2,
-        }).format(n);
+  const formatMoney = (n: number) => {
+    if (hideBalance) return "••••";
+    const v = parseFloat(n.toFixed(2));
+    return new Intl.NumberFormat("ms-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+    }).format(v === 0 ? 0 : v);
+  };
 
   const openCreate = () => {
     setEditTarget(null);
@@ -298,7 +304,11 @@ export default function AccountsPage() {
           type: form.type,
           balance,
         });
-        toast.success("Account created.");
+        if (accounts.length === 0 && searchParams.get("from") === "onboarding") {
+          setOnboardingModalOpen(true);
+        } else {
+          toast.success("Account created.");
+        }
       }
       setDialogOpen(false);
     } catch {
@@ -528,6 +538,16 @@ export default function AccountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OnboardingNextModal
+        open={onboardingModalOpen}
+        onClose={() => setOnboardingModalOpen(false)}
+        completedStep="Account added!"
+        nextStep="Record your first transaction"
+        nextDescription="Log an expense or income to start tracking."
+        ctaLabel="Add Transaction"
+        ctaHref="/transactions/new?from=onboarding"
+      />
     </div>
   );
 }

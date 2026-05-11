@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { InstallAppCard } from "@/components/common/InstallAppCard";
+import { OnboardingNextModal } from "@/components/common/OnboardingNextModal";
 
 type ThemeOption = "light" | "dark";
 
@@ -31,6 +33,8 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ElementTyp
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, signOut, deleteUserAccount } = useAuth();
   const {
     userProfile, ownProfile, saveUserProfile, loadingProfile, partnership, isViewingPartner, isImpersonating,
@@ -51,6 +55,7 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [removePartnerDialogOpen, setRemovePartnerDialogOpen] = useState(false);
+  const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -65,6 +70,9 @@ export default function SettingsPage() {
     setSalaryDay(day);
     try {
       await saveUserProfile({ salaryDay: day });
+      if (searchParams.get("from") === "onboarding") {
+        setOnboardingModalOpen(true);
+      }
     } catch {
       toast.error("Failed to save salary day.");
     }
@@ -556,6 +564,16 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OnboardingNextModal
+        open={onboardingModalOpen}
+        onClose={() => setOnboardingModalOpen(false)}
+        completedStep="Salary day set!"
+        nextStep="Add your first account"
+        nextDescription="Track your cash, bank, and e-wallet balances."
+        ctaLabel="Add Account"
+        ctaHref="/accounts?from=onboarding"
+      />
     </div>
   );
 }

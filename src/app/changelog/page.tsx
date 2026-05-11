@@ -25,6 +25,11 @@ const releases: Release[] = [
     dateRange: "2026-05-04 – present",
     latest: true,
     changes: [
+      { type: "feat", text: "Onboarding redesign — the Get Started card now focuses on one step at a time with a progress bar, a description, and a clear action button; completing each step shows a modal pointing you to the next one; finishing all steps shows a completion message" },
+      { type: "feat", text: "Account balance protection — expenses and transfers are rejected before saving if they would make the account balance negative; the error message tells you exactly which account is short and by how much" },
+      { type: "fix", text: "Transaction filter state is no longer saved across sessions — filters now only restore when returning directly from the edit page, so visiting the list fresh always starts clean" },
+      { type: "fix", text: "Transfer notes now appear in the recent transactions list on the home dashboard and in the full transactions list" },
+      { type: "fix", text: "Delete account now works reliably — all your data is wiped and you are signed out immediately" },
       { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
       { type: "feat", text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite" },
       { type: "feat", text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used" },

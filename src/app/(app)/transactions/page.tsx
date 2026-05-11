@@ -45,48 +45,41 @@ function TransactionsPage() {
 
   const searchParams = useSearchParams();
 
-  const STORAGE_KEY = "txFilters";
-
-  const loadStored = () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  };
+  const EDIT_RETURN_KEY = "txFilters:editReturn";
 
   const hasUrlParams = searchParams.get("account") !== null || searchParams.get("category") !== null || searchParams.get("from") !== null || searchParams.get("to") !== null;
 
+  // Read once and immediately clear — only relevant when returning from edit
+  const editReturn = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem(EDIT_RETURN_KEY);
+      if (!raw) return null;
+      sessionStorage.removeItem(EDIT_RETURN_KEY);
+      return JSON.parse(raw);
+    } catch { return null; }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [filterType, setFilterType] = useState<FilterType>(() => {
     if (hasUrlParams) return "all";
-    const stored = loadStored();
-    return stored?.filterType ?? "all";
+    return editReturn?.filterType ?? "all";
   });
   const [filterAccount, setFilterAccount] = useState<string>(() => {
     if (hasUrlParams) return searchParams.get("account") ?? "all";
-    const stored = loadStored();
-    return stored?.filterAccount ?? "all";
+    return editReturn?.filterAccount ?? "all";
   });
   const [filterCategory, setFilterCategory] = useState<string>(() => {
     if (hasUrlParams) return searchParams.get("category") ?? "all";
-    const stored = loadStored();
-    return stored?.filterCategory ?? "all";
+    return editReturn?.filterCategory ?? "all";
   });
   const [dateFrom, setDateFrom] = useState(() => {
     if (hasUrlParams) return searchParams.get("from") ?? "";
-    const stored = loadStored();
-    return stored?.dateFrom ?? "";
+    return editReturn?.dateFrom ?? "";
   });
   const [dateTo, setDateTo] = useState(() => {
     if (hasUrlParams) return searchParams.get("to") ?? "";
-    const stored = loadStored();
-    return stored?.dateTo ?? "";
+    return editReturn?.dateTo ?? "";
   });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ filterType, filterAccount, filterCategory, dateFrom, dateTo }));
-    } catch { /* ignore */ }
-  }, [filterType, filterAccount, filterCategory, dateFrom, dateTo]);
 
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -104,7 +97,7 @@ function TransactionsPage() {
     setDateFrom("");
     setDateTo("");
     resetVisible();
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    try { sessionStorage.removeItem(EDIT_RETURN_KEY); } catch { /* ignore */ }
   };
 
   const categoryMap = useMemo(
@@ -383,7 +376,7 @@ function TransactionsPage() {
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {tx.type === "transfer"
-                              ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}`
+                              ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}${tx.note ? ` · ${tx.note}` : ""}`
                               : tx.type === "income"
                               ? account?.name
                               : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
@@ -488,7 +481,10 @@ function TransactionsPage() {
                 </div>
                 {!isReadOnly && (
                   <div className="flex gap-2 pt-1">
-                    <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => setSelectedTx(null)}>
+                    <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => {
+                      setSelectedTx(null);
+                      try { sessionStorage.setItem(EDIT_RETURN_KEY, JSON.stringify({ filterType, filterAccount, filterCategory, dateFrom, dateTo })); } catch { /* ignore */ }
+                    }}>
                       <Button className="w-full gap-2">
                         <PencilIcon className="size-4" /> Edit
                       </Button>

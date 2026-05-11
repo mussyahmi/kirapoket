@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ChevronRightIcon, ArrowLeftIcon } from "lucide-react";
@@ -19,6 +19,7 @@ type TxType = "expense" | "income" | "transfer";
 
 export default function NewTransactionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
 
   const isReadOnly = isViewingPartner || isImpersonating;
@@ -163,9 +164,9 @@ export default function NewTransactionPage() {
         note: note.trim() || undefined,
       });
       toast.success("Transaction added.");
-      router.push("/transactions");
-    } catch {
-      toast.error("Failed to add transaction. Please try again.");
+      router.push(searchParams.get("from") === "onboarding" ? "/home?onboarding=done" : "/transactions");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add transaction. Please try again.");
     } finally {
       setSubmitting(false);
     }

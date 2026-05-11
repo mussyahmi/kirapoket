@@ -11,7 +11,6 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut as firebaseSignOut,
-  deleteUser,
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
@@ -51,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("Not authenticated");
     await deleteAllUserData(currentUser.uid);
-    await deleteUser(currentUser);
+    await firebaseSignOut(auth);
   }, []);
 
   return (
