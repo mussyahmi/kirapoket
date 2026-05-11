@@ -262,6 +262,7 @@ export async function addAccount(
 ): Promise<Account> {
   const payload = {
     ...data,
+    balance: Math.round(data.balance * 100) / 100,
     userId,
     createdAt: Timestamp.now(),
   };
@@ -273,7 +274,10 @@ export async function updateAccount(
   id: string,
   data: Partial<Omit<Account, "id" | "userId" | "createdAt">>
 ): Promise<void> {
-  await updateDoc(doc(db, "accounts", id), data);
+  const payload = data.balance !== undefined
+    ? { ...data, balance: Math.round(data.balance * 100) / 100 }
+    : data;
+  await updateDoc(doc(db, "accounts", id), payload);
 }
 
 export async function deleteAccount(id: string): Promise<void> {

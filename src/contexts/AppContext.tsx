@@ -49,6 +49,8 @@ import { useAuth } from "./AuthContext";
 
 export const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 function sortTransactions(txs: Transaction[]): Transaction[] {
   return [...txs].sort((a, b) => {
     const dateCompare = b.date.localeCompare(a.date);
@@ -542,17 +544,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data.type === "expense" || data.type === "income") {
         const acc = accounts.find((a) => a.id === data.accountId);
         if (acc) {
-          const newBalance =
+          const newBalance = round2(
             data.type === "income"
               ? acc.balance + data.amount
-              : acc.balance - data.amount;
+              : acc.balance - data.amount
+          );
           await updateAccount(data.accountId, { balance: newBalance });
         }
       } else if (data.type === "transfer") {
         const from = accounts.find((a) => a.id === data.accountId);
         const to = accounts.find((a) => a.id === data.toAccountId);
-        if (from) await updateAccount(data.accountId, { balance: from.balance - data.amount });
-        if (to && data.toAccountId) await updateAccount(data.toAccountId, { balance: to.balance + data.amount });
+        if (from) await updateAccount(data.accountId, { balance: round2(from.balance - data.amount) });
+        if (to && data.toAccountId) await updateAccount(data.toAccountId, { balance: round2(to.balance + data.amount) });
       }
 
       return tx;
@@ -625,7 +628,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       for (const [accId, delta] of Object.entries(balanceChanges)) {
         if (delta === 0) continue;
         const acc = accounts.find((a) => a.id === accId);
-        if (acc) await updateAccount(accId, { balance: acc.balance + delta });
+        if (acc) await updateAccount(accId, { balance: round2(acc.balance + delta) });
       }
 
       if (uid) {
@@ -669,17 +672,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (tx.type === "expense" || tx.type === "income") {
       const acc = accounts.find((a) => a.id === tx.accountId);
       if (acc) {
-        const newBalance =
+        const newBalance = round2(
           tx.type === "expense"
             ? acc.balance + tx.amount
-            : acc.balance - tx.amount;
+            : acc.balance - tx.amount
+        );
         await updateAccount(tx.accountId, { balance: newBalance });
       }
     } else if (tx.type === "transfer") {
       const from = accounts.find((a) => a.id === tx.accountId);
       const to = accounts.find((a) => a.id === tx.toAccountId);
-      if (from) await updateAccount(tx.accountId, { balance: from.balance + tx.amount });
-      if (to && tx.toAccountId) await updateAccount(tx.toAccountId, { balance: to.balance - tx.amount });
+      if (from) await updateAccount(tx.accountId, { balance: round2(from.balance + tx.amount) });
+      if (to && tx.toAccountId) await updateAccount(tx.toAccountId, { balance: round2(to.balance - tx.amount) });
     }
   }, [transactions, accounts, uid, categories, categoryPath]);
 
