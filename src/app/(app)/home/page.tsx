@@ -580,17 +580,17 @@ function DashboardPage() {
 
               return (
                 <div key={l1.id} className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`)}
-                      className="flex items-center gap-2 hover:underline text-left"
-                    >
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`)}
+                    className="flex items-center justify-between gap-2 rounded-sm px-1.5 -mx-1.5 hover:bg-muted/50 transition-colors w-full"
+                  >
+                    <span className="flex items-center gap-2">
                       <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                       <span className="text-sm font-bold">{l1.name}</span>
-                    </button>
+                    </span>
                     <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
-                  </div>
+                  </button>
                   {l2s.length > 0 && (
                     <div className="space-y-1.5 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
                       {l2s.map((l2) => {
@@ -601,33 +601,30 @@ function DashboardPage() {
 
                         return (
                           <div key={l2.id} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs gap-2">
-                              <button
-                                type="button"
-                                onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
-                                className="text-muted-foreground truncate hover:underline hover:text-foreground text-left"
-                              >
-                                {l2.name}
-                              </button>
-                              <span className="tabular-nums text-muted-foreground shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
+                              className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full text-muted-foreground hover:text-foreground"
+                            >
+                              <span className="truncate text-left">{l2.name}</span>
+                              <span className="tabular-nums shrink-0">
                                 {formatMoney(l2Spending[l2.id] ?? 0)}
                               </span>
-                            </div>
+                            </button>
                             {l3s.length > 0 && (
                               <div className="space-y-0.5 pl-3 border-l border-border/40">
                                 {l3s.map((l3) => (
-                                  <div key={l3.id} className="flex items-center justify-between text-xs gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`)}
-                                      className="text-muted-foreground/70 truncate hover:underline hover:text-muted-foreground text-left"
-                                    >
-                                      {l3.name}
-                                    </button>
-                                    <span className="tabular-nums text-muted-foreground/60 shrink-0">
+                                  <button
+                                    key={l3.id}
+                                    type="button"
+                                    onClick={() => router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`)}
+                                    className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full text-muted-foreground/70 hover:text-muted-foreground"
+                                  >
+                                    <span className="truncate text-left">{l3.name}</span>
+                                    <span className="tabular-nums shrink-0">
                                       {formatMoney(l3Spending[l3.id] ?? 0)}
                                     </span>
-                                  </div>
+                                  </button>
                                 ))}
                               </div>
                             )}

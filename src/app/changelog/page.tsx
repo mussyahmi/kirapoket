@@ -43,6 +43,7 @@ const releases: Release[] = [
       { type: "fix", text: "Transfer notes now appear in the recent transactions list on the home dashboard and in the full transactions list" },
       { type: "fix", text: "Delete account now works reliably — all your data is wiped and you are signed out immediately" },
       { type: "fix", text: "Account balances are now stored with exactly two decimal places — floating point drift from repeated transactions is eliminated" },
+      { type: "fix", text: "Home and budget pages: tapping anywhere on a category row now navigates to transactions — the entire row is a tap target, not just the label text" },
     ],
   },
   {

@@ -737,19 +737,19 @@ export default function BudgetPage() {
                         return (
                           <div key={l2.id} className="space-y-1.5">
                             {/* L2 name + amounts */}
-                            <div className="flex items-center justify-between gap-2 text-sm">
-                              <button
-                                type="button"
-                                onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
-                                className={cn("font-medium text-left hover:underline", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}
-                              >
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
+                              className="flex items-center justify-between gap-2 text-sm rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                            >
+                              <span className={cn("font-medium text-left", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}>
                                 {l2.name}
-                              </button>
+                              </span>
                               <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
                                 {fmtAmt(l2spent)}
                                 {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l2budget)}</span>}
                               </span>
-                            </div>
+                            </button>
                             {/* Progress bar + remaining inline */}
                             {l2pct !== null && (
                               <div className="flex items-center gap-2">
@@ -774,14 +774,15 @@ export default function BudgetPage() {
                                   const l3over = l3budget > 0 && l3spent > l3budget;
 
                                   return (
-                                    <div key={l3.id} className="flex items-center justify-between gap-2 text-xs">
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedL3(l3)}
-                                        className={cn("text-muted-foreground/80 text-left hover:underline hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}
-                                      >
+                                    <button
+                                      key={l3.id}
+                                      type="button"
+                                      onClick={() => setSelectedL3(l3)}
+                                      className="flex items-center justify-between gap-2 text-xs rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                                    >
+                                      <span className={cn("text-muted-foreground/80 text-left hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}>
                                         {l3.name}
-                                      </button>
+                                      </span>
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
                                           {fmtAmt(l3spent)}
@@ -793,7 +794,7 @@ export default function BudgetPage() {
                                           </span>
                                         )}
                                       </div>
-                                    </div>
+                                    </button>
                                   );
                                 })}
                               </div>
