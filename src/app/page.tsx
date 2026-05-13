@@ -120,7 +120,7 @@ function MockDashboard() {
           {[
             { label: "Income", value: "RM 4,500", color: "text-green-600" },
             { label: "Expenses", value: "RM 2,310", color: "text-red-500" },
-            { label: "Balance", value: "RM 2,190", color: "text-blue-600" },
+            { label: "Remaining", value: "RM 2,190", color: "text-blue-600" },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex flex-col items-center px-3 py-3 gap-1">
               <span className="text-[9px] text-muted-foreground">{label}</span>

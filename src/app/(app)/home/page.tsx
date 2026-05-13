@@ -454,7 +454,7 @@ function DashboardPage() {
               {[
                 { label: "Income", value: totalIncome, color: "text-green-600 dark:text-green-400" },
                 { label: "Expenses", value: totalExpenses, color: "text-red-600 dark:text-red-400" },
-                { label: "Balance", value: cycleBalance, color: "text-blue-600 dark:text-blue-400" },
+                { label: "Remaining", value: cycleBalance, color: "text-blue-600 dark:text-blue-400" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col items-center px-4 py-1 gap-1">
                   <p className="text-xs text-muted-foreground">{label}</p>

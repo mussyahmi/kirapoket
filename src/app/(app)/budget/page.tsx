@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { toPng } from "html-to-image";
-import { CopyIcon, CheckIcon, PlusIcon, Trash2Icon, XIcon, DownloadIcon, EyeOffIcon, EyeIcon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon } from "lucide-react";
+import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon, InfoIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -53,7 +52,6 @@ const fmt = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-const CENSORED = "RM ••••";
 
 function SortableForecastItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -95,18 +93,12 @@ export default function BudgetPage() {
   const { user } = useAuth();
 
   const [mode, setMode] = useState<"actual" | "forecast">("actual");
-  const [copying, setCopying] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [censored, setCensored] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const captureRef = useRef<HTMLDivElement>(null);
 
   // Forecast income items (local draft, saved on change)
   const savedItems: ForecastIncomeItem[] = userProfile?.forecastIncomeItems ?? [];
   const [newLabel, setNewLabel] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [saving, setSaving] = useState(false);
-  const fmtAmt = (n: number) => censored ? CENSORED : fmt(n);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
@@ -117,6 +109,8 @@ export default function BudgetPage() {
   const [supportOpen, setSupportOpen] = useState(false);
   const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
   const [selectedL3, setSelectedL3] = useState<Category | null>(null);
+  const [unbudgetedInfoOpen, setUnbudgetedInfoOpen] = useState(false);
+  const [overBudgetInfoOpen, setOverBudgetInfoOpen] = useState(false);
 
   const [l3EditOpen, setL3EditOpen] = useState(false);
   const [l3EditTarget, setL3EditTarget] = useState<Category | null>(null);
@@ -221,47 +215,6 @@ export default function BudgetPage() {
     await saveUserProfile({ forecastIncomeItems: reordered });
   };
 
-  const handleCopy = async () => {
-    if (!captureRef.current) return;
-    setCopying(true);
-    try {
-      const dataUrl = await toPng(captureRef.current, {
-        cacheBust: true,
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-      });
-
-      // Desktop: try clipboard API (stays in gesture context on Chrome/Edge)
-      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      if (!isIos && navigator.clipboard?.write) {
-        try {
-          const blob = await (await fetch(dataUrl)).blob();
-          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-          setCopied(true);
-          toast.success("Copied! Paste anywhere to share.");
-          setTimeout(() => setCopied(false), 2000);
-          return;
-        } catch {
-          // Fall through to preview modal
-        }
-      }
-
-      // iOS / fallback: show image preview — long-press to copy/save
-      setPreviewUrl(dataUrl);
-    } catch {
-      toast.error("Failed to generate image.");
-    } finally {
-      setCopying(false);
-    }
-  };
-
-  const handleDownload = () => {
-    if (!previewUrl) return;
-    const link = document.createElement("a");
-    link.download = "kirapoket-budget.png";
-    link.href = previewUrl;
-    link.click();
-  };
 
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
@@ -351,7 +304,18 @@ export default function BudgetPage() {
       }, 0);
   }, [cycleTransactions, categoryMap, l2BudgetMap]);
 
-  const unallocated = effectiveIncome - totalBudgeted - unbudgetedSpending;
+  const totalExceedAmount = useMemo(() => {
+    return categories
+      .filter((c) => c.level === 3)
+      .reduce((s, c) => {
+        const budget = effectiveCatBudget(c);
+        if (budget <= 0) return s;
+        const spent = l3SpendingMap[c.id] ?? 0;
+        return spent > budget ? s + (spent - budget) : s;
+      }, 0);
+  }, [categories, l3SpendingMap]);
+
+  const unallocated = effectiveIncome - totalBudgeted - unbudgetedSpending - totalExceedAmount;
   const actualRemaining = effectiveIncome - totalSpent;
 
   const l1Categories = useMemo(() => {
@@ -480,30 +444,14 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <div ref={captureRef} className={cn("space-y-6 bg-background rounded-xl p-1", censored && "[&_.amt]:!text-muted-foreground")}>
+      <div className="space-y-6">
 
         {/* Forecast Summary */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Income</CardTitle>
+              <CardTitle>Summary</CardTitle>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => setCensored((v) => !v)}
-                  aria-label={censored ? "Show amounts" : "Hide amounts"}
-                >
-                  {censored
-                    ? <EyeOffIcon className="size-3.5 text-muted-foreground" />
-                    : <EyeIcon className="size-3.5 text-muted-foreground" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="size-7" onClick={handleCopy} disabled={copying} aria-label="Copy as image">
-                  {copied
-                    ? <CheckIcon className="size-3.5 text-green-500" />
-                    : <CopyIcon className={cn("size-3.5 text-muted-foreground", copying && "animate-pulse")} />}
-                </Button>
                 {/* Toggle */}
                 <div className="flex rounded-lg overflow-hidden border border-border text-xs">
                   {(["actual", "forecast"] as const).map((m) => (
@@ -528,13 +476,13 @@ export default function BudgetPage() {
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className={cn("font-medium amt tabular-nums", censored ? "text-muted-foreground" : "text-green-600 dark:text-green-400")}>{fmtAmt(actualIncome)}</span>
+                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmt(actualIncome)}</span>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Expected income</span>
-                  <span className={cn("font-medium tabular-nums", censored ? "text-muted-foreground" : "text-green-600 dark:text-green-400")}>{fmtAmt(forecastIncome)}</span>
+                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmt(forecastIncome)}</span>
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
@@ -578,7 +526,7 @@ export default function BudgetPage() {
                                     onClick={() => startEdit(item)}
                                     className="amt tabular-nums text-green-600 dark:text-green-400 hover:underline"
                                   >
-                                    {fmtAmt(item.amount)}
+                                    {fmt(item.amount)}
                                   </button>
                                   <button
                                     type="button"
@@ -621,53 +569,98 @@ export default function BudgetPage() {
               </div>
             )}
 
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total budgeted</span>
-              <span className="font-medium amt tabular-nums text-muted-foreground"><span className="text-foreground/40">−</span> {fmtAmt(totalBudgeted)}</span>
-            </div>
-            {unbudgetedSpending > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-orange-500/80">Unbudgeted spending</span>
-                <span className="font-medium amt tabular-nums text-orange-500"><span className={censored ? "text-foreground/40" : "text-orange-400/60"}>−</span> {fmtAmt(unbudgetedSpending)}</span>
+            {/* Allocation section */}
+            <div className="rounded-xl border border-border/60 overflow-hidden">
+              <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">Allocation</span>
               </div>
-            )}
-            <div className={cn(
-              "flex justify-between text-sm pt-2 border-t font-semibold rounded-md px-2 -mx-2 py-1.5",
-              unallocated < 0
-                ? "bg-red-50/60 dark:bg-red-950/20"
-                : "bg-blue-50/50 dark:bg-blue-950/20"
-            )}>
-              <span>Unallocated</span>
-              <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
-                {fmtAmt(unallocated)}
-              </span>
+              <div className="px-3 py-2.5 space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total budgeted</span>
+                  <span className="font-medium amt tabular-nums text-muted-foreground"><span className="text-foreground/40">−</span> {fmt(totalBudgeted)}</span>
+                </div>
+                {unbudgetedSpending > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <button
+                        type="button"
+                        onClick={() => setUnbudgetedInfoOpen((v) => !v)}
+                        className="flex items-center gap-1 text-orange-500/80 hover:text-orange-500 transition-colors"
+                      >
+                        Unbudgeted spending
+                        <InfoIcon className="size-3 shrink-0" />
+                      </button>
+                      <span className="font-medium tabular-nums text-orange-500"><span className="text-orange-400/60">−</span> {fmt(unbudgetedSpending)}</span>
+                    </div>
+                    {unbudgetedInfoOpen && (
+                      <p className="text-[11px] text-orange-500/70 leading-snug pl-3 border-l-2 border-orange-300/60 dark:border-orange-700/60">
+                        Spending on categories that have no budget set.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {totalExceedAmount > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <button
+                        type="button"
+                        onClick={() => setOverBudgetInfoOpen((v) => !v)}
+                        className="flex items-center gap-1 text-red-500/80 hover:text-red-500 transition-colors"
+                      >
+                        Over-budget spending
+                        <InfoIcon className="size-3 shrink-0" />
+                      </button>
+                      <span className="font-medium tabular-nums text-red-500"><span className="text-red-400/60">−</span> {fmt(totalExceedAmount)}</span>
+                    </div>
+                    {overBudgetInfoOpen && (
+                      <p className="text-[11px] text-red-500/70 leading-snug pl-3 border-l-2 border-red-300/60 dark:border-red-700/60">
+                        Spending that exceeded category budgets.
+                      </p>
+                    )}
+                  </div>
+                )}
+                <div className={cn(
+                  "flex justify-between text-sm font-semibold rounded-lg px-2.5 py-2 -mx-0.5 border-t border-dashed border-border/60 pt-2.5 mt-0.5"
+                )}>
+                  <span className={cn(unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>Unallocated</span>
+                  <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
+                    {fmt(unallocated)}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="pt-2 border-t space-y-2.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Spent so far</span>
-                <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">{fmtAmt(totalSpent)}</span>
+            {/* Actuals section */}
+            <div className="rounded-xl border border-border/60 overflow-hidden">
+              <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">Actuals</span>
               </div>
-              <div className="flex justify-between text-sm font-semibold">
-                <span>Remaining</span>
-                <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-500 dark:text-green-400")}>
-                  {fmtAmt(actualRemaining)}
-                </span>
-              </div>
-              {effectiveIncome > 0 && (
-                <div className="pt-1 space-y-1">
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn("h-full rounded-full transition-all duration-500", actualRemaining < 0 ? "bg-red-500" : "bg-green-500 dark:bg-green-400")}
-                      style={{ width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-muted-foreground/60 tabular-nums">
-                    <span>{Math.round((totalSpent / effectiveIncome) * 100)}% spent</span>
-                    <span>{Math.max(0, Math.round((actualRemaining / effectiveIncome) * 100))}% left</span>
-                  </div>
+              <div className="px-3 py-2.5 space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Spent so far</span>
+                  <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">{fmt(totalSpent)}</span>
                 </div>
-              )}
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>Remaining</span>
+                  <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-500 dark:text-green-400")}>
+                    {fmt(actualRemaining)}
+                  </span>
+                </div>
+                {effectiveIncome > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={cn("h-full rounded-full transition-all duration-500", actualRemaining < 0 ? "bg-red-500" : "bg-green-500 dark:bg-green-400")}
+                        style={{ width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground/60 tabular-nums">
+                      <span>{Math.round((totalSpent / effectiveIncome) * 100)}% spent</span>
+                      <span>{Math.max(0, Math.round((actualRemaining / effectiveIncome) * 100))}% left</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -746,8 +739,8 @@ export default function BudgetPage() {
                                 {l2.name}
                               </span>
                               <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
-                                {fmtAmt(l2spent)}
-                                {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l2budget)}</span>}
+                                {fmt(l2spent)}
+                                {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l2budget)}</span>}
                               </span>
                             </button>
                             {/* Progress bar + remaining inline */}
@@ -760,7 +753,7 @@ export default function BudgetPage() {
                                   />
                                 </div>
                                 <span className={cn("text-[10px] tabular-nums amt shrink-0 w-20 text-right", l2over ? "text-red-500" : "text-muted-foreground/60")}>
-                                  {l2over ? `Over ${fmtAmt(Math.abs(l2remaining))}` : `${fmtAmt(l2remaining)} left`}
+                                  {l2over ? `Over ${fmt(Math.abs(l2remaining))}` : `${fmt(l2remaining)} left`}
                                 </span>
                               </div>
                             )}
@@ -785,12 +778,12 @@ export default function BudgetPage() {
                                       </span>
                                       <div className="flex items-center gap-1.5 shrink-0">
                                         <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
-                                          {fmtAmt(l3spent)}
-                                          {l3budget > 0 && <span className="amt text-muted-foreground/50"> / {fmtAmt(l3budget)}</span>}
+                                          {fmt(l3spent)}
+                                          {l3budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l3budget)}</span>}
                                         </span>
                                         {l3budget > 0 && (
                                           <span className={cn("text-[10px] amt tabular-nums", l3over ? "text-red-400" : "text-muted-foreground/50")}>
-                                            ({l3over ? `-${fmtAmt(Math.abs(l3remaining))}` : `${fmtAmt(l3remaining)} left`})
+                                            ({l3over ? `-${fmt(Math.abs(l3remaining))}` : `${fmt(l3remaining)} left`})
                                           </span>
                                         )}
                                       </div>
@@ -1017,41 +1010,6 @@ export default function BudgetPage() {
         </DialogContent>
       </Dialog>
 
-      {previewUrl && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
-          onClick={() => setPreviewUrl(null)}
-        >
-          <p className="text-white text-sm font-medium">Long-press the image to copy or save</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewUrl}
-            alt="Budget snapshot"
-            className="max-w-full max-h-[70vh] rounded-xl shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-1.5"
-              onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-            >
-              <DownloadIcon className="size-3.5" />
-              Download
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:text-white hover:bg-white/20 gap-1.5"
-              onClick={() => setPreviewUrl(null)}
-            >
-              <XIcon className="size-3.5" />
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -44,6 +44,8 @@ const releases: Release[] = [
       { type: "fix", text: "Delete account now works reliably — all your data is wiped and you are signed out immediately" },
       { type: "fix", text: "Account balances are now stored with exactly two decimal places — floating point drift from repeated transactions is eliminated" },
       { type: "fix", text: "Home and budget pages: tapping anywhere on a category row now navigates to transactions — the entire row is a tap target, not just the label text" },
+      { type: "feat", text: "Budget summary redesigned — split into Allocation (budgeted, unbudgeted spending, over-budget spending, unallocated) and Actuals (spent, remaining, progress bar) sections; tapping Unbudgeted or Over-budget rows shows a short explanation inline; removed the copy-as-image and censor toggle" },
+      { type: "fix", text: "Home dashboard and landing page: renamed 'Balance' to 'Remaining' — the figure is income minus expenses for the cycle" },
     ],
   },
   {
