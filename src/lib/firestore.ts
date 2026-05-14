@@ -668,7 +668,7 @@ export async function updatePartnershipName(
 
 // ─── Demo seed ────────────────────────────────────────────────────────────────
 
-export const DEMO_UID = "z6zy1opuXIfkUQubcF14Llc9g3x1";
+export const DEMO_UID = process.env.NEXT_PUBLIC_DEMO_UID ?? "";
 
 export async function clearAndSeedDemoData(): Promise<void> {
   const uid = DEMO_UID;
