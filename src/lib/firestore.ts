@@ -665,3 +665,219 @@ export async function updatePartnershipName(
   const field = role === "inviter" ? "inviterName" : "inviteeName";
   await updateDoc(doc(db, "partnerships", partnershipId), { [field]: name });
 }
+
+// ─── Demo seed ────────────────────────────────────────────────────────────────
+
+export const DEMO_UID = "z6zy1opuXIfkUQubcF14Llc9g3x1";
+
+export async function clearAndSeedDemoData(): Promise<void> {
+  const uid = DEMO_UID;
+
+  // Clear all collections except user profile
+  const cols = ["accounts", "categories", "transactions", "debts", "insights", "activities"] as const;
+  for (const col of cols) {
+    const snap = await getDocs(query(collection(db, col), where("userId", "==", uid)));
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+  }
+
+  // Update user profile with salary day
+  await setDoc(doc(db, "users", uid), {
+    salaryDay: 25,
+    hideBalance: false,
+    categoriesSeeded: true,
+    categoriesSeedVersion: 3,
+  }, { merge: true });
+
+  // Account — balance will be set to net amount after all transactions
+  const accountRef = await addDoc(collection(db, "accounts"), {
+    userId: uid,
+    name: "Maybank",
+    type: "bank",
+    balance: 1469.42,
+    createdAt: Timestamp.now(),
+    sortOrder: 0,
+  });
+  const accId = accountRef.id;
+
+  // ── Categories ────────────────────────────────────────────────────────────
+
+  // L1: Needs
+  const needsRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Needs", level: 1, parentId: null, type: "needs",
+  });
+  // Budgets live on L3 — the budget page derives L2 totals by summing L3 children
+  const foodRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Food & Drinks", level: 2, parentId: needsRef.id, type: "needs", sortOrder: 0,
+  });
+  const transportRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Transport", level: 2, parentId: needsRef.id, type: "needs", sortOrder: 1,
+  });
+  const housingRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Housing", level: 2, parentId: needsRef.id, type: "needs", sortOrder: 2,
+  });
+  const healthRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Health", level: 2, parentId: needsRef.id, type: "needs", sortOrder: 3,
+  });
+  // L3 — Food (budget 600 total: 350+150+100)
+  const groceriesRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Groceries", level: 3, parentId: foodRef.id, type: "needs",
+    budget: 350, budgetType: "cycle", sortOrder: 0,
+  });
+  const restaurantRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Restaurant", level: 3, parentId: foodRef.id, type: "needs",
+    budget: 150, budgetType: "cycle", sortOrder: 1,
+  });
+  const deliveryRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Food Delivery", level: 3, parentId: foodRef.id, type: "needs",
+    budget: 100, budgetType: "cycle", sortOrder: 2,
+  });
+  // L3 — Transport (budget 300 total: 250+50)
+  const fuelRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Fuel", level: 3, parentId: transportRef.id, type: "needs",
+    budget: 250, budgetType: "cycle", sortOrder: 0,
+  });
+  const publicTransportRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Public Transport", level: 3, parentId: transportRef.id, type: "needs",
+    budget: 50, budgetType: "cycle", sortOrder: 1,
+  });
+  // L3 — Housing (budget 1500 total: 1200+300)
+  const rentRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Rent", level: 3, parentId: housingRef.id, type: "needs",
+    budget: 1200, budgetType: "cycle", sortOrder: 0,
+  });
+  const utilitiesRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Utilities", level: 3, parentId: housingRef.id, type: "needs",
+    budget: 300, budgetType: "cycle", sortOrder: 1,
+  });
+  // L3 — Health (budget 200 total: 80+120)
+  const medicineRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Medicine", level: 3, parentId: healthRef.id, type: "needs",
+    budget: 80, budgetType: "cycle", sortOrder: 0,
+  });
+  const doctorRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Doctor", level: 3, parentId: healthRef.id, type: "needs",
+    budget: 120, budgetType: "cycle", sortOrder: 1,
+  });
+
+  // L1: Wants
+  const wantsRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Wants", level: 1, parentId: null, type: "wants",
+  });
+  const entertainRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Entertainment", level: 2, parentId: wantsRef.id, type: "wants", sortOrder: 0,
+  });
+  const shoppingRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Shopping", level: 2, parentId: wantsRef.id, type: "wants", sortOrder: 1,
+  });
+  const subsRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Subscriptions", level: 2, parentId: wantsRef.id, type: "wants", sortOrder: 2,
+  });
+  // L3 — Entertainment (budget 200 total: 100+100)
+  const moviesRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Movies", level: 3, parentId: entertainRef.id, type: "wants",
+    budget: 100, budgetType: "cycle", sortOrder: 0,
+  });
+  const gamesRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Games", level: 3, parentId: entertainRef.id, type: "wants",
+    budget: 100, budgetType: "cycle", sortOrder: 1,
+  });
+  // L3 — Shopping (budget 500; Electronics has no budget → unbudgeted spending showcase)
+  const clothesRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Clothes", level: 3, parentId: shoppingRef.id, type: "wants",
+    budget: 500, budgetType: "cycle", sortOrder: 0,
+  });
+  const electronicsRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Electronics", level: 3, parentId: shoppingRef.id, type: "wants", sortOrder: 1,
+  });
+  // L3 — Subscriptions (budget 100 total: 60+40)
+  const streamingRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Streaming", level: 3, parentId: subsRef.id, type: "wants",
+    budget: 60, budgetType: "cycle", sortOrder: 0,
+  });
+  const musicRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Music", level: 3, parentId: subsRef.id, type: "wants",
+    budget: 40, budgetType: "cycle", sortOrder: 1,
+  });
+
+  // L1: Savings
+  const savingsL1Ref = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Savings", level: 1, parentId: null, type: "savings",
+  });
+  const emergencyL2Ref = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Emergency Fund", level: 2, parentId: savingsL1Ref.id, type: "savings", sortOrder: 0,
+  });
+  const emergencyRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Contribution", level: 3, parentId: emergencyL2Ref.id, type: "savings",
+    budget: 500, budgetType: "cycle", sortOrder: 0,
+  });
+  const investL2Ref = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "Investments", level: 2, parentId: savingsL1Ref.id, type: "savings", sortOrder: 1,
+  });
+  const investRef = await addDoc(collection(db, "categories"), {
+    userId: uid, name: "ASB", level: 3, parentId: investL2Ref.id, type: "savings",
+    budget: 361.18, budgetType: "cycle", sortOrder: 0,
+  });
+
+  // ── Transactions (cycle: Apr 25 – May 24, 2026) ────────────────────────────
+
+  const tx = (type: string, amount: number, date: string, categoryId: string | null, note?: string) =>
+    addDoc(collection(db, "transactions"), {
+      userId: uid,
+      type,
+      amount,
+      date,
+      accountId: accId,
+      ...(categoryId ? { categoryId } : {}),
+      ...(note ? { note } : {}),
+      createdAt: Timestamp.now(),
+    });
+
+  // Income
+  await tx("income", 6200.00, "2026-04-25", null, "Salary");
+
+  // Food & Drinks — budget 600, spend 762.50 → over by 162.50
+  await tx("expense", 180.00, "2026-04-26", groceriesRef.id, "Mydin");
+  await tx("expense",  95.00, "2026-04-30", restaurantRef.id, "Family dinner");
+  await tx("expense",  45.00, "2026-05-02", deliveryRef.id, "GrabFood");
+  await tx("expense", 165.00, "2026-05-04", groceriesRef.id, "Monthly groceries");
+  await tx("expense",  68.00, "2026-05-07", restaurantRef.id, "Lunch");
+  await tx("expense",  32.00, "2026-05-09", deliveryRef.id, "Foodpanda");
+  await tx("expense",  90.00, "2026-05-12", groceriesRef.id, "Aeon top-up");
+  await tx("expense",  87.50, "2026-05-13", restaurantRef.id, "Dinner");
+
+  // Transport — budget 300, spend 260.00 → under
+  await tx("expense", 120.00, "2026-04-27", fuelRef.id, "Shell");
+  await tx("expense",  45.00, "2026-05-03", fuelRef.id, "RapidKL");
+  await tx("expense",  95.00, "2026-05-08", fuelRef.id, "Petronas");
+
+  // Housing — budget 1500, spend 1345.00 → under
+  await tx("expense", 1200.00, "2026-04-25", rentRef.id, "April rent");
+  await tx("expense",  145.00, "2026-05-01", utilitiesRef.id, "TNB + Unifi");
+
+  // Health — budget 200, spend 285.00 → over by 85
+  await tx("expense",  85.00, "2026-05-04", medicineRef.id, "Guardian pharmacy");
+  await tx("expense", 200.00, "2026-05-09", doctorRef.id, "Klinik panel");
+
+  // Entertainment — budget 200, spend 95.00 → under
+  await tx("expense",  60.00, "2026-04-28", moviesRef.id, "GSC TGV");
+  await tx("expense",  35.00, "2026-05-06", gamesRef.id, "Steam sale");
+
+  // Shopping — budget 500, spend 530.00 → over by 30
+  await tx("expense", 320.00, "2026-05-01", clothesRef.id, "Uniqlo");
+  await tx("expense", 210.00, "2026-05-11", clothesRef.id, "Zara sale");
+
+  // Subscriptions — budget 100, spend 72.90 → under
+  await tx("expense",  55.00, "2026-04-26", streamingRef.id, "Netflix");
+  await tx("expense",  17.90, "2026-05-01", musicRef.id, "Spotify");
+
+  // Savings — budget 500, spend 500 → exactly met
+  await tx("expense", 500.00, "2026-04-25", emergencyRef.id, "Monthly savings");
+
+  // Investments — budget 361.18, spend 361.18 → exactly met
+  await tx("expense", 361.18, "2026-05-01", investRef.id, "ASB top-up");
+
+  // Unbudgeted — Electronics has no budget so these show as "Unbudgeted spending"
+  await tx("expense", 120.00, "2026-04-29", electronicsRef.id, "Car charger");
+  await tx("expense", 200.00, "2026-05-05", electronicsRef.id, "Keyboard");
+  await tx("expense", 199.00, "2026-05-10", electronicsRef.id, "Phone case + accessories");
+}

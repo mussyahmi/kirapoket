@@ -28,20 +28,22 @@ service cloud.firestore {
     match /users/{uid} {
       allow get: if request.auth != null;
       allow list: if isAdmin();
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
     }
 
-    // Flat collections — owner or active partner may read; only owner may write
+    // Flat collections — owner or active partner may read; only owner (or admin) may write
     match /accounts/{docId} {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.userId
         || isAdmin()
         || isActivePartner(resource.data.userId)
       );
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId
-                    && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow update: if request.auth != null && (
+        isAdmin()
+        || (request.auth.uid == resource.data.userId && request.auth.uid == request.resource.data.userId)
+      );
     }
 
     match /categories/{docId} {
@@ -50,10 +52,12 @@ service cloud.firestore {
         || isAdmin()
         || isActivePartner(resource.data.userId)
       );
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId
-                    && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow update: if request.auth != null && (
+        isAdmin()
+        || (request.auth.uid == resource.data.userId && request.auth.uid == request.resource.data.userId)
+      );
     }
 
     match /transactions/{docId} {
@@ -62,10 +66,12 @@ service cloud.firestore {
         || isAdmin()
         || isActivePartner(resource.data.userId)
       );
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId
-                    && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow update: if request.auth != null && (
+        isAdmin()
+        || (request.auth.uid == resource.data.userId && request.auth.uid == request.resource.data.userId)
+      );
     }
 
     match /debts/{docId} {
@@ -74,21 +80,23 @@ service cloud.firestore {
         || isAdmin()
         || isActivePartner(resource.data.userId)
       );
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null && request.auth.uid == resource.data.userId
-                    && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow update: if request.auth != null && (
+        isAdmin()
+        || (request.auth.uid == resource.data.userId && request.auth.uid == request.resource.data.userId)
+      );
     }
 
     match /activities/{docId} {
       allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
     match /insights/{docId} {
-      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
     }
 
     // Partnerships — inviter creates; inviter or invitee (by email/uid) may read and update status

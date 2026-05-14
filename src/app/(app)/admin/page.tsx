@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
-import { getAllUsers, getUserActivities, getUserStats } from "@/lib/firestore";
+import { getAllUsers, getUserActivities, getUserStats, clearAndSeedDemoData, DEMO_UID } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ export default function AdminPage() {
   const [userStats, setUserStats] = useState<Record<string, { transactions: number; accounts: number }>>({});
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [seedingDemo, setSeedingDemo] = useState(false);
 
   const isAdmin = user?.uid === ADMIN_UID;
 
@@ -94,6 +95,20 @@ export default function AdminPage() {
   const handleImpersonate = (uid: string) => {
     impersonate(uid);
     router.push("/home");
+  };
+
+  const handleSeedDemo = async () => {
+    if (!confirm("This will wipe all data for the demo account and replace it with fresh seed data. Continue?")) return;
+    setSeedingDemo(true);
+    try {
+      await clearAndSeedDemoData();
+      toast.success("Demo data seeded");
+    } catch (e) {
+      console.error(e);
+      toast.error("Seed failed — check console");
+    } finally {
+      setSeedingDemo(false);
+    }
   };
 
   const toggleExpand = async (uid: string) => {
@@ -138,7 +153,27 @@ export default function AdminPage() {
       </div>
 
       {/* Stats */}
-      {!loading && (
+      {loading ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="rounded-xl border border-border bg-card px-3 py-3">
+                <Skeleton className="h-2.5 w-8 mb-2" />
+                <Skeleton className="h-7 w-10" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-8 w-full rounded-lg" />
+          <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-2.5 w-32" />
+              <Skeleton className="h-2.5 w-16" />
+            </div>
+            <Skeleton className="h-1.5 w-full rounded-full" />
+            <Skeleton className="h-2.5 w-48" />
+          </div>
+        </div>
+      ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-border bg-card px-3 py-3">
@@ -225,8 +260,24 @@ export default function AdminPage() {
 
         {/* List */}
         {loading ? (
-          <div className="space-y-px p-3">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
+          <div className="divide-y divide-border">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <div className="relative shrink-0">
+                  <Skeleton className="size-9 rounded-full" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-muted" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <Skeleton className={`h-3 ${["w-28", "w-36", "w-24", "w-32"][i]}`} />
+                  <Skeleton className={`h-2.5 ${["w-40", "w-48", "w-36", "w-44"][i]}`} />
+                  <Skeleton className="h-2 w-16" />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Skeleton className="size-7 rounded-md" />
+                  <Skeleton className="h-7 w-12 rounded-md" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : sortedUsers.length === 0 ? (
           <p className="text-sm text-muted-foreground p-4 text-center">No users found.</p>
@@ -319,8 +370,32 @@ export default function AdminPage() {
                         {u.uid}
                       </p>
 
+                      {/* Demo seed button */}
+                      {u.uid === DEMO_UID && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs px-2.5 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-500/10"
+                          disabled={seedingDemo}
+                          onClick={handleSeedDemo}
+                        >
+                          {seedingDemo ? "Seeding…" : "Reset demo data"}
+                        </Button>
+                      )}
+
                       {/* Stats */}
-                      {stats && (
+                      {isLoadingActs ? (
+                        <div className="flex gap-5">
+                          <div className="space-y-1.5">
+                            <Skeleton className="h-2 w-16" />
+                            <Skeleton className="h-5 w-8" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Skeleton className="h-2 w-12" />
+                            <Skeleton className="h-5 w-5" />
+                          </div>
+                        </div>
+                      ) : stats && (
                         <div className="flex gap-5">
                           <div>
                             <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Transactions</p>
@@ -339,8 +414,13 @@ export default function AdminPage() {
                           Recent activity
                         </p>
                         {isLoadingActs ? (
-                          <div className="space-y-1.5">
-                            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-3.5 w-full" />)}
+                          <div className="space-y-2.5">
+                            {(["w-full", "w-4/5", "w-3/4", "w-full", "w-11/12"] as const).map((w, i) => (
+                              <div key={i} className="flex items-center justify-between gap-4">
+                                <Skeleton className={`h-2.5 ${w}`} />
+                                <Skeleton className="h-2 w-10 shrink-0" />
+                              </div>
+                            ))}
                           </div>
                         ) : !acts || acts.length === 0 ? (
                           <p className="text-xs text-muted-foreground/40">No activity recorded.</p>
