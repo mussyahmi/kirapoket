@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ChevronRightIcon, ArrowLeftIcon } from "lucide-react";
+import { ChevronRightIcon, ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,6 +124,90 @@ function NewTransactionPage() {
   };
 
   const date = format(selectedDate, "yyyy-MM-dd");
+
+  const formatMoney = (n: number) => {
+    const v = parseFloat(n.toFixed(2));
+    return new Intl.NumberFormat("ms-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+    }).format(v === 0 ? 0 : v);
+  };
+
+  const renderBalanceHint = (accId: string, role: "source" | "dest") => {
+    const acc = accounts.find((a) => a.id === accId);
+    if (!acc) return null;
+    const amt = parseFloat(amount);
+    const hasAmt = !isNaN(amt) && amt > 0;
+    const sign =
+      txType === "income"
+        ? 1
+        : txType === "transfer"
+          ? role === "source"
+            ? -1
+            : 1
+          : -1;
+    const projected = acc.balance + (hasAmt ? sign * amt : 0);
+    const short = hasAmt && sign < 0 && projected < 0;
+    const verb =
+      txType === "income"
+        ? "After this income"
+        : txType === "transfer"
+          ? role === "source"
+            ? "After transfer out"
+            : "After transfer in"
+          : "After this expense";
+
+    return (
+      <div
+        className={cn(
+          "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
+          short
+            ? "border-destructive/40 bg-destructive/5"
+            : "border-border bg-muted/40"
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">{acc.name} balance</span>
+          <span className="font-medium tabular-nums">
+            {formatMoney(acc.balance)}
+          </span>
+        </div>
+        {hasAmt && (
+          <div
+            className={cn(
+              "mt-1.5 flex items-center justify-between border-t pt-1.5",
+              short ? "border-destructive/30" : "border-border/60"
+            )}
+          >
+            <span
+              className={cn(
+                "flex items-center gap-1",
+                short ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {short && <TriangleAlertIcon className="size-3.5" />}
+              {verb}
+            </span>
+            <span
+              className={cn(
+                "font-semibold tabular-nums",
+                short && "text-destructive"
+              )}
+            >
+              {formatMoney(projected)}
+            </span>
+          </div>
+        )}
+        {short && (
+          <p className="mt-1 text-xs text-destructive">
+            Short by {formatMoney(Math.abs(projected))} — not enough in this
+            account.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   const validate = (): string | null => {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0)
@@ -338,8 +422,10 @@ function NewTransactionPage() {
         </div>
 
         {/* Account */}
-        <div className="space-y-1.5">
-          <Label>Account</Label>
+        <div>
+          <Label className="mb-1.5 block">
+            {txType === "transfer" ? "From Account" : "Account"}
+          </Label>
           <div className="flex flex-wrap gap-2">
             {accounts.map((a) => (
               <button
@@ -357,12 +443,13 @@ function NewTransactionPage() {
               </button>
             ))}
           </div>
+          {accountId && renderBalanceHint(accountId, "source")}
         </div>
 
         {/* To Account (Transfer only) */}
         {txType === "transfer" && (
-          <div className="space-y-1.5">
-            <Label>To Account</Label>
+          <div>
+            <Label className="mb-1.5 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
               {accounts
                 .filter((a) => a.id !== accountId)
@@ -382,6 +469,7 @@ function NewTransactionPage() {
                   </button>
                 ))}
             </div>
+            {toAccountId && renderBalanceHint(toAccountId, "dest")}
           </div>
         )}
 

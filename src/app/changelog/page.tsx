@@ -34,6 +34,7 @@ const releases: Release[] = [
       { type: "feat", text: "Onboarding redesign — the Get Started card now focuses on one step at a time with a progress bar, a description, and a clear action button; completing each step shows a modal pointing you to the next one; finishing all steps shows a completion message" },
       { type: "feat", text: "Account balance protection — expenses and transfers are rejected before saving if they would make the account balance negative; the error message tells you exactly which account is short and by how much" },
       { type: "feat", text: "Budget summary redesigned — split into Allocation (budgeted, unbudgeted spending, over-budget spending, unallocated) and Actuals (spent, remaining, progress bar) sections; tapping Unbudgeted or Over-budget rows shows a short explanation inline; removed the copy-as-image and censor toggle" },
+      { type: "feat", text: "New transaction form now shows the selected account's balance and the projected balance after the transaction — the panel turns red and warns you if the transaction would overdraw the account; works for expenses, income, and both accounts in a transfer" },
       { type: "fix", text: "Your saved display name is now used consistently in partner invites, the landing page, and Settings instead of defaulting to the Google account name" },
       { type: "fix", text: "Partner view paused/resumed state now persists across app restarts" },
       { type: "fix", text: "Decline button is hidden while an invite acceptance is in progress to prevent a UI glitch" },
