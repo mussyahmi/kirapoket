@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +103,51 @@ function EditTransactionForm() {
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
 
+  // Net per-account balance change if the edit is saved: revert the original
+  // transaction's effect, then apply the edited one — mirrors editTransaction.
+  const editBalanceChanges = useMemo(() => {
+    const changes: Record<string, number> = {};
+    if (!tx) return changes;
+    const amt = parseFloat(amount);
+    const formValid =
+      !isNaN(amt) &&
+      amt > 0 &&
+      !!accountId &&
+      (txType !== "transfer" || (!!toAccountId && toAccountId !== accountId));
+    if (!formValid) return changes;
+
+    const apply = (
+      t: { type: TxType; amount: number; accountId: string; toAccountId?: string },
+      factor: 1 | -1
+    ) => {
+      if (t.type === "expense")
+        changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
+      if (t.type === "income")
+        changes[t.accountId] = (changes[t.accountId] ?? 0) - factor * t.amount;
+      if (t.type === "transfer") {
+        changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
+        if (t.toAccountId)
+          changes[t.toAccountId] =
+            (changes[t.toAccountId] ?? 0) - factor * t.amount;
+      }
+    };
+
+    apply(
+      { type: tx.type, amount: tx.amount, accountId: tx.accountId, toAccountId: tx.toAccountId },
+      1
+    );
+    apply(
+      {
+        type: txType,
+        amount: amt,
+        accountId,
+        toAccountId: txType === "transfer" ? toAccountId : undefined,
+      },
+      -1
+    );
+    return changes;
+  }, [tx, txType, amount, accountId, toAccountId]);
+
   const handleSelectL1 = (id: string) => { setL1Id(id); setL2Id(null); setL3Id(null); };
   const handleSelectL2 = (id: string) => { setL2Id(id); setL3Id(null); };
 
@@ -171,6 +216,74 @@ function EditTransactionForm() {
     cn("px-3 py-1.5 rounded-lg text-sm border transition-colors",
       active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-muted"
     );
+
+  const formatMoney = (n: number) => {
+    const v = parseFloat(n.toFixed(2));
+    return new Intl.NumberFormat("ms-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+    }).format(v === 0 ? 0 : v);
+  };
+
+  const renderBalanceHint = (accId: string) => {
+    const acc = accounts.find((a) => a.id === accId);
+    if (!acc) return null;
+    const delta = editBalanceChanges[accId] ?? 0;
+    const changed = delta !== 0;
+    const projected = acc.balance + delta;
+    const short = changed && projected < 0;
+
+    return (
+      <div
+        className={cn(
+          "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
+          short
+            ? "border-destructive/40 bg-destructive/5"
+            : "border-border bg-muted/40"
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground">{acc.name} balance</span>
+          <span className="font-medium tabular-nums">
+            {formatMoney(acc.balance)}
+          </span>
+        </div>
+        {changed && (
+          <div
+            className={cn(
+              "mt-1.5 flex items-center justify-between border-t pt-1.5",
+              short ? "border-destructive/30" : "border-border/60"
+            )}
+          >
+            <span
+              className={cn(
+                "flex items-center gap-1",
+                short ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {short && <TriangleAlertIcon className="size-3.5" />}
+              After saving
+            </span>
+            <span
+              className={cn(
+                "font-semibold tabular-nums",
+                short && "text-destructive"
+              )}
+            >
+              {formatMoney(projected)}
+            </span>
+          </div>
+        )}
+        {short && (
+          <p className="mt-1 text-xs text-destructive">
+            Short by {formatMoney(Math.abs(projected))} — saving this change
+            would overdraw the account.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto">
@@ -246,8 +359,10 @@ function EditTransactionForm() {
         </div>
 
         {/* Account */}
-        <div className="space-y-1.5">
-          <Label>Account</Label>
+        <div>
+          <Label className="mb-1.5 block">
+            {txType === "transfer" ? "From Account" : "Account"}
+          </Label>
           <div className="flex flex-wrap gap-2">
             {accounts.map((a) => (
               <button key={a.id} type="button" onClick={() => setAccountId(a.id)} className={pillClass(accountId === a.id)}>
@@ -255,12 +370,13 @@ function EditTransactionForm() {
               </button>
             ))}
           </div>
+          {accountId && renderBalanceHint(accountId)}
         </div>
 
         {/* To Account (Transfer only) */}
         {txType === "transfer" && (
-          <div className="space-y-1.5">
-            <Label>To Account</Label>
+          <div>
+            <Label className="mb-1.5 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
               {accounts.filter((a) => a.id !== accountId).map((a) => (
                 <button key={a.id} type="button" onClick={() => setToAccountId(a.id)} className={pillClass(toAccountId === a.id)}>
@@ -268,6 +384,7 @@ function EditTransactionForm() {
                 </button>
               ))}
             </div>
+            {toAccountId && renderBalanceHint(toAccountId)}
           </div>
         )}
 
