@@ -4,7 +4,7 @@ import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon, FileDownIcon, Loader2Icon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, ArrowUpIcon, ArrowDownIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon, FileDownIcon, Loader2Icon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
@@ -362,9 +362,11 @@ function DashboardPage() {
       currency: "MYR",
       minimumFractionDigits: 2,
     }).format(Math.abs(diff));
+    const Icon = up ? ArrowUpIcon : ArrowDownIcon;
     return (
-      <span className={cn("block text-xs tabular-nums", color)}>
-        {up ? "↑" : "↓"} {abs}
+      <span className={cn("inline-flex items-center gap-0.5 text-xs tabular-nums", color)}>
+        <Icon className="size-3" />
+        {abs}
       </span>
     );
   };
@@ -593,13 +595,14 @@ function DashboardPage() {
       ) : (
         <Card>
           <CardContent className="px-0 py-4">
-            <div className="grid grid-cols-3 divide-x divide-border">
+            <div className="grid grid-cols-3">
               {([
-                { label: "Income", value: totalIncome, prev: prevIncome, direction: "income" as const, color: "text-green-600 dark:text-green-400" },
-                { label: "Expenses", value: totalExpenses, prev: prevExpenses, direction: "expense" as const, color: "text-red-600 dark:text-red-400" },
-                { label: "Remaining", value: cycleBalance, prev: prevBalance, direction: "income" as const, color: cycleBalance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400" },
-              ]).map(({ label, value, prev, direction, color }) => (
-                <div key={label} className="flex flex-col items-center px-4 py-1 gap-0.5">
+                { label: "Income", value: totalIncome, prev: prevIncome, direction: "income" as const, color: "text-green-600 dark:text-green-400", barClass: "bg-green-500 dark:bg-green-400" },
+                { label: "Expenses", value: totalExpenses, prev: prevExpenses, direction: "expense" as const, color: "text-red-600 dark:text-red-400", barClass: "bg-red-500 dark:bg-red-400" },
+                { label: "Remaining", value: cycleBalance, prev: prevBalance, direction: "income" as const, color: cycleBalance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400", barClass: cycleBalance >= 0 ? "bg-blue-500 dark:bg-blue-400" : "bg-red-500 dark:bg-red-400" },
+              ]).map(({ label, value, prev, direction, color, barClass }) => (
+                <div key={label} className="flex flex-col items-center px-4 pt-2 pb-1 gap-1">
+                  <div className={cn("h-[3px] w-8 rounded-full mb-0.5", barClass)} />
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p className={cn("text-sm font-bold text-center tabular-nums", color)}>
                     {formatMoney(value)}

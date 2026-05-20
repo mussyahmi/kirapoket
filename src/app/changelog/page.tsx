@@ -30,6 +30,7 @@ const releases: Release[] = [
       { type: "feat", text: "Previous-cycle comparison everywhere — the Summary card and every category row (L1, L2, L3) on the home page show the change vs the previous full cycle, colour-coded by direction; the same comparison appears in the PDF report" },
       { type: "feat", text: "Home dashboard refresh — pie chart replaced with a compact horizontal stacked bar (matching the PDF); Spending by Category now shows a 'vs previous full cycle' subtitle; amount and delta lay out as two right-aligned columns on wider screens" },
       { type: "feat", text: "Download report shortcut — Report button now lives in the cycle navigation row so each cycle can be saved as a PDF in one tap; landing page demo updated to reflect the new design" },
+      { type: "feat", text: "Summary card polish — colour-coded top-bars per metric (green Income / red Expenses / blue Remaining) replace the vertical dividers; delta indicators now render with crisper arrow icons instead of Unicode characters; landing page demo updated to match" },
       { type: "fix", text: "Summary card: Remaining figure turns red when negative (was always blue) — matches the PDF and gives a clear visual flag when a cycle runs into a deficit" },
       { type: "fix", text: "Spending by Category amounts now right-align flush across all three levels — fixed a subtle misalignment caused by negative-margin overflow on the row hover backgrounds" },
       { type: "fix", text: "Budget page: removed unnecessary horizontal padding on the Unallocated row" },

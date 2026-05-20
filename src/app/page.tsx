@@ -14,6 +14,8 @@ import {
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowUp,
+  ArrowDown,
   LayoutDashboardIcon,
   LogOutIcon,
   ExternalLink,
@@ -56,7 +58,7 @@ const MOCK_ACCOUNTS = [
 ];
 
 
-type MockDelta = { text: string; color: string };
+type MockDelta = { direction: "up" | "down"; amount: string; color: string };
 
 const MOCK_L1: {
   label: string;
@@ -68,13 +70,13 @@ const MOCK_L1: {
 }[] = [
   {
     label: "Needs", spent: "RM 630.00", dot: "#4ade80", border: "#4ade8066",
-    delta: { text: "↓ RM 80", color: "text-green-600 dark:text-green-400" },
+    delta: { direction: "down", amount: "RM 80", color: "text-green-600 dark:text-green-400" },
     l2: [
       { name: "Food & Drinks", spent: "RM 420.00",
-        delta: { text: "↓ RM 50", color: "text-green-600 dark:text-green-400" },
+        delta: { direction: "down", amount: "RM 50", color: "text-green-600 dark:text-green-400" },
         l3: [
-          { name: "Groceries", spent: "RM 260.00", delta: { text: "↓ RM 30", color: "text-green-600 dark:text-green-400" } },
-          { name: "Work Meals", spent: "RM 160.00", delta: { text: "↓ RM 20", color: "text-green-600 dark:text-green-400" } },
+          { name: "Groceries", spent: "RM 260.00", delta: { direction: "down", amount: "RM 30", color: "text-green-600 dark:text-green-400" } },
+          { name: "Work Meals", spent: "RM 160.00", delta: { direction: "down", amount: "RM 20", color: "text-green-600 dark:text-green-400" } },
         ]},
       { name: "Transport", spent: "RM 210.00", l3: [
         { name: "Fuel", spent: "RM 150.00" },
@@ -84,13 +86,13 @@ const MOCK_L1: {
   },
   {
     label: "Wants", spent: "RM 225.00", dot: "#fb923c", border: "#fb923c66",
-    delta: { text: "↑ RM 35", color: "text-red-600 dark:text-red-400" },
+    delta: { direction: "up", amount: "RM 35", color: "text-red-600 dark:text-red-400" },
     l2: [
       { name: "Dining Out", spent: "RM 180.00",
-        delta: { text: "↑ RM 30", color: "text-red-600 dark:text-red-400" },
+        delta: { direction: "up", amount: "RM 30", color: "text-red-600 dark:text-red-400" },
         l3: [
-          { name: "Restaurants", spent: "RM 120.00", delta: { text: "↑ RM 20", color: "text-red-600 dark:text-red-400" } },
-          { name: "Cafes", spent: "RM 60.00", delta: { text: "↑ RM 10", color: "text-red-600 dark:text-red-400" } },
+          { name: "Restaurants", spent: "RM 120.00", delta: { direction: "up", amount: "RM 20", color: "text-red-600 dark:text-red-400" } },
+          { name: "Cafes", spent: "RM 60.00", delta: { direction: "up", amount: "RM 10", color: "text-red-600 dark:text-red-400" } },
         ]},
       { name: "Subscriptions", spent: "RM 45.00", l3: [
         { name: "Spotify", spent: "RM 17.90" },
@@ -132,18 +134,25 @@ function MockDashboard() {
 
       {/* summary */}
       <MockCard>
-        <div className="grid grid-cols-3 divide-x divide-border">
+        <div className="grid grid-cols-3">
           {[
-            { label: "Income", value: "RM 4,500", color: "text-green-600", delta: "↑ RM 200" },
-            { label: "Expenses", value: "RM 2,310", color: "text-red-500", delta: "↓ RM 145" },
-            { label: "Remaining", value: "RM 2,190", color: "text-blue-600", delta: "↑ RM 345" },
-          ].map(({ label, value, color, delta }) => (
-            <div key={label} className="flex flex-col items-center px-3 py-2.5 gap-0.5">
-              <span className="text-[9px] text-muted-foreground">{label}</span>
-              <span className={`font-semibold text-[11px] ${color}`}>{value}</span>
-              <span className="text-[8px] text-green-600 dark:text-green-400">{delta}</span>
-            </div>
-          ))}
+            { label: "Income", value: "RM 4,500", color: "text-green-600", direction: "up" as const, delta: "RM 200", bar: "bg-green-500 dark:bg-green-400" },
+            { label: "Expenses", value: "RM 2,310", color: "text-red-500", direction: "down" as const, delta: "RM 145", bar: "bg-red-500 dark:bg-red-400" },
+            { label: "Remaining", value: "RM 2,190", color: "text-blue-600", direction: "up" as const, delta: "RM 345", bar: "bg-blue-500 dark:bg-blue-400" },
+          ].map(({ label, value, color, direction, delta, bar }) => {
+            const DeltaIcon = direction === "up" ? ArrowUp : ArrowDown;
+            return (
+              <div key={label} className="flex flex-col items-center px-3 pt-5 pb-4 gap-0.5">
+                <span className={`h-[2px] w-5 rounded-full mb-0.5 ${bar}`} />
+                <span className="text-[9px] text-muted-foreground">{label}</span>
+                <span className={`font-semibold text-[11px] ${color}`}>{value}</span>
+                <span className="inline-flex items-center gap-0.5 text-[8px] text-green-600 dark:text-green-400">
+                  <DeltaIcon className="size-2" />
+                  {delta}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </MockCard>
 
@@ -195,7 +204,10 @@ function MockDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-foreground">{spent}</span>
-                  <span className={`text-[9px] w-12 text-right ${delta?.color ?? ""}`}>{delta?.text ?? ""}</span>
+                  <span className={`inline-flex items-center justify-end gap-0.5 text-[9px] w-12 ${delta?.color ?? ""}`}>
+                    {delta && (delta.direction === "up" ? <ArrowUp className="size-2.5" /> : <ArrowDown className="size-2.5" />)}
+                    {delta?.amount ?? ""}
+                  </span>
                 </div>
               </div>
               <div className="space-y-1.5 pl-3 border-l-2" style={{ borderColor: border }}>
@@ -205,7 +217,10 @@ function MockDashboard() {
                       <span className="text-[10px] text-muted-foreground">{name}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] text-muted-foreground">{l2spent}</span>
-                        <span className={`text-[9px] w-12 text-right ${l2delta?.color ?? ""}`}>{l2delta?.text ?? ""}</span>
+                        <span className={`inline-flex items-center justify-end gap-0.5 text-[9px] w-12 ${l2delta?.color ?? ""}`}>
+                          {l2delta && (l2delta.direction === "up" ? <ArrowUp className="size-2.5" /> : <ArrowDown className="size-2.5" />)}
+                          {l2delta?.amount ?? ""}
+                        </span>
                       </div>
                     </div>
                     {l3.length > 0 && (
@@ -215,7 +230,10 @@ function MockDashboard() {
                             <span className="text-[9px] text-muted-foreground/60">{l3name}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[9px] text-muted-foreground/60">{l3spent}</span>
-                              <span className={`text-[9px] w-12 text-right ${l3delta?.color ?? ""}`}>{l3delta?.text ?? ""}</span>
+                              <span className={`inline-flex items-center justify-end gap-0.5 text-[9px] w-12 ${l3delta?.color ?? ""}`}>
+                                {l3delta && (l3delta.direction === "up" ? <ArrowUp className="size-2.5" /> : <ArrowDown className="size-2.5" />)}
+                                {l3delta?.amount ?? ""}
+                              </span>
                             </div>
                           </div>
                         ))}
