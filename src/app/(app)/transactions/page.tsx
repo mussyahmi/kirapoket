@@ -13,9 +13,11 @@ import {
   TrashIcon,
   PencilIcon,
   XIcon,
+  DownloadIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
+import { transactionsToCsv, downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -161,6 +163,20 @@ function TransactionsPage() {
     }
   };
 
+  const handleExport = () => {
+    const csv = transactionsToCsv(filtered, accounts, categories);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const rangeSuffix =
+      dateFrom && dateTo
+        ? `${dateFrom}_to_${dateTo}`
+        : dateFrom
+        ? `from-${dateFrom}`
+        : dateTo
+        ? `until-${dateTo}`
+        : today;
+    downloadCsv(`kirapoket-transactions-${rangeSuffix}.csv`, csv);
+  };
+
   const formatMoney = (n: number, type: string) => {
     const formatted = new Intl.NumberFormat("ms-MY", {
       style: "currency",
@@ -182,6 +198,15 @@ function TransactionsPage() {
               <XIcon className="size-3.5" /> Clear filters
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={handleExport}
+            disabled={filtered.length === 0}
+          >
+            <DownloadIcon className="size-3.5" /> Export
+          </Button>
           {!isReadOnly && (
             <Link href="/transactions/new">
               <Button size="sm" className="gap-1.5">

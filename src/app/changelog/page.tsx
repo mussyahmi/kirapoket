@@ -21,9 +21,24 @@ interface Release {
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.8.x",
-    dateRange: "2026-05-04 – present",
+    version: "0.9.x",
+    dateRange: "2026-05-20 – present",
     latest: true,
+    changes: [
+      { type: "feat", text: "PDF monthly report — generate a polished, paginated PDF for any salary cycle from the home page; includes income/expenses/remaining summary, a spending split bar, a hierarchical category breakdown with cycle-over-cycle deltas, and a colour-coded transactions table with running header on continuation pages" },
+      { type: "feat", text: "CSV transaction export — export the current filtered list from the transactions page; filename reflects the active date range when one is set, making it easy to tell multiple exports apart" },
+      { type: "feat", text: "Previous-cycle comparison everywhere — the Summary card and every category row (L1, L2, L3) on the home page show the change vs the previous full cycle, colour-coded by direction; the same comparison appears in the PDF report" },
+      { type: "feat", text: "Home dashboard refresh — pie chart replaced with a compact horizontal stacked bar (matching the PDF); Spending by Category now shows a 'vs previous full cycle' subtitle; amount and delta lay out as two right-aligned columns on wider screens" },
+      { type: "feat", text: "Download report shortcut — Report button now lives in the cycle navigation row so each cycle can be saved as a PDF in one tap; landing page demo updated to reflect the new design" },
+      { type: "fix", text: "Summary card: Remaining figure turns red when negative (was always blue) — matches the PDF and gives a clear visual flag when a cycle runs into a deficit" },
+      { type: "fix", text: "Spending by Category amounts now right-align flush across all three levels — fixed a subtle misalignment caused by negative-margin overflow on the row hover backgrounds" },
+      { type: "fix", text: "Budget page: removed unnecessary horizontal padding on the Unallocated row" },
+    ],
+  },
+  {
+    version: "0.8.x",
+    dateRange: "2026-05-04 – 2026-05-20",
+    latest: false,
     changes: [
       { type: "feat", text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time" },
       { type: "feat", text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite" },

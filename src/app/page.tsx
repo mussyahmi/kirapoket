@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -57,14 +56,26 @@ const MOCK_ACCOUNTS = [
 ];
 
 
-const MOCK_L1 = [
+type MockDelta = { text: string; color: string };
+
+const MOCK_L1: {
+  label: string;
+  spent: string;
+  dot: string;
+  border: string;
+  delta?: MockDelta;
+  l2: { name: string; spent: string; delta?: MockDelta; l3: { name: string; spent: string; delta?: MockDelta }[] }[];
+}[] = [
   {
     label: "Needs", spent: "RM 630.00", dot: "#4ade80", border: "#4ade8066",
+    delta: { text: "↓ RM 80", color: "text-green-600 dark:text-green-400" },
     l2: [
-      { name: "Food & Drinks", spent: "RM 420.00", l3: [
-        { name: "Groceries", spent: "RM 260.00" },
-        { name: "Work Meals", spent: "RM 160.00" },
-      ]},
+      { name: "Food & Drinks", spent: "RM 420.00",
+        delta: { text: "↓ RM 50", color: "text-green-600 dark:text-green-400" },
+        l3: [
+          { name: "Groceries", spent: "RM 260.00", delta: { text: "↓ RM 30", color: "text-green-600 dark:text-green-400" } },
+          { name: "Work Meals", spent: "RM 160.00", delta: { text: "↓ RM 20", color: "text-green-600 dark:text-green-400" } },
+        ]},
       { name: "Transport", spent: "RM 210.00", l3: [
         { name: "Fuel", spent: "RM 150.00" },
         { name: "Parking & Toll", spent: "RM 60.00" },
@@ -73,11 +84,14 @@ const MOCK_L1 = [
   },
   {
     label: "Wants", spent: "RM 225.00", dot: "#fb923c", border: "#fb923c66",
+    delta: { text: "↑ RM 35", color: "text-red-600 dark:text-red-400" },
     l2: [
-      { name: "Dining Out", spent: "RM 180.00", l3: [
-        { name: "Restaurants", spent: "RM 120.00" },
-        { name: "Cafes", spent: "RM 60.00" },
-      ]},
+      { name: "Dining Out", spent: "RM 180.00",
+        delta: { text: "↑ RM 30", color: "text-red-600 dark:text-red-400" },
+        l3: [
+          { name: "Restaurants", spent: "RM 120.00", delta: { text: "↑ RM 20", color: "text-red-600 dark:text-red-400" } },
+          { name: "Cafes", spent: "RM 60.00", delta: { text: "↑ RM 10", color: "text-red-600 dark:text-red-400" } },
+        ]},
       { name: "Subscriptions", spent: "RM 45.00", l3: [
         { name: "Spotify", spent: "RM 17.90" },
         { name: "Netflix", spent: "RM 27.10" },
@@ -111,20 +125,23 @@ function MockDashboard() {
       <div className="flex items-center justify-between px-1 py-1">
         <span className="text-muted-foreground/40 text-[11px] select-none">‹</span>
         <p className="text-[11px] font-medium text-foreground">25 Mar – 24 Apr 2026</p>
-        <span className="text-muted-foreground/40 text-[11px] select-none">›</span>
+        <span className="inline-flex items-center gap-1 text-[9px] font-medium text-foreground border border-border rounded-md px-1.5 py-0.5">
+          <Download className="size-2.5" /> Report
+        </span>
       </div>
 
       {/* summary */}
       <MockCard>
         <div className="grid grid-cols-3 divide-x divide-border">
           {[
-            { label: "Income", value: "RM 4,500", color: "text-green-600" },
-            { label: "Expenses", value: "RM 2,310", color: "text-red-500" },
-            { label: "Remaining", value: "RM 2,190", color: "text-blue-600" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="flex flex-col items-center px-3 py-3 gap-1">
+            { label: "Income", value: "RM 4,500", color: "text-green-600", delta: "↑ RM 200" },
+            { label: "Expenses", value: "RM 2,310", color: "text-red-500", delta: "↓ RM 145" },
+            { label: "Remaining", value: "RM 2,190", color: "text-blue-600", delta: "↑ RM 345" },
+          ].map(({ label, value, color, delta }) => (
+            <div key={label} className="flex flex-col items-center px-3 py-2.5 gap-0.5">
               <span className="text-[9px] text-muted-foreground">{label}</span>
               <span className={`font-semibold text-[11px] ${color}`}>{value}</span>
+              <span className="text-[8px] text-green-600 dark:text-green-400">{delta}</span>
             </div>
           ))}
         </div>
@@ -151,46 +168,55 @@ function MockDashboard() {
 
       {/* spending by category */}
       <MockCard title="Spending by Category">
-        <ResponsiveContainer width="100%" height={120}>
-          <RechartsPieChart>
-            <Pie data={MOCK_PIE} dataKey="value" cx="50%" cy="50%" outerRadius={50} labelLine={false}>
-              {MOCK_PIE.map(({ color, label }) => (
-                <Cell key={label} fill={color} />
-              ))}
-            </Pie>
-          </RechartsPieChart>
-        </ResponsiveContainer>
-        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 pb-3 border-b border-border mb-3">
-          {MOCK_PIE.map(({ label, value, color }) => (
-            <div key={label} className="flex items-center gap-1">
-              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-[9px] text-muted-foreground">{label} {Math.round(value / MOCK_PIE_TOTAL * 100)}%</span>
-            </div>
-          ))}
+        <p className="-mt-1 mb-2.5 text-[9px] text-muted-foreground">vs previous full cycle</p>
+        <div className="space-y-1.5 pb-3 border-b border-border mb-3">
+          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            {MOCK_PIE.map(({ color, value, label }) => {
+              const pct = (value / MOCK_PIE_TOTAL) * 100;
+              return <span key={label} style={{ width: `${pct}%`, backgroundColor: color }} />;
+            })}
+          </div>
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5">
+            {MOCK_PIE.map(({ label, value, color }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                <span className="text-[9px] text-muted-foreground">{label} {Math.round(value / MOCK_PIE_TOTAL * 100)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="space-y-4">
-          {MOCK_L1.map(({ label, spent, dot, border, l2 }) => (
+          {MOCK_L1.map(({ label, spent, dot, border, delta, l2 }) => (
             <div key={label}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: dot }} />
                   <span className="text-[11px] font-bold text-foreground">{label}</span>
                 </div>
-                <span className="text-[10px] text-foreground">{spent}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-foreground">{spent}</span>
+                  <span className={`text-[9px] w-12 text-right ${delta?.color ?? ""}`}>{delta?.text ?? ""}</span>
+                </div>
               </div>
               <div className="space-y-1.5 pl-3 border-l-2" style={{ borderColor: border }}>
-                {l2.map(({ name, spent: l2spent, l3 }) => (
+                {l2.map(({ name, spent: l2spent, delta: l2delta, l3 }) => (
                   <div key={name} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">{name}</span>
-                      <span className="text-[10px] text-muted-foreground">{l2spent}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground">{l2spent}</span>
+                        <span className={`text-[9px] w-12 text-right ${l2delta?.color ?? ""}`}>{l2delta?.text ?? ""}</span>
+                      </div>
                     </div>
                     {l3.length > 0 && (
                       <div className="pl-2.5 border-l border-border/40 space-y-0.5">
-                        {l3.map(({ name: l3name, spent: l3spent }) => (
+                        {l3.map(({ name: l3name, spent: l3spent, delta: l3delta }) => (
                           <div key={l3name} className="flex items-center justify-between">
                             <span className="text-[9px] text-muted-foreground/60">{l3name}</span>
-                            <span className="text-[9px] text-muted-foreground/60">{l3spent}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] text-muted-foreground/60">{l3spent}</span>
+                              <span className={`text-[9px] w-12 text-right ${l3delta?.color ?? ""}`}>{l3delta?.text ?? ""}</span>
+                            </div>
                           </div>
                         ))}
                       </div>

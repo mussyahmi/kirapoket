@@ -4,8 +4,7 @@ import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon, FileDownIcon, Loader2Icon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
@@ -64,6 +63,7 @@ function DashboardPage() {
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [showAllAccounts, setShowAllAccounts] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [onboardingDoneOpen, setOnboardingDoneOpen] = useState(() => searchParams.get("onboarding") === "done");
 
   const salaryDay = userProfile?.salaryDay ?? 25;
@@ -135,6 +135,32 @@ function DashboardPage() {
       setEditingStart(false);
     } catch {
       toast.error("Failed to reset.");
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const [{ buildCycleReport }, { generateMonthlyReportPdf }] = await Promise.all([
+        import("@/lib/report"),
+        import("@/lib/pdf"),
+      ]);
+      const prevShifted = addMonths(start, -1);
+      const prevRef = new Date(
+        prevShifted.getFullYear(),
+        prevShifted.getMonth(),
+        salaryDay + 5
+      );
+      const prevRange = getSalaryCycleRange(salaryDay, prevRef, cycleOptions);
+      const report = buildCycleReport(transactions, categories, accounts, start, end, {
+        userName: userProfile?.displayName ?? "",
+        prev: { start: prevRange.start, end: prevRange.end },
+      });
+      generateMonthlyReportPdf(report);
+    } catch {
+      toast.error("Failed to generate report.");
+    } finally {
+      setGeneratingReport(false);
     }
   };
 
@@ -225,6 +251,66 @@ function DashboardPage() {
     return result;
   }, [cycleTransactions, categoryMap]);
 
+  // Previous-cycle comparison
+  const prevCycleTx = useMemo(() => {
+    const shifted = addMonths(start, -1);
+    const ref = new Date(shifted.getFullYear(), shifted.getMonth(), salaryDay + 5);
+    const { start: pStart, end: pEnd } = getSalaryCycleRange(salaryDay, ref, cycleOptions);
+    const pStartStr = format(pStart, "yyyy-MM-dd");
+    const pEndStr = format(pEnd, "yyyy-MM-dd");
+    return transactions.filter((t) => t.date >= pStartStr && t.date <= pEndStr);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, start, salaryDay, cycleStarts]);
+
+  const hasPrev = prevCycleTx.length > 0;
+
+  const prevIncome = useMemo(
+    () => prevCycleTx.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0),
+    [prevCycleTx]
+  );
+
+  const prevExpenses = useMemo(
+    () => prevCycleTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0),
+    [prevCycleTx]
+  );
+
+  const prevBalance = useMemo(() => prevIncome - prevExpenses, [prevIncome, prevExpenses]);
+
+  const prevL1Spending = useMemo(() => {
+    const result: Record<string, number> = {};
+    if (!hasPrev) return result;
+    for (const t of prevCycleTx) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      let cat = categoryMap[t.categoryId];
+      while (cat && cat.level !== 1 && cat.parentId) cat = categoryMap[cat.parentId];
+      if (cat?.level === 1) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [prevCycleTx, categoryMap, hasPrev]);
+
+  const prevL2Spending = useMemo(() => {
+    const result: Record<string, number> = {};
+    if (!hasPrev) return result;
+    for (const t of prevCycleTx) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      let cat = categoryMap[t.categoryId];
+      while (cat && cat.level !== 2 && cat.parentId) cat = categoryMap[cat.parentId];
+      if (cat?.level === 2) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [prevCycleTx, categoryMap, hasPrev]);
+
+  const prevL3Spending = useMemo(() => {
+    const result: Record<string, number> = {};
+    if (!hasPrev) return result;
+    for (const t of prevCycleTx) {
+      if (t.type !== "expense" || !t.categoryId) continue;
+      const cat = categoryMap[t.categoryId];
+      if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
+    }
+    return result;
+  }, [prevCycleTx, categoryMap, hasPrev]);
+
 
   const pieData = useMemo(
     () =>
@@ -247,6 +333,40 @@ function DashboardPage() {
       currency: "MYR",
       minimumFractionDigits: 2,
     }).format(v === 0 ? 0 : v);
+  };
+
+  const renderDelta = (
+    current: number,
+    prev: number | undefined,
+    options: { direction?: "expense" | "income"; showZero?: boolean } = {}
+  ) => {
+    const dir = options.direction ?? "expense";
+    if (hideBalance || !hasPrev || prev === undefined) return null;
+    if (prev === 0 && current > 0) {
+      return <span className="block text-xs text-muted-foreground tabular-nums">new</span>;
+    }
+    const diff = current - prev;
+    if (Math.abs(diff) < 0.01) {
+      if (options.showZero) {
+        return <span className="block text-xs text-muted-foreground tabular-nums">same as last</span>;
+      }
+      return null;
+    }
+    const up = diff > 0;
+    const isGood = dir === "expense" ? !up : up;
+    const color = isGood
+      ? "text-green-600 dark:text-green-400"
+      : "text-red-600 dark:text-red-400";
+    const abs = new Intl.NumberFormat("ms-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+    }).format(Math.abs(diff));
+    return (
+      <span className={cn("block text-xs tabular-nums", color)}>
+        {up ? "↑" : "↓"} {abs}
+      </span>
+    );
   };
 
   const loading = loadingTransactions || loadingAccounts || loadingProfile;
@@ -342,18 +462,41 @@ function DashboardPage() {
           <div className="size-9" />
         )}
         <div className="text-sm font-medium text-foreground">{cycleLabel}</div>
-        {cycleOffset < 0 ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => { setCycleOffset((o) => { const n = o + 1; sessionStorage.setItem("home:cycleOffset", String(n)); return n; }); setEditingStart(false); }}
-            aria-label="Next cycle"
-          >
-            <ChevronRightIcon className="size-4" />
-          </Button>
-        ) : (
-          <div className="size-9" />
-        )}
+        {(() => {
+          const showDownload = !loading && cycleTransactions.length > 0;
+          const showNext = cycleOffset < 0;
+          if (!showDownload && !showNext) return <div className="size-9" />;
+          return (
+            <div className="flex items-center gap-1">
+              {showDownload && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleDownloadReport}
+                  disabled={generatingReport}
+                >
+                  {generatingReport ? (
+                    <Loader2Icon className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileDownIcon className="size-3.5" />
+                  )}
+                  Report
+                </Button>
+              )}
+              {showNext && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setCycleOffset((o) => { const n = o + 1; sessionStorage.setItem("home:cycleOffset", String(n)); return n; }); setEditingStart(false); }}
+                  aria-label="Next cycle"
+                >
+                  <ChevronRightIcon className="size-4" />
+                </Button>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Cycle start banner — hidden in read-only mode */}
@@ -451,16 +594,21 @@ function DashboardPage() {
         <Card>
           <CardContent className="px-0 py-4">
             <div className="grid grid-cols-3 divide-x divide-border">
-              {[
-                { label: "Income", value: totalIncome, color: "text-green-600 dark:text-green-400" },
-                { label: "Expenses", value: totalExpenses, color: "text-red-600 dark:text-red-400" },
-                { label: "Remaining", value: cycleBalance, color: "text-blue-600 dark:text-blue-400" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="flex flex-col items-center px-4 py-1 gap-1">
+              {([
+                { label: "Income", value: totalIncome, prev: prevIncome, direction: "income" as const, color: "text-green-600 dark:text-green-400" },
+                { label: "Expenses", value: totalExpenses, prev: prevExpenses, direction: "expense" as const, color: "text-red-600 dark:text-red-400" },
+                { label: "Remaining", value: cycleBalance, prev: prevBalance, direction: "income" as const, color: cycleBalance >= 0 ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400" },
+              ]).map(({ label, value, prev, direction, color }) => (
+                <div key={label} className="flex flex-col items-center px-4 py-1 gap-0.5">
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p className={cn("text-sm font-bold text-center tabular-nums", color)}>
                     {formatMoney(value)}
                   </p>
+                  {hasPrev && (
+                    <div className="text-center leading-tight">
+                      {renderDelta(value, prev, { direction, showZero: true })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -539,35 +687,42 @@ function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Spending by Category</CardTitle>
+            {hasPrev && (
+              <p className="text-xs text-muted-foreground">vs previous full cycle</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
-            {pieData.length > 0 && (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} labelLine={false}>
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => new Intl.NumberFormat("ms-MY", { style: "currency", currency: "MYR" }).format(Number(value))} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-2 border-b border-border">
-                  {pieData.map((entry, index) => {
-                    const total = pieData.reduce((s, d) => s + d.value, 0);
-                    const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
-                    const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
-                    return (
-                      <div key={entry.name} className="flex items-center gap-1.5 text-xs">
-                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                        <span>{entry.name} {pct}%</span>
-                      </div>
-                    );
-                  })}
+            {pieData.length > 0 && (() => {
+              const total = pieData.reduce((s, d) => s + d.value, 0);
+              return (
+                <div className="space-y-2.5 pb-3 border-b border-border">
+                  <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                    {pieData.map((entry, index) => {
+                      const pct = total > 0 ? (entry.value / total) * 100 : 0;
+                      const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
+                      return (
+                        <span
+                          key={entry.name}
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {pieData.map((entry, index) => {
+                      const pct = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
+                      const color = L1_COLORS[entry.type] ?? `hsl(${index * 60}, 60%, 55%)`;
+                      return (
+                        <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+                          <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span>{entry.name} {pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </>
-            )}
+              );
+            })()}
             {l1Categories.map((l1) => {
               const l1Spent = l1Spending[l1.id] ?? 0;
               if (l1Spent === 0) return null;
@@ -583,13 +738,20 @@ function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => router.push(`/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`)}
-                    className="flex items-center justify-between gap-2 rounded-sm px-1.5 -mx-1.5 hover:bg-muted/50 transition-colors w-full"
+                    className="flex items-center justify-between gap-2 rounded-sm px-1.5 -mx-1.5 hover:bg-muted/50 transition-colors w-[calc(100%+12px)]"
                   >
                     <span className="flex items-center gap-2">
                       <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                       <span className="text-sm font-bold">{l1.name}</span>
                     </span>
-                    <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
+                    <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
+                      <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
+                      {hasPrev && (
+                        <span className="sm:w-28 sm:text-right">
+                          {renderDelta(l1Spent, prevL1Spending[l1.id])}
+                        </span>
+                      )}
+                    </span>
                   </button>
                   {l2s.length > 0 && (
                     <div className="space-y-1.5 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
@@ -604,11 +766,18 @@ function DashboardPage() {
                             <button
                               type="button"
                               onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
-                              className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full text-muted-foreground hover:text-foreground"
+                              className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground hover:text-foreground"
                             >
                               <span className="truncate text-left">{l2.name}</span>
-                              <span className="tabular-nums shrink-0">
-                                {formatMoney(l2Spending[l2.id] ?? 0)}
+                              <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
+                                <span className="tabular-nums">
+                                  {formatMoney(l2Spending[l2.id] ?? 0)}
+                                </span>
+                                {hasPrev && (
+                                  <span className="sm:w-28 sm:text-right">
+                                    {renderDelta(l2Spending[l2.id] ?? 0, prevL2Spending[l2.id])}
+                                  </span>
+                                )}
                               </span>
                             </button>
                             {l3s.length > 0 && (
@@ -618,11 +787,18 @@ function DashboardPage() {
                                     key={l3.id}
                                     type="button"
                                     onClick={() => router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`)}
-                                    className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full text-muted-foreground/70 hover:text-muted-foreground"
+                                    className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground/70 hover:text-muted-foreground"
                                   >
                                     <span className="truncate text-left">{l3.name}</span>
-                                    <span className="tabular-nums shrink-0">
-                                      {formatMoney(l3Spending[l3.id] ?? 0)}
+                                    <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
+                                      <span className="tabular-nums">
+                                        {formatMoney(l3Spending[l3.id] ?? 0)}
+                                      </span>
+                                      {hasPrev && (
+                                        <span className="sm:w-28 sm:text-right">
+                                          {renderDelta(l3Spending[l3.id] ?? 0, prevL3Spending[l3.id])}
+                                        </span>
+                                      )}
                                     </span>
                                   </button>
                                 ))}

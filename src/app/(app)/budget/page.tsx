@@ -620,7 +620,7 @@ export default function BudgetPage() {
                   </div>
                 )}
                 <div className={cn(
-                  "flex justify-between text-sm font-semibold rounded-lg px-2.5 py-2 -mx-0.5 border-t border-dashed border-border/60 pt-2.5 mt-0.5"
+                  "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-2.5 mt-0.5"
                 )}>
                   <span className={cn(unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>Unallocated</span>
                   <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
