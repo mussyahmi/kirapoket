@@ -145,12 +145,9 @@ function DashboardPage() {
         import("@/lib/report"),
         import("@/lib/pdf"),
       ]);
-      const prevShifted = addMonths(start, -1);
-      const prevRef = new Date(
-        prevShifted.getFullYear(),
-        prevShifted.getMonth(),
-        salaryDay + 5
-      );
+      // Use AUTO start of current cycle shifted back; safe for any salaryDay (including 28-31).
+      const autoStart = parseISO(autoCycleStartKey);
+      const prevRef = addMonths(autoStart, -1);
       const prevRange = getSalaryCycleRange(salaryDay, prevRef, cycleOptions);
       const report = buildCycleReport(transactions, categories, accounts, start, end, {
         userName: userProfile?.displayName ?? "",
@@ -253,14 +250,16 @@ function DashboardPage() {
 
   // Previous-cycle comparison
   const prevCycleTx = useMemo(() => {
-    const shifted = addMonths(start, -1);
-    const ref = new Date(shifted.getFullYear(), shifted.getMonth(), salaryDay + 5);
-    const { start: pStart, end: pEnd } = getSalaryCycleRange(salaryDay, ref, cycleOptions);
+    // Use the AUTO start of current cycle (not the override-adjusted `start`),
+    // shifted back one month — guaranteed to land in the prev cycle for any salaryDay.
+    const autoStart = parseISO(autoCycleStartKey);
+    const prevRef = addMonths(autoStart, -1);
+    const { start: pStart, end: pEnd } = getSalaryCycleRange(salaryDay, prevRef, cycleOptions);
     const pStartStr = format(pStart, "yyyy-MM-dd");
     const pEndStr = format(pEnd, "yyyy-MM-dd");
     return transactions.filter((t) => t.date >= pStartStr && t.date <= pEndStr);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions, start, salaryDay, cycleStarts]);
+  }, [transactions, autoCycleStartKey, salaryDay, cycleStarts]);
 
   const hasPrev = prevCycleTx.length > 0;
 
@@ -341,10 +340,12 @@ function DashboardPage() {
     options: { direction?: "expense" | "income"; showZero?: boolean } = {}
   ) => {
     const dir = options.direction ?? "expense";
-    if (hideBalance || !hasPrev || prev === undefined) return null;
-    if (prev === 0 && current > 0) {
+    if (hideBalance || !hasPrev) return null;
+    // Category didn't exist last cycle (undefined) or had zero spending → show "new"
+    if ((prev === undefined || prev === 0) && current > 0) {
       return <span className="block text-xs text-muted-foreground tabular-nums">new</span>;
     }
+    if (prev === undefined) return null;
     const diff = current - prev;
     if (Math.abs(diff) < 0.01) {
       if (options.showZero) {

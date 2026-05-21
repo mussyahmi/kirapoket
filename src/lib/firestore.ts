@@ -688,12 +688,15 @@ export async function clearAndSeedDemoData(): Promise<void> {
     categoriesSeedVersion: 3,
   }, { merge: true });
 
-  // Account — balance will be set to net amount after all transactions
+  // Account — balance reflects net of BOTH cycles
+  // Prev cycle net: 6200 - 4229.08 = 1970.92
+  // Current cycle net: 6200 - 4730.58 = 1469.42
+  // Total: 3440.34
   const accountRef = await addDoc(collection(db, "accounts"), {
     userId: uid,
     name: "Maybank",
     type: "bank",
-    balance: 1469.42,
+    balance: 3440.34,
     createdAt: Timestamp.now(),
     sortOrder: 0,
   });
@@ -818,7 +821,7 @@ export async function clearAndSeedDemoData(): Promise<void> {
     budget: 361.18, budgetType: "cycle", sortOrder: 0,
   });
 
-  // ── Transactions (cycle: Apr 25 – May 24, 2026) ────────────────────────────
+  // ── Transactions (two cycles) ──────────────────────────────────────────────
 
   const tx = (type: string, amount: number, date: string, categoryId: string | null, note?: string) =>
     addDoc(collection(db, "transactions"), {
@@ -831,6 +834,52 @@ export async function clearAndSeedDemoData(): Promise<void> {
       ...(note ? { note } : {}),
       createdAt: Timestamp.now(),
     });
+
+  // ── PREVIOUS CYCLE (Mar 25 – Apr 24, 2026) ─────────────────────────────────
+  // Designed to produce meaningful cycle-over-cycle deltas vs the current cycle below
+
+  await tx("income", 6200.00, "2026-03-25", null, "Salary");
+
+  // Food & Drinks — prev 850 (current 762.50 → delta ↓ RM 87.50 green)
+  await tx("expense", 200.00, "2026-03-27", groceriesRef.id, "Mydin");
+  await tx("expense", 100.00, "2026-03-30", restaurantRef.id, "Family lunch");
+  await tx("expense",  50.00, "2026-04-02", deliveryRef.id, "GrabFood");
+  await tx("expense", 180.00, "2026-04-05", groceriesRef.id, "Aeon");
+  await tx("expense", 120.00, "2026-04-10", restaurantRef.id, "Dinner");
+  await tx("expense",  40.00, "2026-04-14", deliveryRef.id, "Foodpanda");
+  await tx("expense",  90.00, "2026-04-18", groceriesRef.id, "Top-up");
+  await tx("expense",  70.00, "2026-04-22", restaurantRef.id, "Lunch");
+
+  // Transport — prev 220 (current 260 → delta ↑ RM 40 red)
+  await tx("expense", 100.00, "2026-03-28", fuelRef.id, "Shell");
+  await tx("expense", 120.00, "2026-04-12", fuelRef.id, "Petronas");
+
+  // Housing — prev 1345, same as current (no delta)
+  await tx("expense", 1200.00, "2026-03-25", rentRef.id, "March rent");
+  await tx("expense",  145.00, "2026-04-01", utilitiesRef.id, "TNB + Unifi");
+
+  // Health — prev 100 (current 285 → delta ↑ RM 185 red)
+  await tx("expense",  50.00, "2026-04-06", medicineRef.id, "Guardian");
+  await tx("expense",  50.00, "2026-04-15", doctorRef.id, "Klinik panel");
+
+  // Entertainment — prev 180 (current 95 → delta ↓ RM 85 green)
+  await tx("expense", 120.00, "2026-04-04", moviesRef.id, "GSC weekend");
+  await tx("expense",  60.00, "2026-04-16", gamesRef.id, "Steam");
+
+  // Shopping — prev 600 (current 1049 → delta ↑ RM 449 red)
+  await tx("expense", 250.00, "2026-03-30", clothesRef.id, "H&M");
+  await tx("expense", 180.00, "2026-04-08", clothesRef.id, "Uniqlo");
+  await tx("expense", 170.00, "2026-04-18", electronicsRef.id, "Cable + adapter");
+
+  // Subscriptions — prev 72.90, same as current (no delta)
+  await tx("expense",  55.00, "2026-03-26", streamingRef.id, "Netflix");
+  await tx("expense",  17.90, "2026-04-01", musicRef.id, "Spotify");
+
+  // Savings & Investments — same as current (no delta)
+  await tx("expense", 500.00, "2026-03-25", emergencyRef.id, "Monthly savings");
+  await tx("expense", 361.18, "2026-04-01", investRef.id, "ASB top-up");
+
+  // ── CURRENT CYCLE (Apr 25 – May 24, 2026) ──────────────────────────────────
 
   // Income
   await tx("income", 6200.00, "2026-04-25", null, "Salary");

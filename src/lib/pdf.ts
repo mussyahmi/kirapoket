@@ -270,8 +270,11 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
         if (level === 1) {
           data.cell.styles.fontStyle = "bold";
         } else if (level === 3) {
-          data.cell.styles.textColor = MUTED;
           data.cell.styles.fontSize = 8;
+          // Mute name + amount, but preserve the delta column's red/green color
+          if (data.column.index !== 2) {
+            data.cell.styles.textColor = MUTED;
+          }
         }
       },
     });

@@ -34,6 +34,7 @@ const releases: Release[] = [
       { type: "fix", text: "Summary card: Remaining figure turns red when negative (was always blue) — matches the PDF and gives a clear visual flag when a cycle runs into a deficit" },
       { type: "fix", text: "Spending by Category amounts now right-align flush across all three levels — fixed a subtle misalignment caused by negative-margin overflow on the row hover backgrounds" },
       { type: "fix", text: "Budget page: removed unnecessary horizontal padding on the Unallocated row" },
+      { type: "fix", text: "Cycle-over-cycle comparison reliability — fixed previous-cycle detection for users with salary day 26 or later (was matching the current cycle, showing 'same as last' on every metric); home page now shows 'new' for categories that didn't exist last cycle (matching the PDF); L3 row deltas in the PDF report keep their red/green colour instead of being rendered in muted grey" },
     ],
   },
   {
