@@ -47,6 +47,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "!shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22),0_2px_6px_-2px_rgba(0,0,0,0.08)]",
             "dark:!shadow-[0_24px_50px_-14px_rgba(0,0,0,0.6),0_0_0_0.5px_rgba(255,255,255,0.04)]",
           ].join(" "),
+          actionButton: "!bg-primary !text-primary-foreground !text-xs !font-semibold",
+          cancelButton: "!bg-muted !text-muted-foreground !text-xs !font-semibold",
         },
       }}
       {...props}
