@@ -30,7 +30,7 @@ const releases: Release[] = [
       { type: "feat", text: "Settled debts now grouped by person — same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size" },
       { type: "feat", text: "New transaction page: animated skeleton pills now show while Accounts and Categories load — replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived" },
       { type: "fix", text: "Transactions page header: Clear filters and Export buttons collapse to icon-only on mobile when filters are active so the primary Add button no longer gets cut off; full labels return on larger screens" },
-      { type: "fix", text: "AI Insights return date pushed back to 29 May 2026" },
+      { type: "fix", text: "AI Insights return date pushed back to 29 June 2026" },
     ],
   },
   {
