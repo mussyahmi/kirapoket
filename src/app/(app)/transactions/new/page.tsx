@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/types";
 
@@ -20,7 +21,7 @@ type TxType = "expense" | "income" | "transfer";
 function NewTransactionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
+  const { accounts, categories, createTransaction, userProfile, loadingProfile, loadingAccounts, loadingCategories, isViewingPartner, isImpersonating } = useApp();
 
   const isReadOnly = isViewingPartner || isImpersonating;
   const setupLoading = loadingProfile || loadingAccounts;
@@ -256,33 +257,45 @@ function NewTransactionPage() {
     }
   };
 
+  const PillSkeletons = ({ widths }: { widths: string[] }) => (
+    <div className="flex flex-wrap gap-2">
+      {widths.map((w, i) => (
+        <Skeleton key={i} className={cn("h-8 rounded-lg", w)} />
+      ))}
+    </div>
+  );
+
   const CategoryDrillDown = () => (
     <div className="space-y-5">
       {/* L1 */}
       <div>
         <Label className="mb-1.5 block">Category</Label>
-        <div className="flex flex-wrap gap-2">
-          {l1Categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleSelectL1(cat.id)}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-sm border transition-colors",
-                l1Id === cat.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background hover:bg-muted"
-              )}
-            >
-              {cat.name}
-            </button>
-          ))}
-          {l1Categories.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              No categories. Add them in the Categories page.
-            </p>
-          )}
-        </div>
+        {loadingCategories ? (
+          <PillSkeletons widths={["w-16", "w-16", "w-20"]} />
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {l1Categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => handleSelectL1(cat.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                  l1Id === cat.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background hover:bg-muted"
+                )}
+              >
+                {cat.name}
+              </button>
+            ))}
+            {l1Categories.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No categories. Add them in the Categories page.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* L2 */}
@@ -426,23 +439,27 @@ function NewTransactionPage() {
           <Label className="mb-1.5 block">
             {txType === "transfer" ? "From Account" : "Account"}
           </Label>
-          <div className="flex flex-wrap gap-2">
-            {accounts.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setAccountId(a.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm border transition-colors",
-                  accountId === a.id
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background hover:bg-muted"
-                )}
-              >
-                {a.name}
-              </button>
-            ))}
-          </div>
+          {loadingAccounts ? (
+            <PillSkeletons widths={["w-20", "w-24", "w-20"]} />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {accounts.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setAccountId(a.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                    accountId === a.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted"
+                  )}
+                >
+                  {a.name}
+                </button>
+              ))}
+            </div>
+          )}
           {accountId && renderBalanceHint(accountId, "source")}
         </div>
 

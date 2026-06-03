@@ -404,7 +404,7 @@ export default function BudgetPage() {
           ) : !insights ? (
             <div className="space-y-2 py-2">
               <p className="text-sm text-foreground/80 leading-relaxed">
-                AI Insights is temporarily unavailable and will be back on <span className="font-semibold text-amber-500 dark:text-amber-400">28 May 2026</span>. Sorry for the inconvenience!
+                AI Insights is temporarily unavailable and will be back on <span className="font-semibold text-amber-500 dark:text-amber-400">29 May 2026</span>. Sorry for the inconvenience!
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 If you&apos;d like to help keep this feature running, you&apos;re welcome to buy me a coffee — every bit helps!

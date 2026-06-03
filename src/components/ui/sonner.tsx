@@ -30,15 +30,23 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
+          // Make the toast surface translucent so backdrop-filter can do its work
+          "--normal-bg": "transparent",
           "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          "--normal-border": "transparent",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: [
+            "cn-toast",
+            "!bg-white/75 dark:!bg-white/[0.10]",
+            "!backdrop-blur-2xl !backdrop-saturate-200",
+            "!border !border-black/[0.08] dark:!border-white/[0.14]",
+            "!shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22),0_2px_6px_-2px_rgba(0,0,0,0.08)]",
+            "dark:!shadow-[0_24px_50px_-14px_rgba(0,0,0,0.6),0_0_0_0.5px_rgba(255,255,255,0.04)]",
+          ].join(" "),
         },
       }}
       {...props}

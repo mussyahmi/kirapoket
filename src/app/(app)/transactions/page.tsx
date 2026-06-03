@@ -190,12 +190,19 @@ function TransactionsPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Transactions</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {hasActiveFilters && (
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={clearFilters}>
-              <XIcon className="size-3.5" /> Clear filters
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={clearFilters}
+              aria-label="Clear filters"
+            >
+              <XIcon className="size-3.5" />
+              <span className="hidden sm:inline">Clear filters</span>
             </Button>
           )}
           <Button
@@ -204,8 +211,10 @@ function TransactionsPage() {
             className="gap-1.5"
             onClick={handleExport}
             disabled={filtered.length === 0}
+            aria-label="Export"
           >
-            <DownloadIcon className="size-3.5" /> Export
+            <DownloadIcon className="size-3.5" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
           {!isReadOnly && (
             <Link href="/transactions/new">

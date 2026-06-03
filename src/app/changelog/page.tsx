@@ -21,9 +21,22 @@ interface Release {
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.9.x",
-    dateRange: "2026-05-20 – present",
+    version: "0.10.x",
+    dateRange: "2026-05-21 – present",
     latest: true,
+    changes: [
+      { type: "feat", text: "Liquid Glass material across all chrome — the bottom nav, top header, floating action button, dialogs, toasts, and dropdown menus now use a translucent surface with backdrop blur and saturation boost; content behind picks up richer colour, matching the iOS 26 / macOS Tahoe design language" },
+      { type: "feat", text: "Floating quick-add button — on the Home, Transactions, and Budget pages a circular plus button now slides in from the bottom-right as you scroll down (the bottom nav slides away to make room) so adding a transaction is always one tap; slides back when you scroll up" },
+      { type: "feat", text: "Settled debts now grouped by person — same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size" },
+      { type: "feat", text: "New transaction page: animated skeleton pills now show while Accounts and Categories load — replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived" },
+      { type: "fix", text: "Transactions page header: Clear filters and Export buttons collapse to icon-only on mobile when filters are active so the primary Add button no longer gets cut off; full labels return on larger screens" },
+      { type: "fix", text: "AI Insights return date pushed back to 29 May 2026" },
+    ],
+  },
+  {
+    version: "0.9.x",
+    dateRange: "2026-05-20 – 2026-05-21",
+    latest: false,
     changes: [
       { type: "feat", text: "PDF monthly report — generate a polished, paginated PDF for any salary cycle from the home page; includes income/expenses/remaining summary, a spending split bar, a hierarchical category breakdown with cycle-over-cycle deltas, and a colour-coded transactions table with running header on continuation pages" },
       { type: "feat", text: "CSV transaction export — export the current filtered list from the transactions page; filename reflects the active date range when one is set, making it easy to tell multiple exports apart" },

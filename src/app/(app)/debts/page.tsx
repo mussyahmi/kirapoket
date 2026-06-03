@@ -204,12 +204,17 @@ interface DebtGroupCardProps {
 
 function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDelete, onPay, onCollect, onRecord }: DebtGroupCardProps) {
   const isExpanded = expandedGroups.has(group.key);
-  const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0);
-  const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + d.amount, 0);
+  const sumAmount = (d: Debt) => (d.settled ? d.originalAmount ?? d.amount : d.amount);
+  const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + sumAmount(d), 0);
+  const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + sumAmount(d), 0);
   const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
   const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
+  const allSettled = group.debts.every((d) => d.settled);
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className={cn(
+      "rounded-xl border border-border bg-card overflow-hidden",
+      allSettled && "opacity-60"
+    )}>
       <button
         type="button"
         onClick={() => onToggle(group.key)}
@@ -308,6 +313,29 @@ export default function DebtsPage() {
       }))
       .sort((a, b) => b.latestDate.localeCompare(a.latestDate));
   }, [unsettled]);
+
+  const settledGroups = useMemo(() => {
+    const map = new Map<string, Debt[]>();
+    for (const d of settled) {
+      const key = `settled-${d.personName.trim().toLowerCase()}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(d);
+    }
+    return Array.from(map.entries())
+      .map(([key, groupDebts]) => {
+        const sortedByDate = groupDebts.sort((a, b) => b.date.localeCompare(a.date));
+        const latestSettledDate = groupDebts
+          .map((d) => d.settledDate ?? d.date)
+          .sort((a, b) => b.localeCompare(a))[0];
+        return {
+          key,
+          displayName: sortedByDate[0].personName,
+          debts: sortedByDate,
+          latestDate: latestSettledDate,
+        };
+      })
+      .sort((a, b) => b.latestDate.localeCompare(a.latestDate));
+  }, [settled]);
 
   const totalIOwe = useMemo(
     () => unsettled.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0),
@@ -637,14 +665,18 @@ export default function DebtsPage() {
           </button>
           {showSettled && (
             <div className="space-y-2">
-              {settled.slice(0, settledVisible).map((d) => <DebtCard key={d.id} debt={d} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />)}
-              {settledVisible < settled.length && (
+              {settledGroups.slice(0, settledVisible).map((g) =>
+                g.debts.length === 1
+                  ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />
+                  : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />
+              )}
+              {settledVisible < settledGroups.length && (
                 <button
                   type="button"
                   onClick={() => setSettledVisible((v) => v + SETTLED_PAGE)}
                   className="text-xs text-muted-foreground underline underline-offset-2"
                 >
-                  Load more ({settled.length - settledVisible} remaining)
+                  Load more ({settledGroups.length - settledVisible} {settledGroups.length - settledVisible === 1 ? "person" : "people"} remaining)
                 </button>
               )}
             </div>

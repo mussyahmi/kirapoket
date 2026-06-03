@@ -16,6 +16,7 @@ import {
   ScrollTextIcon,
   ShieldAlertIcon,
   CoffeeIcon,
+  PlusIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
@@ -46,7 +47,8 @@ const allNavItems = [...bottomNavItems, ...menuItems];
 
 export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
-  const { userProfile, accounts, debts } = useApp();
+  const { userProfile, accounts, debts, isViewingPartner, isImpersonating } = useApp();
+  const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
   const isAdmin = user?.uid === ADMIN_UID;
   const unsettledCount = debts.filter((d) => !d.settled).length;
@@ -56,6 +58,10 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   const menuRef = useRef<HTMLDivElement>(null);
 
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+
+  // FAB only shows on the three add-prone pages, when not read-only & set up
+  const FAB_PAGES = ["/home", "/transactions", "/budget"];
+  const fabEligible = FAB_PAGES.includes(pathname) && !isReadOnly && setupComplete;
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -159,9 +165,13 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
 
       {/* ── Main Content Area ── */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile Header */}
+        {/* Mobile Header — Liquid Glass, edge-pinned (no rounding, no float) */}
         <header className={cn(
-          "md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card/90 backdrop-blur-md sticky top-0 z-[60] transition-transform duration-300",
+          "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60] transition-transform duration-300",
+          // Same glass material as the bottom nav, but only a bottom hairline (edge-attached)
+          "bg-white/55 dark:bg-white/[0.06]",
+          "border-b border-black/[0.08] dark:border-white/[0.14]",
+          "backdrop-blur-2xl backdrop-saturate-200",
           navVisible ? "translate-y-0" : "-translate-y-full"
         )}>
           <Link href="/" className="flex items-center gap-2">
@@ -184,7 +194,14 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                 <MenuIcon className="size-4" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-border bg-card shadow-lg overflow-hidden z-[60]">
+                <div className={cn(
+                  "absolute right-0 top-full mt-1.5 w-44 rounded-xl overflow-hidden z-[60]",
+                  // High opacity — menu sits over live content with no overlay, so readability wins
+                  "bg-popover/95",
+                  "border border-black/[0.08] dark:border-white/[0.14]",
+                  "backdrop-blur-2xl backdrop-saturate-200",
+                  "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55)]"
+                )}>
                   {menuItems.map(({ href, label, icon: Icon }) => (
                     <Link
                       key={href}
@@ -245,14 +262,28 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
 
         {/* Page Content */}
         {banner}
-        <main className="flex-1 overflow-auto pb-20 md:pb-0">{children}</main>
+        <main className="flex-1 overflow-auto pb-28 md:pb-0">{children}</main>
       </div>
 
-      {/* ── Mobile Bottom Nav — 4 items only ── */}
-      <nav className={cn(
-        "md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around border-t border-border bg-card/90 backdrop-blur-md h-16 px-1 transition-transform duration-300",
-        navVisible ? "translate-y-0" : "translate-y-full"
-      )}>
+      {/* ── Mobile Bottom Nav — Liquid Glass, 4 items ── */}
+      <nav
+        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        className={cn(
+          "md:hidden fixed left-3 right-3 z-50 flex items-center justify-around h-16 px-1.5",
+          "rounded-3xl",
+          // Glass tint — near-white in light, faint white in dark
+          "bg-white/55 dark:bg-white/[0.06]",
+          // Uniform hairline border — visible in both modes, equal top & bottom
+          "border border-black/[0.08] dark:border-white/[0.14]",
+          // Heavy lens-blur + saturation boost — the Liquid Glass core
+          "backdrop-blur-2xl backdrop-saturate-200",
+          // Outer drop shadow only — no asymmetric inset highlights
+          "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06)]",
+          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),0_0_0_0.5px_rgba(255,255,255,0.04)]",
+          "transition-transform duration-300",
+          navVisible ? "translate-y-0" : "translate-y-[calc(100%+1.5rem)]"
+        )}
+      >
         {bottomNavItems.map(({ href, label, icon: Icon, requiresSetup }) => {
           const disabled = requiresSetup && !setupComplete;
           const active = isActive(href);
@@ -263,9 +294,9 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
               className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 cursor-not-allowed select-none"
             >
               <span className="flex items-center justify-center w-10 h-7 rounded-full">
-                <Icon className="size-5 text-muted-foreground/25" />
+                <Icon className="size-5 text-muted-foreground/30" />
               </span>
-              <span className="text-[10px] font-semibold text-muted-foreground/25">{label}</span>
+              <span className="text-[10px] font-semibold text-muted-foreground/30">{label}</span>
             </span>
           ) : (
             <Link
@@ -275,17 +306,25 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
               className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5"
             >
               <span className={cn(
-                "relative flex items-center justify-center w-10 h-7 rounded-full transition-all duration-200",
-                active ? "bg-primary/15" : ""
+                "relative flex items-center justify-center w-11 h-7 rounded-full transition-all duration-200",
+                active && [
+                  "bg-primary/20 dark:bg-primary/25",
+                  // Subtle glass-on-glass pill for the active state
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.05)]",
+                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.2)]",
+                ]
               )}>
-                <Icon className={cn("size-5 transition-colors", active ? "text-primary" : "text-muted-foreground")} />
+                <Icon className={cn(
+                  "size-5 transition-colors",
+                  active ? "text-primary" : "text-muted-foreground"
+                )} />
                 {href === "/debts" && unsettledCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-card" />
+                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-background" />
                 )}
               </span>
               <span className={cn(
                 "text-[10px] font-semibold transition-colors",
-                active ? "text-primary" : "text-muted-foreground/60"
+                active ? "text-primary" : "text-muted-foreground/70"
               )}>
                 {label}
               </span>
@@ -293,6 +332,35 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
           );
         })}
       </nav>
+
+      {/* ── Floating Action Button — Liquid Glass, matching nav material ── */}
+      {fabEligible && (
+        <Link
+          href="/transactions/new"
+          aria-label="Add transaction"
+          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className={cn(
+            "md:hidden fixed right-3 z-50",
+            "size-14 rounded-full",
+            // Identical glass recipe to the bottom nav
+            "bg-white/55 dark:bg-white/[0.06]",
+            "border border-black/[0.08] dark:border-white/[0.14]",
+            "backdrop-blur-2xl backdrop-saturate-200",
+            "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06)]",
+            "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),0_0_0_0.5px_rgba(255,255,255,0.04)]",
+            // Icon picks up primary so it still reads as an action
+            "text-primary",
+            "flex items-center justify-center",
+            "active:scale-95",
+            "transition-all duration-300 ease-out",
+            navVisible
+              ? "translate-y-[calc(100%+1.5rem)] scale-75 opacity-0 pointer-events-none"
+              : "translate-y-0 scale-100 opacity-100"
+          )}
+        >
+          <PlusIcon className="size-6" strokeWidth={2.5} />
+        </Link>
+      )}
     </div>
   );
 }

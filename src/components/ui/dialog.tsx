@@ -53,7 +53,13 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90dvh] overflow-x-hidden overflow-y-auto -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90dvh] overflow-x-hidden overflow-y-auto -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm text-popover-foreground duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Liquid Glass material — slightly more opaque than nav so form text stays legible
+          "bg-white/75 dark:bg-white/[0.08]",
+          "backdrop-blur-2xl backdrop-saturate-200",
+          "border border-black/[0.08] dark:border-white/[0.14]",
+          "shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25),0_4px_12px_-4px_rgba(0,0,0,0.08)]",
+          "dark:shadow-[0_32px_60px_-20px_rgba(0,0,0,0.7),0_0_0_0.5px_rgba(255,255,255,0.04)]",
           className
         )}
         {...props}
