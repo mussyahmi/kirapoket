@@ -57,3 +57,6 @@ next-env.d.ts
 
 # seed scripts — service account key must never be committed
 scripts/serviceAccount.json
+
+# private content planning — Threads post drafts
+threads-topics.md
