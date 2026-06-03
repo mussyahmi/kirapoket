@@ -267,7 +267,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
 
       {/* ── Mobile Bottom Nav — Liquid Glass, 4 items ── */}
       <nav
-        style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))" }}
         className={cn(
           "md:hidden fixed left-3 right-3 z-50 flex items-center justify-around h-16 px-1.5",
           "rounded-3xl",
@@ -338,7 +338,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         <Link
           href="/transactions/new"
           aria-label="Add transaction"
-          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))" }}
           className={cn(
             "md:hidden fixed right-3 z-50",
             "size-14 rounded-full",
