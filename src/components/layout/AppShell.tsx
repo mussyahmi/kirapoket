@@ -21,6 +21,7 @@ import {
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAddTransaction } from "@/components/transactions/AddTransactionSheet";
 import { cn } from "@/lib/utils";
 import FeedbackButton from "@/components/common/FeedbackButton";
 import SupportButton from "@/components/common/SupportButton";
@@ -54,9 +55,10 @@ function haptic(ms = 8) {
 
 export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
-  const { userProfile, accounts, debts, transactions, isViewingPartner, isImpersonating } = useApp();
+  const { userProfile, accounts, debts, transactions, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
+  const { open: addOpen, openAdd } = useAddTransaction();
   const isAdmin = user?.uid === ADMIN_UID;
   const unsettledCount = debts.filter((d) => !d.settled).length;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -147,8 +149,9 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
     };
   }, [pathname, setupGated, unsettledCount]);
 
-  // Central quick-add button shows once the user can actually add (set up, not read-only)
-  const showAdd = setupComplete && !isReadOnly;
+  // Central quick-add button: shown unless read-only, and optimistically during
+  // load so it doesn't flash out on refresh before profile/accounts arrive
+  const showAdd = !isReadOnly && (setupComplete || loadingProfile || loadingAccounts);
 
   // Icon-only bottom-nav item (labels removed); i must stay the bottomNavItems index
   const renderNavItem = (
@@ -289,10 +292,10 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                 <div className={cn(
                   "absolute right-0 top-full mt-1.5 w-44 rounded-xl overflow-hidden z-[60]",
                   // High opacity — menu sits over live content with no overlay, so readability wins
-                  "bg-popover/95",
-                  "border border-black/[0.08] dark:border-white/[0.14]",
-                  "backdrop-blur-2xl backdrop-saturate-200",
-                  "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55)]"
+                  "bg-popover/90",
+                  "border border-black/[0.06] dark:border-white/[0.08]",
+                  "backdrop-blur-xl backdrop-saturate-[2.2]",
+                  "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.5)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.1)]"
                 )}>
                   {menuItems.map(({ href, label, icon: Icon }) => (
                     <Link
@@ -369,11 +372,13 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
           width: navVisible ? "calc(100vw - 1.5rem)" : "17rem",
           height: navVisible ? "4rem" : "3.25rem",
           transition:
-            "width 350ms cubic-bezier(0.34,1.4,0.5,1), height 350ms cubic-bezier(0.34,1.4,0.5,1), bottom 350ms cubic-bezier(0.34,1.4,0.5,1)",
+            "width 350ms cubic-bezier(0.34,1.4,0.5,1), height 350ms cubic-bezier(0.34,1.4,0.5,1), bottom 350ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 250ms ease",
         }}
         className={cn(
           "md:hidden fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-around px-1.5",
           "rounded-3xl",
+          // Slide out of the way while the add-transaction sheet is open
+          addOpen && "translate-y-[140%] opacity-0 pointer-events-none",
           // Minimal fill — the bar tints toward whatever content scrolls behind it
           "bg-white/20 dark:bg-white/[0.04]",
           // Faint hairline border — kept subtle so it doesn't read as a hard outline
@@ -416,10 +421,10 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         )}
         {bottomNavItems.slice(0, 2).map((item, i) => renderNavItem(item, i))}
         {showAdd && (
-          <Link
-            href="/transactions/new"
+          <button
+            type="button"
             aria-label="Add transaction"
-            onClick={() => haptic(12)}
+            onClick={() => { haptic(12); openAdd(); }}
             className="flex items-center justify-center flex-1"
           >
             <span
@@ -431,7 +436,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
             >
               <PlusIcon className={cn("transition-all duration-300", navVisible ? "size-6" : "size-5")} strokeWidth={2.5} />
             </span>
-          </Link>
+          </button>
         )}
         {bottomNavItems.slice(2).map((item, i) => renderNavItem(item, i + 2))}
       </nav>

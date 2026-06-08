@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { AppShell } from "@/components/layout/AppShell";
+import { AddTransactionProvider } from "@/components/transactions/AddTransactionSheet";
 import { PartnerBanner } from "@/components/common/PartnerBanner";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -76,8 +77,10 @@ export default function AppLayout({
   );
 
   return (
-    <AppShell banner={banner}>
-      {children}
-    </AppShell>
+    <AddTransactionProvider>
+      <AppShell banner={banner}>
+        {children}
+      </AppShell>
+    </AddTransactionProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
+import { useAddTransaction } from "@/components/transactions/AddTransactionSheet";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +45,7 @@ function TransactionsPage() {
   const { transactions, accounts, categories, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
     useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
+  const { openAdd } = useAddTransaction();
 
   const searchParams = useSearchParams();
 
@@ -217,11 +219,9 @@ function TransactionsPage() {
             <span className="hidden sm:inline">Export</span>
           </Button>
           {!isReadOnly && (
-            <Link href="/transactions/new">
-              <Button size="sm" className="gap-1.5">
-                <PlusIcon className="size-4" /> Add
-              </Button>
-            </Link>
+            <Button size="sm" className="gap-1.5" onClick={openAdd}>
+              <PlusIcon className="size-4" /> Add
+            </Button>
           )}
         </div>
       </div>

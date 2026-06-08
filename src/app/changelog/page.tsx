@@ -27,13 +27,15 @@ const releases: Release[] = [
     changes: [
       { type: "feat", text: "Settled debts now grouped by person — same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size" },
       { type: "feat", text: "New transaction page: animated skeleton pills now show while Accounts and Categories load — replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived" },
-      { type: "feat", text: "Liquid Glass bottom navigation — a cleaner icon-only bar with a central + button for adding a transaction; it picks up colour from the content scrolling behind it, the active tab sits under a glass highlight that glides between tabs with a subtle liquid stretch, and the whole bar shrinks toward its centre as you scroll down and expands as you scroll up, with a light haptic tap on supported devices" },
-      { type: "feat", text: "Liquid Glass surfaces across dialogs, toasts, and dropdown menus — a translucent material with backdrop blur and saturation, matching the iOS 26 / macOS Tahoe design language" },
+      { type: "feat", text: "Liquid Glass bottom navigation — a cleaner icon-only bar with a central + button; it picks up colour from the content scrolling behind it, the active tab sits under a glass highlight that glides between tabs with a subtle liquid stretch, and the whole bar shrinks toward its centre as you scroll down and expands as you scroll up, with a light haptic tap on supported devices" },
+      { type: "feat", text: "Quick-add bottom sheet — the nav's + button and the Add button on the Transactions page now slide the new-transaction form up as a bottom sheet with a sticky Add button, instead of opening a separate page; the nav tucks away while it's open" },
+      { type: "feat", text: "Liquid Glass surfaces across dialogs, toasts, dropdown menus, and the quick-add sheet — a consistent translucent material with backdrop blur, saturation, and a lit top edge, matching the iOS 26 / macOS Tahoe design language" },
       { type: "feat", text: "Collapsible category breakdowns — Spending by Category on Home and By Category on Budget now fold up per top-level group (Needs / Wants / Savings); the largest group opens by default and your expand/collapse choices are remembered" },
       { type: "fix", text: "Transactions page header: Clear filters and Export buttons collapse to icon-only on mobile when filters are active so the primary Add button no longer gets cut off; full labels return on larger screens" },
       { type: "fix", text: "AI Insights return date pushed back to 29 June 2026" },
       { type: "fix", text: "Mobile header is now a solid bar that matches the page background and stays in place, replacing the translucent bar that hid on scroll" },
       { type: "fix", text: "Transactions tab stays accessible once you've logged at least one transaction, even if account or salary setup later looks incomplete" },
+      { type: "fix", text: "The central + button no longer briefly disappears on refresh while your profile and accounts finish loading" },
     ],
   },
   {
