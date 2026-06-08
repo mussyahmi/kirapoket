@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon, InfoIcon } from "lucide-react";
+import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon, InfoIcon, ChevronDownIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -116,6 +116,16 @@ export default function BudgetPage() {
   const [l3EditTarget, setL3EditTarget] = useState<Category | null>(null);
   const [l3EditForm, setL3EditForm] = useState<L3EditForm>({ name: "", budgetType: "cycle", budget: "", budgetSelectedDates: [], note: "", links: [] });
   const [l3EditSaving, setL3EditSaving] = useState(false);
+  // null = no saved preference yet; fall back to auto-expanding the largest root
+  const [expandedL1, setExpandedL1] = useState<Set<string> | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("budget:expandedL1");
+      return raw ? new Set(JSON.parse(raw) as string[]) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const openL3Edit = (cat: Category) => {
     setSelectedL3(null);
@@ -329,6 +339,43 @@ export default function BudgetPage() {
     () => Object.values(l2BudgetMap).some((v) => v > 0),
     [l2BudgetMap]
   );
+
+  // Per-root spending totals, used to auto-expand the largest root by default
+  const l1SpendingMap = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [l2id, amt] of Object.entries(l2SpendingMap)) {
+      const parentId = categoryMap[l2id]?.parentId;
+      if (parentId) result[parentId] = (result[parentId] ?? 0) + amt;
+    }
+    return result;
+  }, [l2SpendingMap, categoryMap]);
+
+  const largestL1Id = useMemo(() => {
+    let id: string | null = null;
+    let max = -1;
+    for (const [k, v] of Object.entries(l1SpendingMap)) {
+      if (v > max) {
+        max = v;
+        id = k;
+      }
+    }
+    return id;
+  }, [l1SpendingMap]);
+
+  const effectiveExpanded = useMemo(
+    () => expandedL1 ?? new Set(largestL1Id ? [largestL1Id] : []),
+    [expandedL1, largestL1Id],
+  );
+
+  const toggleL1 = (id: string) => {
+    const next = new Set(effectiveExpanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    try {
+      localStorage.setItem("budget:expandedL1", JSON.stringify([...next]));
+    } catch {}
+    setExpandedL1(next);
+  };
 
   const loading = loadingTransactions || loadingProfile;
 
@@ -699,17 +746,32 @@ export default function BudgetPage() {
                 if (l2sVisible.length === 0) return null;
 
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
+                const isExpanded = effectiveExpanded.has(l1.id);
+                const l1spent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
+                const l1budget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
+                const l1over = l1budget > 0 && l1spent > l1budget;
                 return (
                   <div key={l1.id} className="space-y-3">
                     {/* L1 header */}
-                    <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleL1(l1.id)}
+                      aria-label={isExpanded ? `Collapse ${l1.name}` : `Expand ${l1.name}`}
+                      className="flex w-full items-center justify-between gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors"
+                    >
                       <div className="flex items-center gap-2">
+                        <ChevronDownIcon className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", !isExpanded && "-rotate-90")} />
                         <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         <p className="text-sm font-bold">{l1.name}</p>
                       </div>
-                    </div>
+                      <span className={cn("amt tabular-nums text-xs shrink-0", l1over ? "text-red-500" : "text-muted-foreground")}>
+                        {fmt(l1spent)}
+                        {l1budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l1budget)}</span>}
+                      </span>
+                    </button>
 
                     {/* L2 rows */}
+                    {isExpanded && (
                     <div className="space-y-3 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
                       {l2sVisible.map((l2) => {
                         const l2budget = l2BudgetMap[l2.id] ?? 0;
@@ -796,6 +858,7 @@ export default function BudgetPage() {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 );
               })

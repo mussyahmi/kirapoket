@@ -45,9 +45,16 @@ const menuItems = [
 // Desktop sidebar — all pages
 const allNavItems = [...bottomNavItems, ...menuItems];
 
+// Light haptic tap on supported devices (Android/Chrome; a no-op on iOS Safari)
+function haptic(ms = 8) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(ms);
+  }
+}
+
 export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
-  const { userProfile, accounts, debts, isViewingPartner, isImpersonating } = useApp();
+  const { userProfile, accounts, debts, transactions, isViewingPartner, isImpersonating } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
   const isAdmin = user?.uid === ADMIN_UID;
@@ -57,11 +64,19 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   const [supportOpen, setSupportOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+  // Liquid Glass sliding lens over the active bottom-nav tab
+  const navRef = useRef<HTMLElement>(null);
+  const pillRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const [lens, setLens] = useState({ x: 0, top: 0, w: 0, h: 0, show: false });
+  const [lensReady, setLensReady] = useState(false);
+  // Transient "liquid" squash applied while the lens is in transit
+  const [stretch, setStretch] = useState({ active: false, toRight: true });
+  const prevIdxRef = useRef<number | null>(null);
+  const stretchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // FAB only shows on the three add-prone pages, when not read-only & set up
-  const FAB_PAGES = ["/home", "/transactions", "/budget"];
-  const fabEligible = FAB_PAGES.includes(pathname) && !isReadOnly && setupComplete;
+  // Setup-gated tabs unlock once setup is done — but never re-lock once transactions exist
+  const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+  const setupGated = !setupComplete && transactions.length === 0;
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
@@ -95,6 +110,86 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   // Close menu on route change
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
+  // Position the sliding lens over the active tab; it animates between tabs via CSS
+  useEffect(() => {
+    const nav = navRef.current;
+    const measure = () => {
+      const idx = bottomNavItems.findIndex(
+        (it) => pathname === it.href || pathname.startsWith(it.href + "/")
+      );
+      const pill = pillRefs.current[idx];
+      if (!nav || !pill) {
+        setLens((l) => ({ ...l, show: false }));
+        return;
+      }
+      const nr = nav.getBoundingClientRect();
+      const pr = pill.getBoundingClientRect();
+      const x = pr.left - nr.left;
+      // Squash toward the direction of travel, but only on a real tab change
+      // (not on first paint, resize, or the scroll shrink/grow reflow)
+      const prevIdx = prevIdxRef.current;
+      if (prevIdx != null && prevIdx >= 0 && prevIdx !== idx) {
+        setStretch({ active: true, toRight: idx > prevIdx });
+        if (stretchTimer.current) clearTimeout(stretchTimer.current);
+        stretchTimer.current = setTimeout(() => setStretch((s) => ({ ...s, active: false })), 230);
+      }
+      prevIdxRef.current = idx;
+      setLens({ x, top: pr.top - nr.top, w: pr.width, h: pr.height, show: true });
+      setLensReady(true);
+    };
+    const raf = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(() => requestAnimationFrame(measure));
+    if (nav) ro.observe(nav);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      if (stretchTimer.current) clearTimeout(stretchTimer.current);
+    };
+  }, [pathname, setupGated, unsettledCount]);
+
+  // Central quick-add button shows once the user can actually add (set up, not read-only)
+  const showAdd = setupComplete && !isReadOnly;
+
+  // Icon-only bottom-nav item (labels removed); i must stay the bottomNavItems index
+  const renderNavItem = (
+    { href, label, icon: Icon, requiresSetup }: (typeof bottomNavItems)[number],
+    i: number
+  ) => {
+    const disabled = requiresSetup && setupGated;
+    const active = isActive(href);
+    const pillCls = cn(
+      "relative z-10 flex items-center justify-center rounded-full transition-all duration-300",
+      navVisible ? "w-12 h-9" : "w-9 h-7"
+    );
+    const iconSize = navVisible ? "size-6" : "size-5";
+    return disabled ? (
+      <span
+        key={href}
+        title={label}
+        className="flex items-center justify-center flex-1 cursor-not-allowed select-none"
+      >
+        <span ref={(el) => { pillRefs.current[i] = el; }} className={pillCls}>
+          <Icon className={cn("text-muted-foreground/30 transition-all duration-300", iconSize)} />
+        </span>
+      </span>
+    ) : (
+      <Link
+        key={href}
+        href={href}
+        aria-label={label}
+        onClick={() => { if (!active) haptic(); }}
+        className="flex items-center justify-center flex-1"
+      >
+        <span ref={(el) => { pillRefs.current[i] = el; }} className={pillCls}>
+          <Icon className={cn("transition-all duration-300", iconSize, active ? "text-primary" : "text-muted-foreground")} />
+          {href === "/debts" && unsettledCount > 0 && (
+            <span className="absolute top-0.5 right-1.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-background" />
+          )}
+        </span>
+      </Link>
+    );
+  };
+
   return (
     <div className="flex h-full min-h-screen">
       {/* ── Desktop Sidebar ── */}
@@ -108,7 +203,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         </div>
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {allNavItems.map(({ href, label, icon: Icon, ...rest }) => {
-            const disabled = ("requiresSetup" in rest ? rest.requiresSetup : false) && !setupComplete;
+            const disabled = ("requiresSetup" in rest ? rest.requiresSetup : false) && setupGated;
             return disabled ? (
               <span
                 key={href}
@@ -165,14 +260,11 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
 
       {/* ── Main Content Area ── */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile Header — Liquid Glass, edge-pinned (no rounding, no float) */}
+        {/* Mobile Header — solid, edge-pinned, always visible */}
         <header className={cn(
-          "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60] transition-transform duration-300",
-          // Same glass material as the bottom nav, but only a bottom hairline (edge-attached)
-          "bg-white/55 dark:bg-white/[0.06]",
-          "border-b border-black/[0.08] dark:border-white/[0.14]",
-          "backdrop-blur-2xl backdrop-saturate-200",
-          navVisible ? "translate-y-0" : "-translate-y-full"
+          "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60]",
+          // Matches the page background, with a hairline to separate from content
+          "bg-background border-b border-border"
         )}>
           <Link href="/" className="flex items-center gap-2">
             <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">KP</span>
@@ -265,102 +357,84 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         <main className="flex-1 overflow-auto pb-28 md:pb-0">{children}</main>
       </div>
 
-      {/* ── Mobile Bottom Nav — Liquid Glass, 4 items ── */}
+      {/* ── Mobile Bottom Nav — Liquid Glass; shrinks & drops labels on scroll ── */}
       <nav
-        style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))" }}
+        ref={navRef}
+        style={{
+          // Lift the bottom by half the height drop so the bar shrinks toward its centre
+          bottom: navVisible
+            ? "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))"
+            : "calc(max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem)) + 0.375rem)",
+          // At rest: full-width bar. On scroll: narrower, shorter (icons close up)
+          width: navVisible ? "calc(100vw - 1.5rem)" : "17rem",
+          height: navVisible ? "4rem" : "3.25rem",
+          transition:
+            "width 350ms cubic-bezier(0.34,1.4,0.5,1), height 350ms cubic-bezier(0.34,1.4,0.5,1), bottom 350ms cubic-bezier(0.34,1.4,0.5,1)",
+        }}
         className={cn(
-          "md:hidden fixed left-3 right-3 z-50 flex items-center justify-around h-16 px-1.5",
+          "md:hidden fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-around px-1.5",
           "rounded-3xl",
-          // Glass tint — near-white in light, faint white in dark
-          "bg-white/55 dark:bg-white/[0.06]",
-          // Uniform hairline border — visible in both modes, equal top & bottom
-          "border border-black/[0.08] dark:border-white/[0.14]",
-          // Heavy lens-blur + saturation boost — the Liquid Glass core
-          "backdrop-blur-2xl backdrop-saturate-200",
-          // Outer drop shadow only — no asymmetric inset highlights
-          "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06)]",
-          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),0_0_0_0.5px_rgba(255,255,255,0.04)]",
-          "transition-transform duration-300",
-          navVisible ? "translate-y-0" : "translate-y-[calc(100%+1.5rem)]"
+          // Minimal fill — the bar tints toward whatever content scrolls behind it
+          "bg-white/20 dark:bg-white/[0.04]",
+          // Faint hairline border — kept subtle so it doesn't read as a hard outline
+          "border border-black/[0.06] dark:border-white/[0.06]",
+          // Light lens-blur + strong saturation so content colour bleeds through vividly
+          "backdrop-blur-sm backdrop-saturate-[2.2]",
+          // Outer drop shadow + a soft lit top edge and gentle corner glints (no full ring)
+          "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.5),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.5),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.5)]",
+          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.22),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.22)]"
         )}
       >
-        {bottomNavItems.map(({ href, label, icon: Icon, requiresSetup }) => {
-          const disabled = requiresSetup && !setupComplete;
-          const active = isActive(href);
-          return disabled ? (
+        {/* Top-down gloss — specular sheen across the glass surface */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-b from-white/30 via-transparent to-white/[0.06] dark:from-white/[0.12] dark:to-white/[0.02]"
+        />
+        {/* Sliding Liquid Glass lens — animates between tabs */}
+        {lens.show && (
+          <span
+            aria-hidden
+            style={{
+              left: lens.x,
+              top: lens.top,
+              width: lens.w,
+              height: lens.h,
+              transformOrigin: stretch.toRight ? "left center" : "right center",
+              transform: `scaleX(${stretch.active ? 1.28 : 1})`,
+              transition: lensReady
+                ? "left 450ms cubic-bezier(0.34,1.4,0.5,1), top 450ms cubic-bezier(0.34,1.4,0.5,1), width 450ms cubic-bezier(0.34,1.4,0.5,1), height 450ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.5,0,0.2,1)"
+                : undefined,
+            }}
+            className={cn(
+              "pointer-events-none absolute z-0 rounded-full",
+              "bg-primary/20 dark:bg-primary/25",
+              // Raised glass droplet: soft lit top edge + gentle corner glints (no full ring)
+              "shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),inset_-4px_-4px_3px_-5px_rgba(255,255,255,0.5),inset_4px_-3px_3px_-5px_rgba(255,255,255,0.28)]",
+              "dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_-4px_-4px_3px_-5px_rgba(255,255,255,0.3),inset_4px_-3px_3px_-5px_rgba(255,255,255,0.16)]"
+            )}
+          />
+        )}
+        {bottomNavItems.slice(0, 2).map((item, i) => renderNavItem(item, i))}
+        {showAdd && (
+          <Link
+            href="/transactions/new"
+            aria-label="Add transaction"
+            onClick={() => haptic(12)}
+            className="flex items-center justify-center flex-1"
+          >
             <span
-              key={href}
-              title={label}
-              className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 cursor-not-allowed select-none"
+              className={cn(
+                "flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 active:scale-95",
+                "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]",
+                navVisible ? "size-12" : "size-10"
+              )}
             >
-              <span className="flex items-center justify-center w-10 h-7 rounded-full">
-                <Icon className="size-5 text-muted-foreground/30" />
-              </span>
-              <span className="text-[10px] font-semibold text-muted-foreground/30">{label}</span>
+              <PlusIcon className={cn("transition-all duration-300", navVisible ? "size-6" : "size-5")} strokeWidth={2.5} />
             </span>
-          ) : (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className="flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5"
-            >
-              <span className={cn(
-                "relative flex items-center justify-center w-11 h-7 rounded-full transition-all duration-200",
-                active && [
-                  "bg-primary/20 dark:bg-primary/25",
-                  // Subtle glass-on-glass pill for the active state
-                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.05)]",
-                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.2)]",
-                ]
-              )}>
-                <Icon className={cn(
-                  "size-5 transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
-                )} />
-                {href === "/debts" && unsettledCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-background" />
-                )}
-              </span>
-              <span className={cn(
-                "text-[10px] font-semibold transition-colors",
-                active ? "text-primary" : "text-muted-foreground/70"
-              )}>
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+          </Link>
+        )}
+        {bottomNavItems.slice(2).map((item, i) => renderNavItem(item, i + 2))}
       </nav>
-
-      {/* ── Floating Action Button — Liquid Glass, matching nav material ── */}
-      {fabEligible && (
-        <Link
-          href="/transactions/new"
-          aria-label="Add transaction"
-          style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))" }}
-          className={cn(
-            "md:hidden fixed right-3 z-50",
-            "size-14 rounded-full",
-            // Identical glass recipe to the bottom nav
-            "bg-white/55 dark:bg-white/[0.06]",
-            "border border-black/[0.08] dark:border-white/[0.14]",
-            "backdrop-blur-2xl backdrop-saturate-200",
-            "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06)]",
-            "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),0_0_0_0.5px_rgba(255,255,255,0.04)]",
-            // Icon picks up primary so it still reads as an action
-            "text-primary",
-            "flex items-center justify-center",
-            "active:scale-95",
-            "transition-all duration-300 ease-out",
-            navVisible
-              ? "translate-y-[calc(100%+1.5rem)] scale-75 opacity-0 pointer-events-none"
-              : "translate-y-0 scale-100 opacity-100"
-          )}
-        >
-          <PlusIcon className="size-6" strokeWidth={2.5} />
-        </Link>
-      )}
     </div>
   );
 }

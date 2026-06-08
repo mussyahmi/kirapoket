@@ -63,6 +63,16 @@ function DashboardPage() {
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [showAllAccounts, setShowAllAccounts] = useState(false);
+  // null = no saved preference yet; fall back to auto-expanding the largest root
+  const [expandedL1, setExpandedL1] = useState<Set<string> | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("home:expandedL1");
+      return raw ? new Set(JSON.parse(raw) as string[]) : null;
+    } catch {
+      return null;
+    }
+  });
   const [generatingReport, setGeneratingReport] = useState(false);
   const [onboardingDoneOpen, setOnboardingDoneOpen] = useState(() => searchParams.get("onboarding") === "done");
 
@@ -226,6 +236,34 @@ function DashboardPage() {
     }
     return result;
   }, [cycleTransactions, categoryMap]);
+
+  // Largest-spending L1 root, auto-expanded until the user picks their own state
+  const largestL1Id = useMemo(() => {
+    let id: string | null = null;
+    let max = -1;
+    for (const [k, v] of Object.entries(l1Spending)) {
+      if (v > max) {
+        max = v;
+        id = k;
+      }
+    }
+    return id;
+  }, [l1Spending]);
+
+  const effectiveExpanded = useMemo(
+    () => expandedL1 ?? new Set(largestL1Id ? [largestL1Id] : []),
+    [expandedL1, largestL1Id],
+  );
+
+  const toggleL1 = (id: string) => {
+    const next = new Set(effectiveExpanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    try {
+      localStorage.setItem("home:expandedL1", JSON.stringify([...next]));
+    } catch {}
+    setExpandedL1(next);
+  };
 
   const l2Spending = useMemo(() => {
     const result: Record<string, number> = {};
@@ -737,27 +775,43 @@ function DashboardPage() {
                 .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
                 .filter((c) => (l2Spending[c.id] ?? 0) > 0);
 
+              const isExpanded = effectiveExpanded.has(l1.id);
+
               return (
                 <div key={l1.id} className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`)}
-                    className="flex items-center justify-between gap-2 rounded-sm px-1.5 -mx-1.5 hover:bg-muted/50 transition-colors w-[calc(100%+12px)]"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span className="text-sm font-bold">{l1.name}</span>
-                    </span>
-                    <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
-                      <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
-                      {hasPrev && (
-                        <span className="sm:w-28 sm:text-right">
-                          {renderDelta(l1Spent, prevL1Spending[l1.id])}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                  {l2s.length > 0 && (
+                  <div className="flex items-center gap-1 -mx-1.5">
+                    {l2s.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleL1(l1.id)}
+                        aria-label={isExpanded ? `Collapse ${l1.name}` : `Expand ${l1.name}`}
+                        className="shrink-0 p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        <ChevronDownIcon className={cn("size-3.5 transition-transform", !isExpanded && "-rotate-90")} />
+                      </button>
+                    ) : (
+                      <span className="size-3.5 shrink-0" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`)}
+                      className="flex flex-1 items-center justify-between gap-2 rounded-sm px-1.5 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-bold">{l1.name}</span>
+                      </span>
+                      <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
+                        <span className="tabular-nums text-sm">{formatMoney(l1Spent)}</span>
+                        {hasPrev && (
+                          <span className="sm:w-28 sm:text-right">
+                            {renderDelta(l1Spent, prevL1Spending[l1.id])}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                  {l2s.length > 0 && isExpanded && (
                     <div className="space-y-1.5 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
                       {l2s.map((l2) => {
                         const l3s = categories
