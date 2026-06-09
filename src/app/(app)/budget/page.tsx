@@ -1012,7 +1012,7 @@ export default function BudgetPage() {
                         </button>
                       )}
                     </div>
-                    <div className="rounded-xl border border-border min-h-[420px]">
+                    <div className="rounded-xl border border-border min-h-[420px] bg-background overflow-hidden">
                       <Calendar
                         mode="multiple"
                         selected={l3EditForm.budgetSelectedDates}

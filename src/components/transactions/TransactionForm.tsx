@@ -428,7 +428,7 @@ export function TransactionForm({
         {/* Date & Time */}
         <div className="space-y-1.5">
           <Label>Date</Label>
-          <div className="rounded-xl border border-border min-h-[450px]">
+          <div className="rounded-xl border border-border min-h-[450px] bg-background overflow-hidden">
             <Calendar
               mode="single"
               selected={selectedDate}

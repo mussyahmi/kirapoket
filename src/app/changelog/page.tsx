@@ -37,6 +37,8 @@ const releases: Release[] = [
       { type: "fix", text: "Transactions tab stays accessible once you've logged at least one transaction, even if account or salary setup later looks incomplete" },
       { type: "fix", text: "The central + button no longer briefly disappears on refresh while your profile and accounts finish loading" },
       { type: "fix", text: "Bottom navigation polish — wider side margins give the bar more breathing room, the active-tab highlight drops its glassy ring outline for a cleaner fill, and tapping a tab now lets the highlight glide all the way over before the page changes" },
+      { type: "fix", text: "Dialogs now sit above the header instead of slipping behind it — the Edit Item and other modals are no longer clipped by the top bar" },
+      { type: "fix", text: "Date pickers fill their box cleanly — the empty area below the calendar grid now matches the picker's background instead of showing a darker band" },
     ],
   },
   {
