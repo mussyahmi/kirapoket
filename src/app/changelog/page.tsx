@@ -36,6 +36,7 @@ const releases: Release[] = [
       { type: "fix", text: "Mobile header is now a solid bar that matches the page background and stays in place, replacing the translucent bar that hid on scroll" },
       { type: "fix", text: "Transactions tab stays accessible once you've logged at least one transaction, even if account or salary setup later looks incomplete" },
       { type: "fix", text: "The central + button no longer briefly disappears on refresh while your profile and accounts finish loading" },
+      { type: "fix", text: "Bottom navigation polish — wider side margins give the bar more breathing room, the active-tab highlight drops its glassy ring outline for a cleaner fill, and tapping a tab now lets the highlight glide all the way over before the page changes" },
     ],
   },
   {

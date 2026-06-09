@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   HomeIcon,
@@ -55,6 +55,7 @@ function haptic(ms = 8) {
 
 export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { userProfile, accounts, debts, transactions, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
@@ -75,6 +76,9 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   const [stretch, setStretch] = useState({ active: false, toRight: true });
   const prevIdxRef = useRef<number | null>(null);
   const stretchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tab the lens is sliding toward; navigation is deferred until the slide ends
+  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
+  const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Setup-gated tabs unlock once setup is done — but never re-lock once transactions exist
   const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
@@ -116,9 +120,11 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   useEffect(() => {
     const nav = navRef.current;
     const measure = () => {
-      const idx = bottomNavItems.findIndex(
+      const activeIdx = bottomNavItems.findIndex(
         (it) => pathname === it.href || pathname.startsWith(it.href + "/")
       );
+      // While a tap is in flight, slide the lens to the tapped tab before the URL changes
+      const idx = pendingIdx ?? activeIdx;
       const pill = pillRefs.current[idx];
       if (!nav || !pill) {
         setLens((l) => ({ ...l, show: false }));
@@ -147,7 +153,13 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
       ro.disconnect();
       if (stretchTimer.current) clearTimeout(stretchTimer.current);
     };
-  }, [pathname, setupGated, unsettledCount]);
+  }, [pathname, pendingIdx, setupGated, unsettledCount]);
+
+  // Once the URL catches up to the tapped tab, clear the pending target
+  useEffect(() => {
+    setPendingIdx(null);
+    return () => { if (navTimer.current) clearTimeout(navTimer.current); };
+  }, [pathname]);
 
   // Central quick-add button: shown unless read-only, and optimistically during
   // load so it doesn't flash out on refresh before profile/accounts arrive
@@ -180,7 +192,15 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         key={href}
         href={href}
         aria-label={label}
-        onClick={() => { if (!active) haptic(); }}
+        onClick={(e) => {
+          if (active || pendingIdx !== null) return;
+          // Let the lens slide to this tab first; navigate once it lands
+          e.preventDefault();
+          haptic();
+          setPendingIdx(i);
+          if (navTimer.current) clearTimeout(navTimer.current);
+          navTimer.current = setTimeout(() => router.push(href), 420);
+        }}
         className="flex items-center justify-center flex-1"
       >
         <span ref={(el) => { pillRefs.current[i] = el; }} className={pillCls}>
@@ -369,7 +389,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
             ? "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem))"
             : "calc(max(1.25rem, calc(env(safe-area-inset-bottom) + 0.5rem)) + 0.375rem)",
           // At rest: full-width bar. On scroll: narrower, shorter (icons close up)
-          width: navVisible ? "calc(100vw - 1.5rem)" : "17rem",
+          width: navVisible ? "calc(100vw - 5rem)" : "17rem",
           height: navVisible ? "4rem" : "3.25rem",
           transition:
             "width 350ms cubic-bezier(0.34,1.4,0.5,1), height 350ms cubic-bezier(0.34,1.4,0.5,1), bottom 350ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 250ms ease",
@@ -412,10 +432,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
             }}
             className={cn(
               "pointer-events-none absolute z-0 rounded-full",
-              "bg-primary/20 dark:bg-primary/25",
-              // Raised glass droplet: soft lit top edge + gentle corner glints (no full ring)
-              "shadow-[inset_0_1px_1px_rgba(255,255,255,0.5),inset_-4px_-4px_3px_-5px_rgba(255,255,255,0.5),inset_4px_-3px_3px_-5px_rgba(255,255,255,0.28)]",
-              "dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_-4px_-4px_3px_-5px_rgba(255,255,255,0.3),inset_4px_-3px_3px_-5px_rgba(255,255,255,0.16)]"
+              "bg-primary/20 dark:bg-primary/25"
             )}
           />
         )}
