@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   LogOutIcon, SunIcon, MoonIcon, TrashIcon,
   HeartHandshakeIcon, SendIcon, XCircleIcon,
-  StopCircleIcon, CheckCircle2Icon, EyeOffIcon, EyeIcon,
+  StopCircleIcon, CheckCircle2Icon,
   ClockIcon, PencilIcon, ClipboardCheckIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,7 +43,6 @@ function SettingsPage() {
   const { resolvedTheme, setTheme } = useTheme();
 
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
-  const [hideBalance, setHideBalance] = useState(false);
   const [confirmBeforeSaving, setConfirmBeforeSaving] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [editNameDialogOpen, setEditNameDialogOpen] = useState(false);
@@ -63,7 +62,6 @@ function SettingsPage() {
   useEffect(() => {
     if (userProfile) {
       setSalaryDay(userProfile.salaryDay ?? null);
-      setHideBalance(userProfile.hideBalance ?? false);
       setConfirmBeforeSaving(userProfile.confirmBeforeSaving ?? true);
     }
   }, [userProfile]);
@@ -77,16 +75,6 @@ function SettingsPage() {
       }
     } catch {
       toast.error("Failed to save salary day.");
-    }
-  };
-
-  const handleToggleBalance = async () => {
-    const next = !hideBalance;
-    setHideBalance(next);
-    try {
-      await saveUserProfile({ hideBalance: next });
-    } catch {
-      toast.error("Failed to save preference.");
     }
   };
 
@@ -313,43 +301,6 @@ function SettingsPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Privacy */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Privacy</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={hideBalance}
-            onClick={handleToggleBalance}
-            className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
-          >
-            <div className="flex items-center gap-3">
-              {hideBalance
-                ? <EyeOffIcon className="size-4 text-primary shrink-0" />
-                : <EyeIcon className="size-4 text-muted-foreground shrink-0" />}
-              <div>
-                <p className="text-sm font-medium">Hide balance</p>
-                <p className="text-xs text-muted-foreground">
-                  {hideBalance ? "Balances shown as ••••" : "Balances are visible"}
-                </p>
-              </div>
-            </div>
-            <div className={cn(
-              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0",
-              hideBalance ? "bg-primary" : "bg-muted"
-            )}>
-              <span className={cn(
-                "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
-                hideBalance ? "translate-x-6" : "translate-x-1"
-              )} />
-            </div>
-          </button>
         </CardContent>
       </Card>
 

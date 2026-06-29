@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import PullToRefresh from "@/components/common/PullToRefresh";
 import { isInAppBrowser } from "@/lib/utils";
 import {
   Wallet,
@@ -555,7 +556,7 @@ export default function LandingPage() {
         <div className="absolute bottom-0 -left-40 size-96 rounded-full bg-primary/8 blur-3xl" />
       </div>
 
-      <div className="relative flex flex-col flex-1">
+      <PullToRefresh onRefresh={async () => { await new Promise((r) => setTimeout(r, 300)); window.location.reload(); }} className="relative flex flex-col flex-1">
         {/* ── Nav bar ── */}
         <header className="flex items-center justify-between px-6 md:px-12 py-5">
           <div className="flex items-center gap-2.5">
@@ -658,7 +659,7 @@ export default function LandingPage() {
           </Link>
         </footer>
 
-      </div>
+      </PullToRefresh>
     </div>
   );
 }

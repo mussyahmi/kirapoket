@@ -100,16 +100,19 @@ function TransactionsPage() {
   // Default the date range to the current salary cycle once the profile loads,
   // unless filters came from the URL or were restored after an edit.
   const didDefaultDates = useRef(false);
+  const [dateInitDone, setDateInitDone] = useState(false);
   useEffect(() => {
     if (didDefaultDates.current) return;
     if (hasUrlParams || editReturn?.dateFrom || editReturn?.dateTo) {
       didDefaultDates.current = true;
+      setDateInitDone(true);
       return;
     }
     if (loadingProfile) return;
     didDefaultDates.current = true;
     setDateFrom(defaultDates.from);
     setDateTo(defaultDates.to);
+    setDateInitDone(true);
   }, [loadingProfile, hasUrlParams, editReturn, defaultDates]);
 
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
@@ -120,8 +123,10 @@ function TransactionsPage() {
   const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
 
   // The default cycle range is not considered an "active" filter — only show
-  // Clear filters when something differs from the default state.
-  const datesAtDefault = dateFrom === defaultDates.from && dateTo === defaultDates.to;
+  // Clear filters when something differs from the default state. Treat the
+  // pre-init state as default too, so the button doesn't flash on first load.
+  const datesAtDefault =
+    !dateInitDone || (dateFrom === defaultDates.from && dateTo === defaultDates.to);
   const hasActiveFilters = filterType !== "all" || filterAccount !== "all" || filterCategory !== "all" || !datesAtDefault;
 
   const clearFilters = () => {

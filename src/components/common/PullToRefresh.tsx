@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2Icon } from "lucide-react";
 
-const THRESHOLD = 70; // px pulled before a refresh fires
+const THRESHOLD = 60; // px pulled before a refresh fires
 const MAX_PULL = 120; // px the content can travel
 const RESTING = 56; // px the content rests at while refreshing
+const RESISTANCE = 0.6; // fraction of finger travel the indicator follows
 
 // Light haptic tap on supported devices (Android/Chrome; a no-op on iOS Safari)
 function haptic(ms = 10) {
@@ -22,9 +23,11 @@ function haptic(ms = 10) {
 export default function PullToRefresh({
   onRefresh,
   children,
+  className,
 }: {
   onRefresh: () => Promise<void>;
   children: React.ReactNode;
+  className?: string;
 }) {
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +63,7 @@ export default function PullToRefresh({
         return;
       }
       // Rubber-band resistance, capped
-      const next = Math.min(MAX_PULL, dy * 0.5);
+      const next = Math.min(MAX_PULL, dy * RESISTANCE);
       pullRef.current = next;
       setPull(next);
       setDragging(true);
@@ -111,15 +114,17 @@ export default function PullToRefresh({
           just below the sticky header */}
       <div
         aria-hidden={pull === 0}
-        className="md:hidden pointer-events-none fixed left-1/2 z-40 -translate-x-1/2"
-        style={{
-          top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)",
-          transform: `translate(-50%, ${pull / 2 - 18}px)`,
-          opacity: pull > 4 ? 1 : 0,
-          transition: dragging ? "none" : "transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 200ms ease",
-        }}
+        className="md:hidden pointer-events-none fixed inset-x-0 z-40 flex justify-center"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}
       >
-        <span className="flex size-9 items-center justify-center rounded-full bg-background/80 shadow-md backdrop-blur-sm border border-border">
+        <span
+          className="flex size-9 items-center justify-center rounded-full bg-background/80 shadow-md backdrop-blur-sm border border-border"
+          style={{
+            transform: `translateY(${pull / 2 - 18}px)`,
+            opacity: pull > 4 ? 1 : 0,
+            transition: dragging ? "none" : "transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 200ms ease",
+          }}
+        >
           <Loader2Icon
             className={`size-5 text-primary ${refreshing ? "animate-spin" : ""}`}
             style={refreshing ? undefined : { transform: `rotate(${progress * 270}deg)`, opacity: 0.4 + progress * 0.6 }}
@@ -128,6 +133,7 @@ export default function PullToRefresh({
       </div>
 
       <div
+        className={className}
         style={{
           transform: `translateY(${pull}px)`,
           transition: dragging ? "none" : "transform 300ms cubic-bezier(0.34,1.4,0.5,1)",

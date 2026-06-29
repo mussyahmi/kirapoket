@@ -683,7 +683,6 @@ export async function clearAndSeedDemoData(): Promise<void> {
   // Update user profile with salary day
   await setDoc(doc(db, "users", uid), {
     salaryDay: 25,
-    hideBalance: false,
     categoriesSeeded: true,
     categoriesSeedVersion: 3,
   }, { merge: true });

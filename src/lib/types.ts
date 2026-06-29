@@ -37,7 +37,6 @@ export interface UserProfile {
   photoURL: string | null;
   salaryDay: number | null;
   cycleStarts?: Record<string, string>;
-  hideBalance: boolean;
   // Show a summary/confirmation sheet before saving a transaction. Defaults to
   // true when unset.
   confirmBeforeSaving?: boolean;

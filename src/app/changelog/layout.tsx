@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeftIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import PullToRefresh from "@/components/common/PullToRefresh";
 import { cn } from "@/lib/utils";
 
 export default function ChangelogLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +40,11 @@ export default function ChangelogLayout({ children }: { children: React.ReactNod
         </button>
         <ThemeToggle />
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        <PullToRefresh onRefresh={async () => { await new Promise((r) => setTimeout(r, 300)); window.location.reload(); }}>
+          {children}
+        </PullToRefresh>
+      </main>
     </div>
   );
 }

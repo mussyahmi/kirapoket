@@ -9,7 +9,6 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeOffIcon,
   BanknoteIcon,
   WalletIcon,
   CreditCardIcon,
@@ -208,12 +207,11 @@ function SortableAccountRow({
 function AccountsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { accounts, loadingAccounts, userProfile, transactions, createAccount, editAccount, removeAccount, reorderAccounts, isViewingPartner, isImpersonating } =
+  const { accounts, loadingAccounts, transactions, createAccount, editAccount, removeAccount, reorderAccounts, isViewingPartner, isImpersonating } =
     useApp();
 
   const isReadOnly = isViewingPartner || isImpersonating;
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
-  const hideBalance = userProfile?.hideBalance ?? false;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Account | null>(null);
@@ -253,7 +251,6 @@ function AccountsPage() {
   }, [accounts]);
 
   const formatMoney = (n: number) => {
-    if (hideBalance) return "••••";
     const v = parseFloat(n.toFixed(2));
     return new Intl.NumberFormat("ms-MY", {
       style: "currency",
@@ -361,9 +358,8 @@ function AccountsPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Balance</p>
               <p className="text-2xl font-bold tabular-nums">{formatMoney(totalBalance)}</p>
             </div>
-            {hideBalance && <EyeOffIcon className="size-5 text-muted-foreground" />}
           </div>
-          {accounts.length > 0 && totalBalance > 0 && !hideBalance && (
+          {accounts.length > 0 && totalBalance > 0 && (
             <>
               <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
                 {typeBreakdown.map(([type, val]) => (

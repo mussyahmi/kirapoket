@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, ArrowUpIcon, ArrowDownIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon, FileDownIcon, Loader2Icon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, ArrowUpRightIcon, ArrowDownRightIcon, ArrowLeftRightIcon, ArrowUpIcon, ArrowDownIcon, CheckCircle2Icon, CircleIcon, BanknoteIcon, PencilIcon, CheckIcon, XIcon, WalletIcon, ChevronDownIcon, FileDownIcon, Loader2Icon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
@@ -82,7 +82,6 @@ function DashboardPage() {
 
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
-  const hideBalance = userProfile?.hideBalance ?? false;
 
   const cycleOptions = { cycleStarts };
 
@@ -367,7 +366,6 @@ function DashboardPage() {
   );
 
   const formatMoney = (n: number) => {
-    if (hideBalance) return "••••";
     const v = parseFloat(n.toFixed(2));
     return new Intl.NumberFormat("ms-MY", {
       style: "currency",
@@ -382,7 +380,7 @@ function DashboardPage() {
     options: { direction?: "expense" | "income"; showZero?: boolean } = {}
   ) => {
     const dir = options.direction ?? "expense";
-    if (hideBalance || !hasPrev) return null;
+    if (!hasPrev) return null;
     // Category didn't exist last cycle (undefined) or had zero spending → show "new"
     if ((prev === undefined || prev === 0) && current > 0) {
       return <span className="block text-xs text-muted-foreground tabular-nums">new</span>;
@@ -670,7 +668,6 @@ function DashboardPage() {
         <CardHeader>
           <CardTitle>Accounts</CardTitle>
           <CardAction className="flex items-center gap-2">
-            {hideBalance && <EyeOffIcon className="size-4 text-muted-foreground" />}
             <Link href="/accounts" aria-label="Manage accounts">
               <WalletIcon className="size-4 text-muted-foreground hover:text-foreground transition-colors" />
             </Link>

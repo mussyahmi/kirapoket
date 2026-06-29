@@ -35,6 +35,7 @@ const releases: Release[] = [
       { type: "fix", text: "Filtering transactions by an account now also shows transfers into that account, not just transfers out of it" },
       { type: "fix", text: "PDF report no longer shows a negative \"-RM0.00\" remaining when a cycle breaks even, and the figure stays neutral instead of red" },
       { type: "fix", text: "Home dashboard no longer briefly flashes the wrong salary cycle while loading; the changelog now shows when it was last updated" },
+      { type: "fix", text: "Removed the rarely-used Hide balance toggle from Settings" },
     ],
   },
   {
