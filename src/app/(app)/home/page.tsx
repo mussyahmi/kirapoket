@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, differenceInDays, parseISO, isToday, isYesterday } from "date-fns";
@@ -54,25 +54,29 @@ function DashboardPage() {
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
-  const [cycleOffset, setCycleOffset] = useState(() => {
-    if (typeof window === "undefined") return 0;
+  // Always start at 0 to match the server render; restore the saved offset
+  // after mount to avoid a hydration mismatch on the cycle label.
+  const [cycleOffset, setCycleOffset] = useState(0);
+  useEffect(() => {
     const saved = sessionStorage.getItem("home:cycleOffset");
-    return saved ? parseInt(saved, 10) : 0;
-  });
+    if (saved) setCycleOffset(parseInt(saved, 10));
+  }, []);
   const [markingReceived, setMarkingReceived] = useState(false);
   const [editingStart, setEditingStart] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [showAllAccounts, setShowAllAccounts] = useState(false);
-  // null = no saved preference yet; fall back to auto-expanding the largest root
-  const [expandedL1, setExpandedL1] = useState<Set<string> | null>(() => {
-    if (typeof window === "undefined") return null;
+  // null = no saved preference yet; fall back to auto-expanding the largest root.
+  // Start null on both server and client, then restore after mount to avoid a
+  // hydration mismatch.
+  const [expandedL1, setExpandedL1] = useState<Set<string> | null>(null);
+  useEffect(() => {
     try {
       const raw = localStorage.getItem("home:expandedL1");
-      return raw ? new Set(JSON.parse(raw) as string[]) : null;
+      if (raw) setExpandedL1(new Set(JSON.parse(raw) as string[]));
     } catch {
-      return null;
+      /* ignore */
     }
-  });
+  }, []);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [onboardingDoneOpen, setOnboardingDoneOpen] = useState(() => searchParams.get("onboarding") === "done");
 

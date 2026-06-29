@@ -582,7 +582,7 @@ export default function LandingPage() {
                   Know where your<br className="hidden md:block" /> money goes.
                 </h1>
                 <p className="text-base text-muted-foreground leading-relaxed max-w-sm anim-fade-up" style={{ animationDelay: "220ms" }}>
-                  Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets, AI insights, and a shared partner view.
+                  Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings — with budgets, an AI assistant, and a shared partner view.
                 </p>
               </div>
 
@@ -620,7 +620,7 @@ export default function LandingPage() {
                   <FeatureCard icon={Target} title="Budgets" desc="Set spending targets per category and track progress in real time." />
                 </div>
                 <div className="anim-fade-up" style={{ animationDelay: "580ms" }}>
-                  <FeatureCard icon={Sparkles} title="AI Spending Insights" desc="Gemini-powered tips personalised to your actual spending each cycle." />
+                  <FeatureCard icon={Sparkles} title="AI Assistant" desc="Chat about your spending and budgets, grounded in your real data — coming soon." />
                 </div>
                 <div className="anim-fade-up" style={{ animationDelay: "640ms" }}>
                   <FeatureCard icon={HandCoins} title="Debt Tracker" desc="Track what you owe and what's owed to you — with Pay and Collect flows." />

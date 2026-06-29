@@ -14,6 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  TransactionConfirmDialog,
+  type AccountImpact,
+  type TxConfirmSummary,
+} from "@/components/transactions/TransactionConfirmDialog";
 
 type TxType = "expense" | "income" | "transfer";
 
@@ -21,12 +26,13 @@ function EditTransactionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
-  const { accounts, categories, transactions, loadingTransactions, editTransaction, isViewingPartner, isImpersonating } = useApp();
+  const { accounts, categories, transactions, loadingTransactions, editTransaction, userProfile, isViewingPartner, isImpersonating } = useApp();
+  const readOnly = isViewingPartner || isImpersonating;
 
-  if (isViewingPartner || isImpersonating) {
-    router.replace("/transactions");
-    return null;
-  }
+  // Editing isn't allowed while viewing a partner / impersonating — bounce out
+  useEffect(() => {
+    if (readOnly) router.replace("/transactions");
+  }, [readOnly, router]);
 
   const tx = useMemo(() => transactions.find((t) => t.id === id), [transactions, id]);
 
@@ -42,6 +48,9 @@ function EditTransactionForm() {
   const [l3Id, setL3Id] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [initialised, setInitialised] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const confirmBeforeSaving = userProfile?.confirmBeforeSaving ?? true;
 
   // Pre-fill form once tx is loaded
   useEffect(() => {
@@ -168,10 +177,44 @@ function EditTransactionForm() {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) { toast.error(err); return; }
+  const accountName = (accId: string) => accounts.find((a) => a.id === accId)?.name ?? "—";
+
+  const confirmSummary = useMemo<TxConfirmSummary | null>(() => {
+    const amt = parseFloat(amount);
+    if (isNaN(amt)) return null;
+    const path = [l1Id, l2Id, l3Id]
+      .map((cid) => categories.find((c) => c.id === cid)?.name)
+      .filter(Boolean)
+      .join(" › ");
+    let timeLabel: string | undefined;
+    try {
+      if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
+    } catch { /* ignore */ }
+    return {
+      type: txType,
+      amount: amt,
+      dateLabel: format(selectedDate, "d MMM yyyy"),
+      timeLabel,
+      categoryPath: txType === "expense" ? path || undefined : undefined,
+      fromAccount: accountName(accountId),
+      toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
+      note: note.trim() || undefined,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, txType, selectedDate, time, accountId, toAccountId, note, l1Id, l2Id, l3Id, categories, accounts]);
+
+  // Derived from editBalanceChanges (revert original, apply edit) per account
+  const confirmImpacts = useMemo<AccountImpact[]>(() => {
+    return Object.entries(editBalanceChanges)
+      .map(([accId, delta]) => {
+        const acc = accounts.find((a) => a.id === accId);
+        if (!acc) return null;
+        return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+      })
+      .filter((r): r is AccountImpact => r !== null);
+  }, [editBalanceChanges, accounts]);
+
+  const doSave = async () => {
     setSubmitting(true);
     try {
       await editTransaction(id, {
@@ -185,6 +228,7 @@ function EditTransactionForm() {
         note: note.trim() || undefined,
       });
       toast.success("Transaction updated.");
+      setConfirmOpen(false);
       router.push("/transactions");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update transaction.");
@@ -192,6 +236,19 @@ function EditTransactionForm() {
       setSubmitting(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const err = validate();
+    if (err) { toast.error(err); return; }
+    if (confirmBeforeSaving) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
+  };
+
+  if (readOnly) return null;
 
   if (loadingTransactions || !initialised) {
     return (
@@ -444,6 +501,16 @@ function EditTransactionForm() {
           {submitting ? "Saving..." : "Save Changes"}
         </Button>
       </form>
+
+      <TransactionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        mode="edit"
+        summary={confirmSummary}
+        impacts={confirmImpacts}
+        onConfirm={doSave}
+        submitting={submitting}
+      />
     </div>
   );
 }

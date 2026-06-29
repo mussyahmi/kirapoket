@@ -38,6 +38,9 @@ export interface UserProfile {
   salaryDay: number | null;
   cycleStarts?: Record<string, string>;
   hideBalance: boolean;
+  // Show a summary/confirmation sheet before saving a transaction. Defaults to
+  // true when unset.
+  confirmBeforeSaving?: boolean;
   forecastIncomeItems?: ForecastIncomeItem[];
   lastLogin?: Timestamp | null;
   categoriesSeeded?: boolean;

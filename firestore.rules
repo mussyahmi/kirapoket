@@ -143,6 +143,12 @@ service cloud.firestore {
       allow create, update: if request.auth != null;
     }
 
+    // AI chat rate-limit counters — written only by the server (Admin SDK,
+    // which bypasses rules). Clients have no access.
+    match /aiUsage/{uid} {
+      allow read, write: if false;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

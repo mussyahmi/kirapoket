@@ -17,6 +17,7 @@ import {
   ShieldAlertIcon,
   CoffeeIcon,
   PlusIcon,
+  SparklesIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
@@ -25,6 +26,7 @@ import { useAddTransaction } from "@/components/transactions/AddTransactionSheet
 import { cn } from "@/lib/utils";
 import FeedbackButton from "@/components/common/FeedbackButton";
 import SupportButton from "@/components/common/SupportButton";
+import PullToRefresh from "@/components/common/PullToRefresh";
 import pkg from "../../../package.json";
 
 // Bottom nav — 4 core daily-use pages
@@ -37,6 +39,7 @@ const bottomNavItems = [
 
 // Header menu — less-visited pages
 const menuItems = [
+  { href: "/assistant", label: "AI Assistant", icon: SparklesIcon },
   { href: "/accounts", label: "Accounts", icon: WalletIcon },
   { href: "/categories", label: "Categories", icon: TagIcon },
   { href: "/changelog", label: "Changelog", icon: ScrollTextIcon },
@@ -56,7 +59,7 @@ function haptic(ms = 8) {
 export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userProfile, accounts, debts, transactions, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating } = useApp();
+  const { userProfile, accounts, debts, transactions, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating, refreshAll } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
   const { open: addOpen, openAdd } = useAddTransaction();
@@ -377,7 +380,9 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
 
         {/* Page Content */}
         {banner}
-        <main className="flex-1 overflow-auto pb-28 md:pb-0">{children}</main>
+        <main className="flex-1 overflow-auto pb-28 md:pb-0">
+          <PullToRefresh onRefresh={refreshAll}>{children}</PullToRefresh>
+        </main>
       </div>
 
       {/* ── Mobile Bottom Nav — Liquid Glass; shrinks & drops labels on scroll ── */}

@@ -9,7 +9,7 @@ import {
   LogOutIcon, SunIcon, MoonIcon, TrashIcon,
   HeartHandshakeIcon, SendIcon, XCircleIcon,
   StopCircleIcon, CheckCircle2Icon, EyeOffIcon, EyeIcon,
-  ClockIcon, PencilIcon,
+  ClockIcon, PencilIcon, ClipboardCheckIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
@@ -44,6 +44,7 @@ function SettingsPage() {
 
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
   const [hideBalance, setHideBalance] = useState(false);
+  const [confirmBeforeSaving, setConfirmBeforeSaving] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [editNameDialogOpen, setEditNameDialogOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -63,6 +64,7 @@ function SettingsPage() {
     if (userProfile) {
       setSalaryDay(userProfile.salaryDay ?? null);
       setHideBalance(userProfile.hideBalance ?? false);
+      setConfirmBeforeSaving(userProfile.confirmBeforeSaving ?? true);
     }
   }, [userProfile]);
 
@@ -83,6 +85,16 @@ function SettingsPage() {
     setHideBalance(next);
     try {
       await saveUserProfile({ hideBalance: next });
+    } catch {
+      toast.error("Failed to save preference.");
+    }
+  };
+
+  const handleToggleConfirm = async () => {
+    const next = !confirmBeforeSaving;
+    setConfirmBeforeSaving(next);
+    try {
+      await saveUserProfile({ confirmBeforeSaving: next });
     } catch {
       toast.error("Failed to save preference.");
     }
@@ -335,6 +347,44 @@ function SettingsPage() {
               <span className={cn(
                 "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
                 hideBalance ? "translate-x-6" : "translate-x-1"
+              )} />
+            </div>
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Transactions */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={confirmBeforeSaving}
+            onClick={handleToggleConfirm}
+            disabled={isReadOnly}
+            className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <ClipboardCheckIcon className={cn("size-4 shrink-0", confirmBeforeSaving ? "text-primary" : "text-muted-foreground")} />
+              <div>
+                <p className="text-sm font-medium">Confirm before saving</p>
+                <p className="text-xs text-muted-foreground">
+                  {confirmBeforeSaving
+                    ? "Review a summary and balance changes before saving"
+                    : "Save transactions immediately"}
+                </p>
+              </div>
+            </div>
+            <div className={cn(
+              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0",
+              confirmBeforeSaving ? "bg-primary" : "bg-muted"
+            )}>
+              <span className={cn(
+                "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                confirmBeforeSaving ? "translate-x-6" : "translate-x-1"
               )} />
             </div>
           </button>

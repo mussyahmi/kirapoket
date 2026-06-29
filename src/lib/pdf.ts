@@ -25,7 +25,11 @@ const money = new Intl.NumberFormat("en-MY", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const rm = (n: number) => `RM ${money.format(n)}`;
+const rm = (n: number) => {
+  // Avoid "-0.00" when a tiny negative float rounds to zero.
+  const v = Math.round(n * 100) / 100 || 0;
+  return `RM ${money.format(v)}`;
+};
 const signedRm = (type: string, n: number) =>
   type === "income" ? `+${rm(n)}` : type === "expense" ? `-${rm(n)}` : rm(n);
 
@@ -118,7 +122,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
   }[] = [
     { label: "INCOME", value: report.income, prev: report.prevIncome, direction: "income", color: GREEN },
     { label: "EXPENSES", value: report.expenses, prev: report.prevExpenses, direction: "expense", color: RED },
-    { label: "REMAINING", value: report.net, prev: report.prevNet, direction: "income", color: report.net >= 0 ? BLUE : RED, signed: true },
+    { label: "REMAINING", value: report.net, prev: report.prevNet, direction: "income", color: (Math.round(report.net * 100) / 100 || 0) >= 0 ? BLUE : RED, signed: true },
   ];
   summary.forEach((box, i) => {
     const x = margin + i * (boxW + gap);

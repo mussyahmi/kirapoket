@@ -120,6 +120,9 @@ interface AppContextValue {
   refreshProfile: () => Promise<void>;
   saveUserProfile: (data: Partial<UserProfile>) => Promise<void>;
 
+  // Refresh every entity at once (used by pull-to-refresh)
+  refreshAll: () => Promise<void>;
+
   // Partnership
   partnership: Partnership | null;
   pendingInvite: Partnership | null;  // incoming invite awaiting acceptance
@@ -367,6 +370,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setLoadingDebts(false);
     }
   }, [uid]);
+
+  const refreshAll = useCallback(async () => {
+    if (!uid) return;
+    await Promise.all([
+      refreshProfile(),
+      refreshAccounts(),
+      refreshCategories(),
+      refreshTransactions(),
+      refreshDebts(),
+    ]);
+  }, [uid, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts]);
 
   useEffect(() => {
     if (uid) {
@@ -775,6 +789,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         removeDebt,
         refreshProfile,
         saveUserProfile,
+        refreshAll,
         isImpersonating,
         impersonate,
         stopImpersonating,

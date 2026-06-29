@@ -9,6 +9,9 @@ interface Release {
   changes: { type: "feat" | "fix"; text: string }[];
 }
 
+// Bump this whenever the changelog is updated for a release.
+const LAST_UPDATED = "29 June 2026";
+
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
 //
@@ -21,9 +24,23 @@ interface Release {
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.10.x",
-    dateRange: "2026-05-21 – present",
+    version: "0.11.x",
+    dateRange: "2026-06-29 – present",
     latest: true,
+    changes: [
+      { type: "feat", text: "Pull down from the top of any page to refresh your data — especially handy in the installed home-screen app, where the browser's own pull-to-refresh isn't available" },
+      { type: "feat", text: "Confirm before saving — adding or editing a transaction now shows a summary and exactly how each account balance will change before you commit; can be turned off under Settings → Transactions" },
+      { type: "feat", text: "The transactions list now opens scoped to your current salary cycle, with the From and To dates pre-filled; Clear filters resets back to that range" },
+      { type: "feat", text: "AI Spending Insights is being replaced by a new AI Assistant you'll be able to chat with about your spending and budgets — coming soon" },
+      { type: "fix", text: "Filtering transactions by an account now also shows transfers into that account, not just transfers out of it" },
+      { type: "fix", text: "PDF report no longer shows a negative \"-RM0.00\" remaining when a cycle breaks even, and the figure stays neutral instead of red" },
+      { type: "fix", text: "Home dashboard no longer briefly flashes the wrong salary cycle while loading; the changelog now shows when it was last updated" },
+    ],
+  },
+  {
+    version: "0.10.x",
+    dateRange: "2026-05-21 – 2026-06-29",
+    latest: false,
     changes: [
       { type: "feat", text: "Settled debts now grouped by person — same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size" },
       { type: "feat", text: "New transaction page: animated skeleton pills now show while Accounts and Categories load — replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived" },
@@ -255,6 +272,7 @@ export default function ChangelogPage() {
         <div>
           <h1 className="text-xl font-semibold">Changelog</h1>
           <p className="text-sm text-muted-foreground">What&apos;s new in KiraPoket</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Last updated {LAST_UPDATED}</p>
         </div>
       </div>
 

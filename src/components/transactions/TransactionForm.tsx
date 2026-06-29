@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -13,6 +13,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  TransactionConfirmDialog,
+  type AccountImpact,
+  type TxConfirmSummary,
+} from "./TransactionConfirmDialog";
 
 type TxType = "expense" | "income" | "transfer";
 
@@ -48,6 +53,9 @@ export function TransactionForm({
   const [toAccountId, setToAccountId] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const confirmBeforeSaving = userProfile?.confirmBeforeSaving ?? true;
 
   // Category drill-down state
   const [l1Id, setL1Id] = useState<string | null>(null);
@@ -200,13 +208,52 @@ export function TransactionForm({
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) {
-      toast.error(err);
-      return;
+  // Summary + per-account balance changes shown in the confirmation sheet
+  const accountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? "—";
+
+  const confirmSummary = useMemo<TxConfirmSummary | null>(() => {
+    const amt = parseFloat(amount);
+    if (isNaN(amt)) return null;
+    const path = [l1Id, l2Id, l3Id]
+      .map((id) => categories.find((c) => c.id === id)?.name)
+      .filter(Boolean)
+      .join(" › ");
+    let timeLabel: string | undefined;
+    try {
+      if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
+    } catch { /* ignore */ }
+    return {
+      type: txType,
+      amount: amt,
+      dateLabel: format(selectedDate, "d MMM yyyy"),
+      timeLabel,
+      categoryPath: txType === "expense" ? path || undefined : undefined,
+      fromAccount: accountName(accountId),
+      toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
+      note: note.trim() || undefined,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, txType, selectedDate, time, accountId, toAccountId, note, l1Id, l2Id, l3Id, categories, accounts]);
+
+  const confirmImpacts = useMemo<AccountImpact[]>(() => {
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) return [];
+    const impact = (id: string, delta: number): AccountImpact | null => {
+      const acc = accounts.find((a) => a.id === id);
+      if (!acc) return null;
+      return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+    };
+    const rows: (AccountImpact | null)[] = [];
+    if (txType === "expense") rows.push(impact(accountId, -amt));
+    else if (txType === "income") rows.push(impact(accountId, amt));
+    else if (txType === "transfer") {
+      rows.push(impact(accountId, -amt));
+      rows.push(impact(toAccountId, amt));
     }
+    return rows.filter((r): r is AccountImpact => r !== null);
+  }, [amount, txType, accountId, toAccountId, accounts]);
+
+  const doSave = async () => {
     setSubmitting(true);
     try {
       await createTransaction({
@@ -221,12 +268,27 @@ export function TransactionForm({
         note: note.trim() || undefined,
       });
       toast.success("Transaction added.");
+      setConfirmOpen(false);
       onDone();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to add transaction. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const err = validate();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    if (confirmBeforeSaving) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSave();
   };
 
   const PillSkeletons = ({ widths }: { widths: string[] }) => (
@@ -531,6 +593,16 @@ export function TransactionForm({
           </Button>
         </div>
       </form>
+
+      <TransactionConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        mode="add"
+        summary={confirmSummary}
+        impacts={confirmImpacts}
+        onConfirm={doSave}
+        submitting={submitting}
+      />
     </div>
   );
 }

@@ -3,15 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, CoffeeIcon, ListIcon, PencilIcon, InfoIcon, ChevronDownIcon } from "lucide-react";
+import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, ListIcon, PencilIcon, InfoIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { getSalaryCycleRange } from "@/lib/firestore";
-import { type SpendingInsights } from "@/lib/gemini";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +19,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import SupportButton from "@/components/common/SupportButton";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
 
 interface L3EditForm {
@@ -90,8 +87,6 @@ export default function BudgetPage() {
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
-  const { user } = useAuth();
-
   const [mode, setMode] = useState<"actual" | "forecast">("actual");
 
   // Forecast income items (local draft, saved on change)
@@ -104,10 +99,6 @@ export default function BudgetPage() {
   const [editLabel, setEditLabel] = useState("");
   const [editAmount, setEditAmount] = useState("");
 
-  const [insights, setInsights] = useState<SpendingInsights | null>(null);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [insightsGeneratedAt, setInsightsGeneratedAt] = useState<Date | null>(null);
   const [selectedL3, setSelectedL3] = useState<Category | null>(null);
   const [unbudgetedInfoOpen, setUnbudgetedInfoOpen] = useState(false);
   const [overBudgetInfoOpen, setOverBudgetInfoOpen] = useState(false);
@@ -398,98 +389,23 @@ export default function BudgetPage() {
         <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
       </div>
 
-      {/* AI Insights */}
-      <div className="rounded-xl border border-amber-200/60 dark:border-amber-700/40 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border-b border-amber-100 dark:border-amber-800/40">
-          <div className="flex items-center gap-2">
-            <SparklesIcon className={cn("size-4 text-amber-500 dark:text-amber-400 shrink-0", insightsLoading && "animate-pulse")} />
-            <div>
-              <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">AI Insights</span>
-              {insightsGeneratedAt && !insightsLoading && (
-                <p className="text-[10px] text-amber-500/70 dark:text-amber-500/60 leading-none mt-0.5">
-                  {insightsGeneratedAt.toLocaleDateString("en-MY", { day: "numeric", month: "short" })}
-                  {" · "}
-                  {insightsGeneratedAt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" })}
-                </p>
-              )}
-
-            </div>
+      {/* AI Assistant entry point */}
+      <button
+        type="button"
+        onClick={() => router.push("/assistant")}
+        className="w-full rounded-xl border border-amber-200/60 dark:border-amber-700/40 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 px-4 py-3 flex items-center justify-between gap-3 text-left transition-colors hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-950/60 dark:hover:to-orange-950/50"
+      >
+        <div className="flex items-center gap-3">
+          <div className="size-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+            <SparklesIcon className="size-4 text-amber-500 dark:text-amber-400" />
           </div>
-          {!insights && !insightsLoading && (
-            <>
-              <button
-                onClick={() => setSupportOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors" style={{ backgroundColor: "#FFDD00", color: "#1a1a1a" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#f5d000")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "#FFDD00")}
-              >
-                <CoffeeIcon className="size-3.5 shrink-0" /> Buy Me a Coffee
-              </button>
-              <SupportButton dialogOnly open={supportOpen} onOpenChange={setSupportOpen} />
-            </>
-          )}
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Ask AI about your spending</p>
+            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">Coming soon</p>
+          </div>
         </div>
-        <div className="p-4 bg-card space-y-4">
-          {insightsLoading ? (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Skeleton className="h-3.5 w-full" />
-                <Skeleton className="h-3.5 w-5/6" />
-                <Skeleton className="h-3.5 w-4/6" />
-              </div>
-              <div className="space-y-1.5 pt-3 border-t border-border/50">
-                <Skeleton className="h-5 w-12 rounded-full" />
-                <Skeleton className="h-3.5 w-full" />
-                <Skeleton className="h-3.5 w-11/12" />
-                <Skeleton className="h-3.5 w-4/5" />
-              </div>
-              <div className="space-y-1.5 pt-3 border-t border-border/50">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-3.5 w-full" />
-                <Skeleton className="h-3.5 w-10/12" />
-                <Skeleton className="h-3.5 w-3/5" />
-              </div>
-            </div>
-          ) : !insights ? (
-            <div className="space-y-2 py-2">
-              <p className="text-sm text-foreground/80 leading-relaxed">
-                AI Insights is temporarily unavailable and will be back on <span className="font-semibold text-amber-500 dark:text-amber-400">29 June 2026</span>. Sorry for the inconvenience!
-              </p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                If you&apos;d like to help keep this feature running, you&apos;re welcome to buy me a coffee — every bit helps!
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm leading-relaxed text-foreground/80 border-l-2 border-amber-300 dark:border-amber-600 pl-3">{insights.summary}</p>
-              <div className="space-y-2.5 pt-1 border-t border-border/50">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs font-semibold">
-                  <span className="size-1.5 rounded-full bg-green-500 shrink-0" />Do
-                </span>
-                <ul className="space-y-2.5">
-                  {insights.dos.map((tip, i) => (
-                    <li key={i} className="flex gap-2.5 text-sm">
-                      <span className="size-5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                      <span className="leading-relaxed">{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="space-y-2.5 pt-1 border-t border-border/50">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-semibold">
-                  <span className="size-1.5 rounded-full bg-red-500 shrink-0" />Don&apos;t
-                </span>
-                <ul className="space-y-2.5">
-                  {insights.donts.map((tip, i) => (
-                    <li key={i} className="flex gap-2.5 text-sm">
-                      <span className="size-5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-500 dark:text-red-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
-                      <span className="leading-relaxed">{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        <ChevronRightIcon className="size-4 text-amber-500/70 dark:text-amber-400/70 shrink-0" />
+      </button>
 
       <div className="space-y-6">
 

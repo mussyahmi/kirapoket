@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAddTransaction } from "@/components/transactions/AddTransactionSheet";
 import { transactionsToCsv, downloadCsv } from "@/lib/csv";
+import { getSalaryCycleRange } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -42,7 +43,7 @@ import type { Transaction } from "@/lib/types";
 type FilterType = "all" | "expense" | "income" | "transfer";
 
 function TransactionsPage() {
-  const { transactions, accounts, categories, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
+  const { transactions, accounts, categories, userProfile, loadingProfile, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
     useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { openAdd } = useAddTransaction();
@@ -85,6 +86,32 @@ function TransactionsPage() {
     return editReturn?.dateTo ?? "";
   });
 
+  // The current salary cycle — used as the default date range and the baseline
+  // for deciding whether any filters are actually active.
+  const defaultDates = useMemo(() => {
+    const salaryDay = userProfile?.salaryDay ?? 25;
+    const { start, end } = getSalaryCycleRange(salaryDay, new Date(), {
+      cycleStarts: userProfile?.cycleStarts,
+    });
+    return { from: format(start, "yyyy-MM-dd"), to: format(end, "yyyy-MM-dd") };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
+
+  // Default the date range to the current salary cycle once the profile loads,
+  // unless filters came from the URL or were restored after an edit.
+  const didDefaultDates = useRef(false);
+  useEffect(() => {
+    if (didDefaultDates.current) return;
+    if (hasUrlParams || editReturn?.dateFrom || editReturn?.dateTo) {
+      didDefaultDates.current = true;
+      return;
+    }
+    if (loadingProfile) return;
+    didDefaultDates.current = true;
+    setDateFrom(defaultDates.from);
+    setDateTo(defaultDates.to);
+  }, [loadingProfile, hasUrlParams, editReturn, defaultDates]);
+
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -92,14 +119,17 @@ function TransactionsPage() {
   const [visibleGroups, setVisibleGroups] = useState(GROUPS_PAGE);
   const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
 
-  const hasActiveFilters = filterType !== "all" || filterAccount !== "all" || filterCategory !== "all" || dateFrom !== "" || dateTo !== "";
+  // The default cycle range is not considered an "active" filter — only show
+  // Clear filters when something differs from the default state.
+  const datesAtDefault = dateFrom === defaultDates.from && dateTo === defaultDates.to;
+  const hasActiveFilters = filterType !== "all" || filterAccount !== "all" || filterCategory !== "all" || !datesAtDefault;
 
   const clearFilters = () => {
     setFilterType("all");
     setFilterAccount("all");
     setFilterCategory("all");
-    setDateFrom("");
-    setDateTo("");
+    setDateFrom(defaultDates.from);
+    setDateTo(defaultDates.to);
     resetVisible();
     try { sessionStorage.removeItem(EDIT_RETURN_KEY); } catch { /* ignore */ }
   };
@@ -128,7 +158,7 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
-      if (filterAccount !== "all" && t.accountId !== filterAccount) return false;
+      if (filterAccount !== "all" && t.accountId !== filterAccount && t.toAccountId !== filterAccount) return false;
       if (matchingCategoryIds !== null) {
         if (!t.categoryId || !matchingCategoryIds.has(t.categoryId)) return false;
       }
