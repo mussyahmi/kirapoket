@@ -29,13 +29,14 @@ const releases: Release[] = [
     latest: true,
     changes: [
       { type: "feat", text: "Pull down from the top of any page to refresh your data — especially handy in the installed home-screen app, where the browser's own pull-to-refresh isn't available" },
-      { type: "feat", text: "Confirm before saving — adding or editing a transaction now shows a summary and exactly how each account balance will change before you commit; can be turned off under Settings → Transactions" },
+      { type: "feat", text: "Confirm before saving — adding or editing a transaction now shows a summary, exactly how each account balance will change, and how it affects the category's budget for the cycle before you commit; can be turned off under Settings → Transactions" },
       { type: "feat", text: "The transactions list now opens scoped to your current salary cycle, with the From and To dates pre-filled; Clear filters resets back to that range" },
       { type: "feat", text: "AI Spending Insights is being replaced by a new AI Assistant you'll be able to chat with about your spending and budgets — coming soon" },
       { type: "fix", text: "Filtering transactions by an account now also shows transfers into that account, not just transfers out of it" },
       { type: "fix", text: "PDF report no longer shows a negative \"-RM0.00\" remaining when a cycle breaks even, and the figure stays neutral instead of red" },
       { type: "fix", text: "Home dashboard no longer briefly flashes the wrong salary cycle while loading; the changelog now shows when it was last updated" },
       { type: "fix", text: "Removed the rarely-used Hide balance toggle from Settings" },
+      { type: "fix", text: "Fixed the account-type dropdown opening hidden behind the account form, so you can now pick Cash, E-wallet, Credit card and the other types; also stopped the save-confirmation dialog from briefly flashing the balance change twice as it closes" },
     ],
   },
   {

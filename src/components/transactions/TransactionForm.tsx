@@ -13,6 +13,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getSalaryCycleRange } from "@/lib/firestore";
+import { computeBudgetImpact, type BudgetImpact } from "@/lib/budget";
 import {
   TransactionConfirmDialog,
   type AccountImpact,
@@ -38,6 +40,7 @@ export function TransactionForm({
   const {
     accounts,
     categories,
+    transactions,
     createTransaction,
     userProfile,
     loadingProfile,
@@ -54,6 +57,12 @@ export function TransactionForm({
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Snapshot of the account impacts taken when the confirm dialog opens. The
+  // live `confirmImpacts` recomputes from account balances, which update
+  // optimistically during save — reading them live would briefly show the
+  // amount deducted twice before the dialog closes.
+  const [frozenImpacts, setFrozenImpacts] = useState<AccountImpact[]>([]);
+  const [frozenBudget, setFrozenBudget] = useState<BudgetImpact | null>(null);
 
   const confirmBeforeSaving = userProfile?.confirmBeforeSaving ?? true;
 
@@ -253,6 +262,24 @@ export function TransactionForm({
     return rows.filter((r): r is AccountImpact => r !== null);
   }, [amount, txType, accountId, toAccountId, accounts]);
 
+  const confirmBudget = useMemo<BudgetImpact | null>(() => {
+    const amt = parseFloat(amount);
+    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
+    const salaryDay = userProfile?.salaryDay;
+    if (salaryDay == null) return null;
+    const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
+      cycleStarts: userProfile?.cycleStarts,
+    });
+    return computeBudgetImpact({
+      categories,
+      transactions,
+      categoryId: selectedCategoryId,
+      amount: amt,
+      cycleStartStr: format(start, "yyyy-MM-dd"),
+      cycleEndStr: format(end, "yyyy-MM-dd"),
+    });
+  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile]);
+
   const doSave = async () => {
     setSubmitting(true);
     try {
@@ -285,6 +312,8 @@ export function TransactionForm({
       return;
     }
     if (confirmBeforeSaving) {
+      setFrozenImpacts(confirmImpacts);
+      setFrozenBudget(confirmBudget);
       setConfirmOpen(true);
       return;
     }
@@ -599,7 +628,8 @@ export function TransactionForm({
         onOpenChange={setConfirmOpen}
         mode="add"
         summary={confirmSummary}
-        impacts={confirmImpacts}
+        impacts={frozenImpacts}
+        budget={frozenBudget}
         onConfirm={doSave}
         submitting={submitting}
       />

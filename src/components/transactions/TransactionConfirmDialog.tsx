@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { BudgetImpact } from "@/lib/budget";
 
 export type AccountImpact = {
   id: string;
@@ -71,6 +72,7 @@ export function TransactionConfirmDialog({
   mode,
   summary,
   impacts,
+  budget,
   onConfirm,
   submitting,
 }: {
@@ -79,6 +81,7 @@ export function TransactionConfirmDialog({
   mode: "add" | "edit";
   summary: TxConfirmSummary | null;
   impacts: AccountImpact[];
+  budget?: BudgetImpact | null;
   onConfirm: () => void;
   submitting: boolean;
 }) {
@@ -168,6 +171,54 @@ export function TransactionConfirmDialog({
                 })}
               </div>
             </div>
+
+            {/* Budget impact */}
+            {budget && (() => {
+              const over = budget.projected > budget.budget;
+              const remaining = budget.budget - budget.projected;
+              const pct = Math.min(100, Math.round((budget.projected / budget.budget) * 100));
+              return (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+                    Budget impact
+                  </p>
+                  <div
+                    className={cn(
+                      "rounded-xl border px-3 py-2.5",
+                      over ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium">{budget.categoryName}</span>
+                      <span className="flex items-center gap-1.5 tabular-nums text-sm">
+                        <span className="text-muted-foreground">{money(budget.spent)}</span>
+                        <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+                        <span className={cn("font-semibold", over && "text-destructive")}>
+                          {money(budget.projected)}
+                        </span>
+                        <span className="text-muted-foreground">/ {money(budget.budget)}</span>
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn("h-full rounded-full", over ? "bg-destructive" : "bg-primary")}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className={cn("mt-1.5 text-xs", over ? "text-destructive flex items-center gap-1" : "text-muted-foreground")}>
+                      {over ? (
+                        <>
+                          <TriangleAlertIcon className="size-3.5 shrink-0" />
+                          Over budget by {money(Math.abs(remaining))}.
+                        </>
+                      ) : (
+                        `${money(remaining)} left this cycle.`
+                      )}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

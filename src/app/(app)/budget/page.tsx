@@ -10,6 +10,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { getSalaryCycleRange } from "@/lib/firestore";
+import { effectiveCatBudget } from "@/lib/budget";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,12 +36,6 @@ const L1_COLORS: Record<string, string> = {
   wants: "#f97316",
   savings: "#60a5fa",
 };
-
-function effectiveCatBudget(c: Pick<Category, "budget" | "budgetType" | "budgetDays">) {
-  if (c.budget === undefined) return 0;
-  if (c.budgetType === "daily") return c.budget * (c.budgetDays ?? 30);
-  return c.budget;
-}
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("ms-MY", {

@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getSalaryCycleRange } from "@/lib/firestore";
+import { computeBudgetImpact, type BudgetImpact } from "@/lib/budget";
 import {
   TransactionConfirmDialog,
   type AccountImpact,
@@ -49,6 +51,11 @@ function EditTransactionForm() {
   const [submitting, setSubmitting] = useState(false);
   const [initialised, setInitialised] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Snapshot of the account impacts taken when the confirm dialog opens, so it
+  // doesn't briefly re-render against balances that update optimistically
+  // during save (which would look like the amount being applied twice).
+  const [frozenImpacts, setFrozenImpacts] = useState<AccountImpact[]>([]);
+  const [frozenBudget, setFrozenBudget] = useState<BudgetImpact | null>(null);
 
   const confirmBeforeSaving = userProfile?.confirmBeforeSaving ?? true;
 
@@ -214,6 +221,26 @@ function EditTransactionForm() {
       .filter((r): r is AccountImpact => r !== null);
   }, [editBalanceChanges, accounts]);
 
+  const confirmBudget = useMemo<BudgetImpact | null>(() => {
+    const amt = parseFloat(amount);
+    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
+    const salaryDay = userProfile?.salaryDay;
+    if (salaryDay == null) return null;
+    const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
+      cycleStarts: userProfile?.cycleStarts,
+    });
+    return computeBudgetImpact({
+      categories,
+      transactions,
+      categoryId: selectedCategoryId,
+      amount: amt,
+      cycleStartStr: format(start, "yyyy-MM-dd"),
+      cycleEndStr: format(end, "yyyy-MM-dd"),
+      // Don't count the transaction being edited toward the current spend
+      excludeTransactionId: id,
+    });
+  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile, id]);
+
   const doSave = async () => {
     setSubmitting(true);
     try {
@@ -242,6 +269,8 @@ function EditTransactionForm() {
     const err = validate();
     if (err) { toast.error(err); return; }
     if (confirmBeforeSaving) {
+      setFrozenImpacts(confirmImpacts);
+      setFrozenBudget(confirmBudget);
       setConfirmOpen(true);
       return;
     }
@@ -507,7 +536,8 @@ function EditTransactionForm() {
         onOpenChange={setConfirmOpen}
         mode="edit"
         summary={confirmSummary}
-        impacts={confirmImpacts}
+        impacts={frozenImpacts}
+        budget={frozenBudget}
         onConfirm={doSave}
         submitting={submitting}
       />
