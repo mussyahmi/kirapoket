@@ -188,33 +188,41 @@ export function TransactionConfirmDialog({
                       over ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/30"
                     )}
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    {/* Category + remaining/over status */}
+                    <div className="flex items-baseline justify-between gap-3">
                       <span className="text-sm font-medium">{budget.categoryName}</span>
-                      <span className="flex items-center gap-1.5 tabular-nums text-sm">
-                        <span className="text-muted-foreground">{money(budget.spent)}</span>
-                        <ArrowRightIcon className="size-3.5 text-muted-foreground" />
-                        <span className={cn("font-semibold", over && "text-destructive")}>
-                          {money(budget.projected)}
-                        </span>
-                        <span className="text-muted-foreground">/ {money(budget.budget)}</span>
+                      <span
+                        className={cn(
+                          "flex items-center gap-1 text-xs font-medium tabular-nums shrink-0",
+                          over ? "text-destructive" : "text-muted-foreground"
+                        )}
+                      >
+                        {over && <TriangleAlertIcon className="size-3.5 shrink-0" />}
+                        {over
+                          ? `${money(Math.abs(remaining))} over`
+                          : `${money(remaining)} left`}
                       </span>
                     </div>
+
+                    {/* Progress bar */}
                     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div
                         className={cn("h-full rounded-full", over ? "bg-destructive" : "bg-primary")}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <p className={cn("mt-1.5 text-xs", over ? "text-destructive flex items-center gap-1" : "text-muted-foreground")}>
-                      {over ? (
-                        <>
-                          <TriangleAlertIcon className="size-3.5 shrink-0" />
-                          Over budget by {money(Math.abs(remaining))}.
-                        </>
-                      ) : (
-                        `${money(remaining)} left this cycle.`
-                      )}
-                    </p>
+
+                    {/* Spent → projected of budget */}
+                    <div className="mt-2 flex items-center justify-between gap-3 text-xs tabular-nums text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        {money(budget.spent)}
+                        <ArrowRightIcon className="size-3.5" />
+                        <span className={cn("font-semibold text-foreground", over && "text-destructive")}>
+                          {money(budget.projected)}
+                        </span>
+                      </span>
+                      <span>of {money(budget.budget)}</span>
+                    </div>
                   </div>
                 </div>
               );
