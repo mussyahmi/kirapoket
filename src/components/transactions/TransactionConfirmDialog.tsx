@@ -242,13 +242,15 @@ export function TransactionConfirmDialog({
           <Button
             type="button"
             onClick={onConfirm}
-            disabled={submitting || anyShort}
+            disabled={submitting}
           >
             {submitting
               ? "Saving..."
-              : mode === "add"
-                ? "Confirm & add"
-                : "Confirm & save"}
+              : anyShort
+                ? "Save anyway"
+                : mode === "add"
+                  ? "Confirm & add"
+                  : "Confirm & save"}
           </Button>
         </DialogFooter>
       </DialogContent>
