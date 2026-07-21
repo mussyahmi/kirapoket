@@ -415,8 +415,8 @@ function DashboardPage() {
 
   const loading = loadingTransactions || loadingAccounts || loadingProfile;
 
-  // Value-first order: an account is auto-created, so nudge logging a
-  // transaction before the optional salary-day config.
+  // Only the two essential steps. An account is auto-created, and salary day is
+  // optional now — so it's not a required onboarding step (it lives in Settings).
   const onboardingSteps = [
     {
       label: "Add your first account",
@@ -431,13 +431,6 @@ function DashboardPage() {
       cta: "Add Transaction",
       done: transactions.length > 0,
       href: "/transactions/new?from=onboarding",
-    },
-    {
-      label: "Set your salary day",
-      description: "Optional — aligns the dashboard to your real pay cycle.",
-      cta: "Go to Settings",
-      done: userProfile?.salaryDay != null,
-      href: "/settings?from=onboarding",
     },
   ];
 
