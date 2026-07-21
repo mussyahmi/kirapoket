@@ -37,6 +37,8 @@ export interface UserProfile {
   photoURL: string | null;
   salaryDay: number | null;
   cycleStarts?: Record<string, string>;
+  // User-uploaded avatar (overrides the Google photoURL). null/absent = use Google's.
+  customPhotoURL?: string | null;
   // Show a summary/confirmation sheet before saving a transaction. Defaults to
   // true when unset.
   confirmBeforeSaving?: boolean;
@@ -44,7 +46,29 @@ export interface UserProfile {
   lastLogin?: Timestamp | null;
   categoriesSeeded?: boolean;
   categoriesSeedVersion?: number;
+  // A starter account is auto-created once so new users aren't blocked by the
+  // "add an account" setup wall. Set once; never re-seeds after deletion.
+  defaultAccountSeeded?: boolean;
   partnershipId?: string | null;
+  // Cooldown state for the periodic feedback pulse (see FeedbackPulse)
+  feedbackPrompt?: FeedbackPromptState;
+}
+
+export interface FeedbackPromptState {
+  lastShownAt?: string;   // ISO — when the pulse card was last shown
+  lastGivenAt?: string;   // ISO — when the user last submitted feedback
+  dismissals?: number;    // times explicitly dismissed; enough of these = stop asking
+}
+
+export interface Feedback {
+  id: string;
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  sentiment: "up" | "down";
+  message?: string;
+  appVersion?: string;
+  createdAt: Timestamp | string;
 }
 
 export interface Account {

@@ -224,8 +224,7 @@ function EditTransactionForm() {
   const confirmBudget = useMemo<BudgetImpact | null>(() => {
     const amt = parseFloat(amount);
     if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
-    const salaryDay = userProfile?.salaryDay;
-    if (salaryDay == null) return null;
+    const salaryDay = userProfile?.salaryDay ?? 25;
     const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
       cycleStarts: userProfile?.cycleStarts,
     });

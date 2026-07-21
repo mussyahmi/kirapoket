@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -10,10 +10,12 @@ import {
   HeartHandshakeIcon, SendIcon, XCircleIcon,
   StopCircleIcon, CheckCircle2Icon,
   ClockIcon, PencilIcon, ClipboardCheckIcon,
+  CameraIcon, Loader2Icon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -21,7 +23,11 @@ import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { uploadAvatar, removeAvatar } from "@/lib/avatar";
 import { InstallAppCard } from "@/components/common/InstallAppCard";
 import { OnboardingNextModal } from "@/components/common/OnboardingNextModal";
 
@@ -45,9 +51,12 @@ function SettingsPage() {
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
   const [confirmBeforeSaving, setConfirmBeforeSaving] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [editNameDialogOpen, setEditNameDialogOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarLightbox, setAvatarLightbox] = useState(false);
   const isReadOnly = mounted && (isViewingPartner || isImpersonating);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -88,9 +97,44 @@ function SettingsPage() {
     }
   };
 
-  const handleOpenEditName = () => {
+  // Resolved avatar for the signed-in user: uploaded photo wins over Google's
+  const avatarSrc = ownProfile?.customPhotoURL ?? user?.photoURL ?? undefined;
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file later
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file."); return; }
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadAvatar(user.uid, file);
+      await saveUserProfile({ customPhotoURL: url });
+      toast.success("Photo updated.");
+    } catch {
+      toast.error("Couldn't update photo. Please try again.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    try {
+      await removeAvatar(user.uid);
+      await saveUserProfile({ customPhotoURL: null });
+      toast.success("Photo removed.");
+    } catch {
+      toast.error("Couldn't remove photo. Please try again.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const openEditProfile = () => {
+    if (isReadOnly) return;
     setNameInput(ownProfile?.displayName ?? user?.displayName ?? "");
-    setEditNameDialogOpen(true);
+    setEditProfileOpen(true);
   };
 
   const handleSaveName = async () => {
@@ -99,7 +143,7 @@ function SettingsPage() {
     setSavingName(true);
     try {
       await saveUserProfile({ displayName: trimmed });
-      setEditNameDialogOpen(false);
+      setEditProfileOpen(false);
       toast.success("Name updated.");
     } catch {
       toast.error("Failed to update name.");
@@ -164,14 +208,22 @@ function SettingsPage() {
       <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
         <CardContent className="flex items-center gap-4 py-5">
           {loadingProfile ? (
-            <div className="size-10 shrink-0 rounded-full bg-muted animate-pulse" />
+            <div className="size-16 shrink-0 rounded-full bg-muted animate-pulse" />
           ) : (
-            <Avatar size="lg" className="shrink-0 shadow-sm">
-              {user?.photoURL ? (
-                <AvatarImage src={user.photoURL} alt={ownProfile?.displayName ?? user.displayName ?? "User"} />
-              ) : null}
-              <AvatarFallback className="text-sm font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
-            </Avatar>
+            <button
+              type="button"
+              onClick={() => avatarSrc && setAvatarLightbox(true)}
+              disabled={!avatarSrc}
+              aria-label="View photo"
+              className="size-16 shrink-0 rounded-full disabled:cursor-default"
+            >
+              <Avatar className="size-full shadow-sm">
+                {avatarSrc ? (
+                  <AvatarImage src={avatarSrc} alt={ownProfile?.displayName ?? user?.displayName ?? "User"} />
+                ) : null}
+                <AvatarFallback className="text-lg font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+              </Avatar>
+            </button>
           )}
           <div className="min-w-0 flex-1">
             {loadingProfile ? (
@@ -181,18 +233,17 @@ function SettingsPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-1.5">
-                  <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
+                <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                {!isReadOnly && (
                   <button
                     type="button"
-                    onClick={handleOpenEditName}
-                    title="Edit name"
-                    className="shrink-0 rounded-md p-1 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
+                    onClick={openEditProfile}
+                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
-                    <PencilIcon className="size-3" />
+                    <PencilIcon className="size-3" /> Edit profile
                   </button>
-                </div>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                )}
               </>
             )}
           </div>
@@ -484,29 +535,80 @@ function SettingsPage() {
         </Link>
       </p>
 
-      <Dialog open={editNameDialogOpen} onOpenChange={(o) => !savingName && setEditNameDialogOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit display name</DialogTitle>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
-            disabled={savingName}
-            placeholder="Your name"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditNameDialogOpen(false)} disabled={savingName}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveName} disabled={savingName || !nameInput.trim()}>
-              {savingName ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
+      <Dialog open={avatarLightbox} onOpenChange={setAvatarLightbox}>
+        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-xs">
+          {avatarSrc && (
+            <img src={avatarSrc} alt="" className="w-full rounded-2xl object-cover" />
+          )}
         </DialogContent>
       </Dialog>
+
+      <Sheet open={editProfileOpen} onOpenChange={(o) => !savingName && !uploadingAvatar && setEditProfileOpen(o)}>
+        <SheetContent side="bottom" className="rounded-t-2xl p-0 sm:mx-auto sm:max-w-md">
+          <SheetHeader className="border-b shrink-0">
+            <SheetTitle>Edit Profile</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pt-5 pb-6 space-y-6">
+            {/* Photo */}
+            <div className="flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={() => avatarSrc && setAvatarLightbox(true)}
+                disabled={!avatarSrc}
+                aria-label="View photo"
+                className="size-28 shrink-0 rounded-full disabled:cursor-default"
+              >
+                <Avatar className="size-full shadow-sm">
+                  {avatarSrc ? (
+                    <AvatarImage src={avatarSrc} alt={ownProfile?.displayName ?? user?.displayName ?? "User"} />
+                  ) : null}
+                  <AvatarFallback className="text-2xl font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+                </Avatar>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              <div className="flex flex-col items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
+                  {uploadingAvatar ? <Loader2Icon className="size-3.5 animate-spin" /> : <CameraIcon className="size-3.5" />}
+                  Change photo
+                </Button>
+                {ownProfile?.customPhotoURL && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    disabled={uploadingAvatar}
+                    className="text-xs text-muted-foreground/70 hover:text-destructive transition-colors disabled:opacity-60"
+                  >
+                    {user?.photoURL ? "Use Google photo" : "Remove photo"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="displayName">Display name</Label>
+              <Input
+                id="displayName"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                disabled={savingName}
+                placeholder="Your name"
+              />
+            </div>
+
+            <Button className="w-full" onClick={handleSaveName} disabled={savingName || !nameInput.trim()}>
+              {savingName ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={removePartnerDialogOpen} onOpenChange={setRemovePartnerDialogOpen}>
         <DialogContent>

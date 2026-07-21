@@ -84,7 +84,9 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Setup-gated tabs unlock once setup is done — but never re-lock once transactions exist
-  const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+  // Logging only needs an account now — salary day is optional (defaults to a
+  // calendar-ish cycle) so users aren't walled off before seeing any value.
+  const setupComplete = accounts.length > 0;
   const setupGated = !setupComplete && transactions.length === 0;
 
   const isActive = (href: string) =>

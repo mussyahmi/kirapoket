@@ -164,8 +164,8 @@ function AssistantChat() {
             </div>
             {m.role === "user" && (
               <Avatar className="size-7 shrink-0 mt-0.5">
-                {user?.photoURL && (
-                  <AvatarImage src={user.photoURL} alt={userProfile?.displayName ?? "You"} />
+                {(userProfile?.customPhotoURL ?? user?.photoURL) && (
+                  <AvatarImage src={userProfile?.customPhotoURL ?? user?.photoURL ?? undefined} alt={userProfile?.displayName ?? "You"} />
                 )}
                 <AvatarFallback className="text-[10px] font-semibold">
                   {getInitials(userProfile?.displayName ?? user?.displayName)}

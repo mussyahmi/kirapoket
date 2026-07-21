@@ -15,7 +15,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Account, Activity, ActivityType, Category, Transaction, UserProfile, Debt } from "./types";
+import type { Account, Activity, ActivityType, Category, Transaction, UserProfile, Debt, Feedback } from "./types";
 import { format, startOfDay, endOfDay, parseISO, isWithinInterval, addDays } from "date-fns";
 
 // ─── Default category seed ───────────────────────────────────────────────────
@@ -442,6 +442,34 @@ export async function getRecentActivities(n = 50): Promise<Activity[]> {
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Activity));
+}
+
+/** Records a feedback pulse response. Message is omitted when empty. */
+export async function submitFeedback(
+  data: Omit<Feedback, "id" | "createdAt" | "message"> & { message?: string }
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    userId: data.userId,
+    email: data.email,
+    displayName: data.displayName,
+    sentiment: data.sentiment,
+    createdAt: Timestamp.now(),
+  };
+  if (data.appVersion) payload.appVersion = data.appVersion;
+  const msg = data.message?.trim();
+  if (msg) payload.message = msg;
+  await addDoc(collection(db, "feedback"), payload);
+}
+
+/** Latest feedback across all users — for the admin panel. */
+export async function getRecentFeedback(n = 100): Promise<Feedback[]> {
+  const q = query(
+    collection(db, "feedback"),
+    orderBy("createdAt", "desc"),
+    limit(n)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Feedback));
 }
 
 export async function getUserStats(userId: string): Promise<{ transactions: number; accounts: number }> {

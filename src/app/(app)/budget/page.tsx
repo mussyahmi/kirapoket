@@ -725,9 +725,11 @@ export default function BudgetPage() {
                                     style={{ width: `${l2pct}%`, backgroundColor: l2over ? "#ef4444" : color }}
                                   />
                                 </div>
-                                <span className={cn("text-[10px] tabular-nums amt shrink-0 w-20 text-right", l2over ? "text-red-500" : "text-muted-foreground/60")}>
-                                  {l2over ? `Over ${fmt(Math.abs(l2remaining))}` : `${fmt(l2remaining)} left`}
-                                </span>
+                                {(l2over || l2remaining !== 0) && (
+                                  <span className={cn("text-[10px] tabular-nums amt shrink-0 w-20 text-right", l2over ? "text-red-500" : "text-muted-foreground/60")}>
+                                    {l2over ? `Over ${fmt(Math.abs(l2remaining))}` : `${fmt(l2remaining)} left`}
+                                  </span>
+                                )}
                               </div>
                             )}
                             {/* L3 rows */}
@@ -746,15 +748,15 @@ export default function BudgetPage() {
                                       onClick={() => setSelectedL3(l3)}
                                       className="flex items-center justify-between gap-2 text-xs rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
                                     >
-                                      <span className={cn("text-muted-foreground/80 text-left hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}>
+                                      <span className={cn("text-left", l3over ? "text-red-500-80 hover:text-red-500" : l3budget === 0 ? "text-orange-500/80 hover:text-orange-500" : "text-muted-foreground/80 hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}>
                                         {l3.name}
                                       </span>
                                       <div className="flex items-center gap-1.5 shrink-0">
-                                        <span className={cn("amt tabular-nums", l3over ? "text-red-500" : "text-muted-foreground")}>
+                                        <span className={cn("amt tabular-nums", l3over ? "text-red-500" : l3budget === 0 ? "text-orange-500" : "text-muted-foreground")}>
                                           {fmt(l3spent)}
                                           {l3budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l3budget)}</span>}
                                         </span>
-                                        {l3budget > 0 && (
+                                        {l3budget > 0 && (l3over || l3remaining !== 0) && (
                                           <span className={cn("text-[10px] amt tabular-nums", l3over ? "text-red-400" : "text-muted-foreground/50")}>
                                             ({l3over ? `-${fmt(Math.abs(l3remaining))}` : `${fmt(l3remaining)} left`})
                                           </span>

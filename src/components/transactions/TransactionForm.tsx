@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
@@ -24,29 +24,43 @@ import {
 type TxType = "expense" | "income" | "transfer";
 
 /**
- * The add-transaction form, reused by the full page route and the bottom-sheet
- * quick-add. Navigation is delegated to onDone/onCancel so the caller decides
- * whether to route away or just close a sheet.
+ * The transaction form, reused by the bottom-sheet for both quick-add and edit.
+ * Pass `editId` to edit an existing transaction; omit it to add a new one.
+ * Navigation is delegated to onDone/onCancel so the caller decides whether to
+ * route away or just close a sheet.
  */
 export function TransactionForm({
   embedded = false,
+  editId,
   onDone,
   onCancel,
+  onConfirmOpenChange,
 }: {
   embedded?: boolean;
+  editId?: string;
   onDone: () => void;
   onCancel: () => void;
+  // Lets a sheet host recede/lock its chrome while the confirm dialog is open
+  onConfirmOpenChange?: (open: boolean) => void;
 }) {
   const {
     accounts,
     categories,
     transactions,
     createTransaction,
+    editTransaction,
     userProfile,
     loadingProfile,
     loadingAccounts,
     loadingCategories,
+    loadingTransactions,
   } = useApp();
+
+  const isEdit = !!editId;
+  const editTx = useMemo(
+    () => (editId ? transactions.find((t) => t.id === editId) : undefined),
+    [transactions, editId]
+  );
 
   const [txType, setTxType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
@@ -70,6 +84,45 @@ export function TransactionForm({
   const [l1Id, setL1Id] = useState<string | null>(null);
   const [l2Id, setL2Id] = useState<string | null>(null);
   const [l3Id, setL3Id] = useState<string | null>(null);
+
+  // In edit mode, pre-fill the form once the transaction (and categories) load
+  const [initialised, setInitialised] = useState(false);
+  useEffect(() => {
+    if (!isEdit || !editTx || initialised) return;
+    setTxType(editTx.type);
+    setAmount(String(editTx.amount));
+    setSelectedDate(parseISO(editTx.date));
+    setTime(editTx.time ?? format(new Date(), "HH:mm"));
+    setAccountId(editTx.accountId);
+    setToAccountId(editTx.toAccountId ?? "");
+    setNote(editTx.note ?? "");
+    if (editTx.categoryId) {
+      const cat = categories.find((c) => c.id === editTx.categoryId);
+      if (cat) {
+        if (cat.level === 3) {
+          setL3Id(cat.id);
+          const l2 = categories.find((c) => c.id === cat.parentId);
+          if (l2) {
+            setL2Id(l2.id);
+            const l1 = categories.find((c) => c.id === l2.parentId);
+            if (l1) setL1Id(l1.id);
+          }
+        } else if (cat.level === 2) {
+          setL2Id(cat.id);
+          const l1 = categories.find((c) => c.id === cat.parentId);
+          if (l1) setL1Id(l1.id);
+        } else {
+          setL1Id(cat.id);
+        }
+      }
+    }
+    setInitialised(true);
+  }, [isEdit, editTx, categories, initialised]);
+
+  // Report confirm-dialog open state up so a sheet host can blur/lock its chrome
+  useEffect(() => {
+    onConfirmOpenChange?.(confirmOpen);
+  }, [confirmOpen, onConfirmOpenChange]);
 
   const l1Categories = useMemo(() => {
     const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
@@ -99,7 +152,7 @@ export function TransactionForm({
   );
 
   const setupLoading = loadingProfile || loadingAccounts;
-  const setupComplete = userProfile?.salaryDay != null && accounts.length > 0;
+  const setupComplete = accounts.length > 0;
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
 
@@ -124,9 +177,78 @@ export function TransactionForm({
     }).format(v === 0 ? 0 : v);
   };
 
+  // Edit mode: net per-account balance change if saved — revert the original
+  // transaction's effect, then apply the edited one (mirrors editTransaction).
+  const editBalanceChanges = useMemo(() => {
+    const changes: Record<string, number> = {};
+    if (!editTx) return changes;
+    const amt = parseFloat(amount);
+    if (isNaN(amt)) return changes;
+    const apply = (
+      t: { type: TxType; amount: number; accountId: string; toAccountId?: string },
+      factor: 1 | -1
+    ) => {
+      if (t.type === "expense")
+        changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
+      if (t.type === "income")
+        changes[t.accountId] = (changes[t.accountId] ?? 0) - factor * t.amount;
+      if (t.type === "transfer") {
+        changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
+        if (t.toAccountId)
+          changes[t.toAccountId] = (changes[t.toAccountId] ?? 0) - factor * t.amount;
+      }
+    };
+    apply({ type: editTx.type, amount: editTx.amount, accountId: editTx.accountId, toAccountId: editTx.toAccountId }, 1);
+    apply({ type: txType, amount: amt, accountId, toAccountId: txType === "transfer" ? toAccountId : undefined }, -1);
+    return changes;
+  }, [editTx, txType, amount, accountId, toAccountId]);
+
   const renderBalanceHint = (accId: string, role: "source" | "dest") => {
     const acc = accounts.find((a) => a.id === accId);
     if (!acc) return null;
+
+    // Edit mode uses the net revert-then-apply delta with an "After saving" label
+    if (isEdit) {
+      const delta = editBalanceChanges[accId] ?? 0;
+      const changed = delta !== 0;
+      const projected = acc.balance + delta;
+      const short = changed && projected < 0;
+      return (
+        <div
+          className={cn(
+            "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
+            short ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/40"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">{acc.name} balance</span>
+            <span className="font-medium tabular-nums">{formatMoney(acc.balance)}</span>
+          </div>
+          {changed && (
+            <div
+              className={cn(
+                "mt-1.5 flex items-center justify-between border-t pt-1.5",
+                short ? "border-destructive/30" : "border-border/60"
+              )}
+            >
+              <span className={cn("flex items-center gap-1", short ? "text-destructive" : "text-muted-foreground")}>
+                {short && <TriangleAlertIcon className="size-3.5" />}
+                After saving
+              </span>
+              <span className={cn("font-semibold tabular-nums", short && "text-destructive")}>
+                {formatMoney(projected)}
+              </span>
+            </div>
+          )}
+          {short && (
+            <p className="mt-1 text-xs text-destructive">
+              Short by {formatMoney(Math.abs(projected))} — saving this change leaves this account negative.
+            </p>
+          )}
+        </div>
+      );
+    }
+
     const amt = parseFloat(amount);
     const hasAmt = !isNaN(amt) && amt > 0;
     const sign =
@@ -245,6 +367,16 @@ export function TransactionForm({
   }, [amount, txType, selectedDate, time, accountId, toAccountId, note, l1Id, l2Id, l3Id, categories, accounts]);
 
   const confirmImpacts = useMemo<AccountImpact[]>(() => {
+    // Edit mode: derive from the net revert-then-apply delta per account
+    if (isEdit) {
+      return Object.entries(editBalanceChanges)
+        .map(([accId, delta]) => {
+          const acc = accounts.find((a) => a.id === accId);
+          if (!acc) return null;
+          return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+        })
+        .filter((r): r is AccountImpact => r !== null);
+    }
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) return [];
     const impact = (id: string, delta: number): AccountImpact | null => {
@@ -260,13 +392,14 @@ export function TransactionForm({
       rows.push(impact(toAccountId, amt));
     }
     return rows.filter((r): r is AccountImpact => r !== null);
-  }, [amount, txType, accountId, toAccountId, accounts]);
+  }, [isEdit, editBalanceChanges, amount, txType, accountId, toAccountId, accounts]);
 
   const confirmBudget = useMemo<BudgetImpact | null>(() => {
     const amt = parseFloat(amount);
     if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
-    const salaryDay = userProfile?.salaryDay;
-    if (salaryDay == null) return null;
+    // Fall back to the default cycle when no salary day is set (matches the
+    // budget page's ?? 25) so budget impact still shows before setup.
+    const salaryDay = userProfile?.salaryDay ?? 25;
     const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
       cycleStarts: userProfile?.cycleStarts,
     });
@@ -277,13 +410,15 @@ export function TransactionForm({
       amount: amt,
       cycleStartStr: format(start, "yyyy-MM-dd"),
       cycleEndStr: format(end, "yyyy-MM-dd"),
+      // In edit mode, don't count the transaction being edited toward the spend
+      excludeTransactionId: editId,
     });
-  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile]);
+  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile, editId]);
 
   const doSave = async () => {
     setSubmitting(true);
     try {
-      await createTransaction({
+      const payload = {
         type: txType,
         amount: parseFloat(amount),
         date,
@@ -293,12 +428,24 @@ export function TransactionForm({
         categoryId:
           txType !== "transfer" ? (selectedCategoryId ?? undefined) : undefined,
         note: note.trim() || undefined,
-      });
-      toast.success("Transaction added.");
+      };
+      if (isEdit && editId) {
+        await editTransaction(editId, payload);
+        toast.success("Transaction updated.");
+      } else {
+        await createTransaction(payload);
+        toast.success("Transaction added.");
+      }
       setConfirmOpen(false);
       onDone();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to add transaction. Please try again.");
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : isEdit
+            ? "Failed to update transaction."
+            : "Failed to add transaction. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -424,30 +571,32 @@ export function TransactionForm({
         )}
         <Card>
           <CardContent className="pt-6 space-y-3">
-            <p className="text-sm font-medium">Complete setup first</p>
+            <p className="text-sm font-medium">Add an account first</p>
             <p className="text-sm text-muted-foreground">
-              Before adding transactions, you need to:
+              You need at least one account to track transactions against.
             </p>
-            <ul className="space-y-1.5 text-sm text-muted-foreground">
-              {userProfile?.salaryDay == null && (
-                <li>
-                  ·{" "}
-                  <a href="/settings" className="underline text-foreground">
-                    Set your salary day
-                  </a>
-                </li>
-              )}
-              {accounts.length === 0 && (
-                <li>
-                  ·{" "}
-                  <a href="/accounts" className="underline text-foreground">
-                    Add at least one account
-                  </a>
-                </li>
-              )}
-            </ul>
+            <a href="/accounts" className="inline-block underline text-foreground text-sm">
+              Add an account
+            </a>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Edit mode: wait for the transaction to load, or report it missing
+  if (isEdit && !editTx) {
+    return (
+      <div className={cn("space-y-3", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}>
+        {loadingTransactions ? (
+          <>
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Transaction not found.</p>
+        )}
       </div>
     );
   }
@@ -618,7 +767,7 @@ export function TransactionForm({
           )}
         >
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Saving..." : "Add Transaction"}
+            {submitting ? "Saving..." : isEdit ? "Save Changes" : "Add Transaction"}
           </Button>
         </div>
       </form>
@@ -626,7 +775,7 @@ export function TransactionForm({
       <TransactionConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        mode="add"
+        mode={isEdit ? "edit" : "add"}
         summary={confirmSummary}
         impacts={frozenImpacts}
         budget={frozenBudget}

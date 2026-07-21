@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import FeedbackPulse from "@/components/common/FeedbackPulse";
 import { cn } from "@/lib/utils";
 
 const L1_COLORS: Record<string, string> = {
@@ -414,14 +415,9 @@ function DashboardPage() {
 
   const loading = loadingTransactions || loadingAccounts || loadingProfile;
 
+  // Value-first order: an account is auto-created, so nudge logging a
+  // transaction before the optional salary-day config.
   const onboardingSteps = [
-    {
-      label: "Set your salary day",
-      description: "So we know your spending cycle.",
-      cta: "Go to Settings",
-      done: userProfile?.salaryDay != null,
-      href: "/settings?from=onboarding",
-    },
     {
       label: "Add your first account",
       description: "Track your cash, bank, and e-wallet balances.",
@@ -435,6 +431,13 @@ function DashboardPage() {
       cta: "Add Transaction",
       done: transactions.length > 0,
       href: "/transactions/new?from=onboarding",
+    },
+    {
+      label: "Set your salary day",
+      description: "Optional — aligns the dashboard to your real pay cycle.",
+      cta: "Go to Settings",
+      done: userProfile?.salaryDay != null,
+      href: "/settings?from=onboarding",
     },
   ];
 
@@ -660,6 +663,8 @@ function DashboardPage() {
         </Card>
       )}
 
+      {!isReadOnly && <FeedbackPulse />}
+
       {/* Account Balances — only shown for current cycle; balance is live and misleading for past cycles */}
       {cycleOffset < 0 ? null : loadingAccounts ? (
         <Skeleton className="h-28 rounded-xl" />
@@ -875,8 +880,8 @@ function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent Transactions */}
-      {loadingTransactions ? (
+      {/* Recent Transactions — only on the current cycle; "recent" is misleading when viewing a past cycle */}
+      {cycleOffset < 0 ? null : loadingTransactions ? (
         <Skeleton className="h-44 rounded-xl" />
       ) : (
       <Card>
@@ -974,6 +979,7 @@ function DashboardPage() {
         </CardContent>
       </Card>
       )}
+
       <Dialog open={onboardingDoneOpen} onOpenChange={setOnboardingDoneOpen}>
         <DialogContent className="max-w-sm text-center">
           <div className="flex flex-col items-center gap-3 py-2">

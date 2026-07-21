@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "29 June 2026";
+const LAST_UPDATED = "21 July 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,22 @@ const LAST_UPDATED = "29 June 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.11.x",
-    dateRange: "2026-06-29 – present",
+    version: "0.12.x",
+    dateRange: "2026-07-21 – present",
     latest: true,
+    changes: [
+      { type: "feat", text: "Add a profile photo — upload your own picture (it's cropped square and kept small automatically) or keep your Google photo; change or remove it anytime from Settings → Edit profile, and tap any avatar to view it full-size" },
+      { type: "feat", text: "Getting started is quicker — a starter Cash account is now created for you and setting a salary day is optional, so you can log your first expense straight away and fine-tune your pay cycle later" },
+      { type: "feat", text: "Editing a transaction now slides up in the same quick bottom sheet as adding one — no full-page jump — and the form gently blurs behind the confirmation step so it's clear what you're reviewing" },
+      { type: "feat", text: "A quick 👍 / 👎 check-in on the home screen lets you tell us how KiraPoket is working for you and what you'd like to see next" },
+      { type: "fix", text: "Budget page reads clearer — unbudgeted spending stands out in orange, over-budget items in red, and fully-spent items no longer show a redundant 'RM 0.00 left'" },
+      { type: "fix", text: "Recent Transactions now hides while you're browsing a past cycle, and the new/edit transaction sheet stays neatly centred on wider screens" },
+    ],
+  },
+  {
+    version: "0.11.x",
+    dateRange: "2026-06-29 – 2026-07-21",
+    latest: false,
     changes: [
       { type: "feat", text: "Pull down from the top of any page to refresh your data — especially handy in the installed home-screen app, where the browser's own pull-to-refresh isn't available" },
       { type: "feat", text: "Confirm before saving — adding or editing a transaction now shows a summary, exactly how each account balance will change, and how it affects the category's budget for the cycle before you commit; can be turned off under Settings → Transactions" },

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { format, parseISO, isToday, isYesterday } from "date-fns";
@@ -46,7 +45,7 @@ function TransactionsPage() {
   const { transactions, accounts, categories, userProfile, loadingProfile, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
     useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
-  const { openAdd } = useAddTransaction();
+  const { openAdd, openEdit } = useAddTransaction();
 
   const searchParams = useSearchParams();
 
@@ -550,14 +549,12 @@ function TransactionsPage() {
                 </div>
                 {!isReadOnly && (
                   <div className="flex gap-2 pt-1">
-                    <Link href={`/transactions/edit?id=${tx.id}`} className="flex-1" onClick={() => {
-                      setSelectedTx(null);
-                      try { sessionStorage.setItem(EDIT_RETURN_KEY, JSON.stringify({ filterType, filterAccount, filterCategory, dateFrom, dateTo })); } catch { /* ignore */ }
-                    }}>
-                      <Button className="w-full gap-2">
-                        <PencilIcon className="size-4" /> Edit
-                      </Button>
-                    </Link>
+                    <Button
+                      className="flex-1 w-full gap-2"
+                      onClick={() => { setSelectedTx(null); openEdit(tx.id); }}
+                    >
+                      <PencilIcon className="size-4" /> Edit
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

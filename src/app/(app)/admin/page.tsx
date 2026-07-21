@@ -4,15 +4,15 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
-import { getAllUsers, getUserActivities, getUserStats, clearAndSeedDemoData, DEMO_UID } from "@/lib/firestore";
+import { getAllUsers, getUserActivities, getUserStats, clearAndSeedDemoData, DEMO_UID, getRecentFeedback } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ChevronDownIcon, ChevronUpIcon, UserIcon, SearchIcon, TrendingUpIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, UserIcon, SearchIcon, TrendingUpIcon, ChevronRightIcon, ThumbsUpIcon, ThumbsDownIcon, MessageSquareTextIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import type { Activity, UserProfile } from "@/lib/types";
+import type { Activity, UserProfile, Feedback } from "@/lib/types";
 import type { Timestamp } from "firebase/firestore";
 
 const MAU_MS = 30 * 24 * 60 * 60 * 1000;
@@ -57,12 +57,16 @@ export default function AdminPage() {
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(true);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isAdmin = user?.uid === ADMIN_UID;
 
   useEffect(() => {
     if (!isAdmin) return;
     getAllUsers().then(setUsers).finally(() => setLoading(false));
+    getRecentFeedback(100).then(setFeedback).finally(() => setLoadingFeedback(false));
   }, [isAdmin]);
 
   const mau = useMemo(
@@ -235,6 +239,67 @@ export default function AdminPage() {
         <ChevronRightIcon className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
       </button>
 
+      {/* Feedback */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <button
+          onClick={() => setFeedbackOpen((v) => !v)}
+          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+        >
+          <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
+            <MessageSquareTextIcon className="size-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">Feedback</p>
+            <p className="text-xs text-muted-foreground">
+              {loadingFeedback ? "Loading…" : `${feedback.length} response${feedback.length === 1 ? "" : "s"}`}
+            </p>
+          </div>
+          {feedbackOpen ? (
+            <ChevronUpIcon className="size-4 text-muted-foreground/50 shrink-0" />
+          ) : (
+            <ChevronDownIcon className="size-4 text-muted-foreground/50 shrink-0" />
+          )}
+        </button>
+        {feedbackOpen && (
+          <div className="border-t border-border divide-y divide-border max-h-96 overflow-y-auto">
+            {feedback.length === 0 ? (
+              <p className="px-4 py-6 text-center text-xs text-muted-foreground">No feedback yet.</p>
+            ) : (
+              feedback.map((f) => {
+                const when = f.createdAt
+                  ? (typeof f.createdAt === "string"
+                      ? new Date(f.createdAt)
+                      : (f.createdAt as Timestamp).toDate())
+                  : null;
+                return (
+                  <div key={f.id} className="px-4 py-3 flex gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      {f.sentiment === "up" ? (
+                        <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <ThumbsDownIcon className="size-4 text-red-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {f.message ? (
+                        <p className="text-sm whitespace-pre-wrap break-words">{f.message}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No comment</p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground/70 mt-1 truncate">
+                        {f.displayName || f.email || f.userId}
+                        {when && <> · {formatDistanceToNow(when, { addSuffix: true })}</>}
+                        {f.appVersion && <> · v{f.appVersion}</>}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
       {/* User list */}
       <div className="rounded-xl border border-border overflow-hidden">
         {/* Toolbar */}
@@ -296,16 +361,21 @@ export default function AdminPage() {
 
                     {/* Avatar with active dot */}
                     <div className="relative shrink-0">
-                      <div
-                        className={`flex items-center justify-center size-9 rounded-full bg-muted overflow-hidden ${u.photoURL ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
-                        onClick={() => u.photoURL && setLightboxUrl(u.photoURL)}
-                      >
-                        {u.photoURL ? (
-                          <img src={u.photoURL} alt="" className="size-9 object-cover" />
-                        ) : (
-                          <UserIcon className="size-4 text-muted-foreground" />
-                        )}
-                      </div>
+                      {(() => {
+                        const photo = u.customPhotoURL ?? u.photoURL;
+                        return (
+                          <div
+                            className={`flex items-center justify-center size-9 rounded-full bg-muted overflow-hidden ${photo ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+                            onClick={() => photo && setLightboxUrl(photo)}
+                          >
+                            {photo ? (
+                              <img src={photo} alt="" className="size-9 object-cover" />
+                            ) : (
+                              <UserIcon className="size-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        );
+                      })()}
                       <span
                         className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background ${
                           active ? "bg-emerald-500" : "bg-muted-foreground/30"

@@ -411,6 +411,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [uid, authLoading, refreshProfile, refreshAccounts, refreshCategories, refreshTransactions, refreshDebts, refreshPartnership, user, impersonatedUid]);
 
+  // Give brand-new users a starter "Cash" account so they aren't stopped at the
+  // "add an account" setup wall — the single biggest onboarding drop-off. Runs
+  // once per user (flagged on the profile) and never re-seeds after deletion.
+  const seededDefaultAccountRef = useRef(false);
+  useEffect(() => {
+    if (impersonatedUid || viewingPartnerUid) return; // real user only
+    if (!uid || !userProfile) return;
+    if (loadingProfile || loadingAccounts) return;    // wait for both to settle
+    if (userProfile.defaultAccountSeeded) return;      // already handled once
+
+    const markSeeded = () => {
+      updateUserProfile(uid, { defaultAccountSeeded: true });
+      setUserProfile((p) => (p ? { ...p, defaultAccountSeeded: true } : p));
+      setOwnProfile((p) => (p ? { ...p, defaultAccountSeeded: true } : p));
+    };
+
+    // Existing users who already have accounts: just flag, never seed
+    if (accounts.length > 0) { markSeeded(); return; }
+
+    if (seededDefaultAccountRef.current) return;
+    seededDefaultAccountRef.current = true;
+    (async () => {
+      try {
+        const account = await addAccount(uid, { name: "Cash", type: "cash", balance: 0, sortOrder: 0 });
+        setAccounts((prev) => (prev.length ? prev : [account]));
+        markSeeded();
+      } catch {
+        seededDefaultAccountRef.current = false; // allow a retry next load
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid, userProfile, accounts.length, loadingProfile, loadingAccounts, impersonatedUid, viewingPartnerUid]);
+
   useEffect(() => {
     if (!impersonatedUid || !userProfile) return;
     getPartnershipForInviter(impersonatedUid).then((asInviter) => {

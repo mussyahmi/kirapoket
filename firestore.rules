@@ -94,6 +94,14 @@ service cloud.firestore {
       allow delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
+    // Feedback pulse responses — a user may create & read their own; admin sees all.
+    // Immutable once written (no update/delete for users).
+    match /feedback/{docId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
     match /insights/{docId} {
       allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
       allow write: if request.auth != null && (request.auth.uid == request.resource.data.userId || isAdmin());
