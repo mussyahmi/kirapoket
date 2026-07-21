@@ -556,14 +556,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (data: Omit<Transaction, "id" | "userId" | "createdAt">) => {
       if (!uid) throw new Error("Not authenticated");
 
-      // Balance check — expense and transfer deduct from source account
-      if (data.type === "expense" || data.type === "transfer") {
-        const acc = accounts.find((a) => a.id === data.accountId);
-        if (acc && acc.balance < data.amount) {
-          throw new Error(`Insufficient balance. ${acc.name} only has RM${Math.max(0, acc.balance).toFixed(2)}.`);
-        }
-      }
-
+      // Overdraws are allowed (tracked balances are often behind reality); the
+      // confirm dialog already warns before this point. Balance may go negative.
       const tx = await addTransaction(uid, data);
       setTransactions((prev) => sortTransactions([tx, ...prev]));
       const path = categoryPath(data.categoryId, categories);
@@ -616,30 +610,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const old = transactions.find((t) => t.id === id);
 
-      if (old) {
-        const updated = { ...old, ...data };
-
-        // Compute net balance delta before writing — reject if any account would go negative
-        const balanceChanges: Record<string, number> = {};
-        const revertCheck = (tx: Transaction, factor: 1 | -1) => {
-          if (tx.type === "expense") balanceChanges[tx.accountId] = (balanceChanges[tx.accountId] ?? 0) + factor * tx.amount;
-          if (tx.type === "income") balanceChanges[tx.accountId] = (balanceChanges[tx.accountId] ?? 0) - factor * tx.amount;
-          if (tx.type === "transfer") {
-            balanceChanges[tx.accountId] = (balanceChanges[tx.accountId] ?? 0) + factor * tx.amount;
-            if (tx.toAccountId) balanceChanges[tx.toAccountId] = (balanceChanges[tx.toAccountId] ?? 0) - factor * tx.amount;
-          }
-        };
-        revertCheck(old, 1);
-        revertCheck(updated, -1);
-
-        for (const [accId, delta] of Object.entries(balanceChanges)) {
-          const acc = accounts.find((a) => a.id === accId);
-          if (acc && acc.balance + delta < 0) {
-            throw new Error(`Insufficient balance. ${acc.name} only has RM${Math.max(0, acc.balance).toFixed(2)}.`);
-          }
-        }
-      }
-
+      // Overdraws are allowed — the confirm dialog warns before saving; no hard block.
       await updateTransaction(id, data);
       setTransactions((prev) =>
         sortTransactions(prev.map((t) => (t.id === id ? { ...t, ...data } : t)))
