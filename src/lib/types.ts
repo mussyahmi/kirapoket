@@ -44,6 +44,8 @@ export interface UserProfile {
   confirmBeforeSaving?: boolean;
   forecastIncomeItems?: ForecastIncomeItem[];
   lastLogin?: Timestamp | null;
+  // App version the user was last seen on (set on load, like lastLogin)
+  lastAppVersion?: string;
   categoriesSeeded?: boolean;
   categoriesSeedVersion?: number;
   // A starter account is auto-created once so new users aren't blocked by the

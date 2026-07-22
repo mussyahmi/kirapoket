@@ -282,7 +282,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               clearPartnerDeclinedFlag(uid);
             }
           });
-          updateUserProfile(uid, { lastLogin: Timestamp.now(), photoURL: user?.photoURL ?? null });
+          updateUserProfile(uid, {
+            lastLogin: Timestamp.now(),
+            photoURL: user?.photoURL ?? null,
+            lastAppVersion: process.env.NEXT_PUBLIC_APP_VERSION ?? undefined,
+          });
           // Re-seed if a previous seeding attempt was incomplete or never flagged as done
           if (!profile.categoriesSeeded) {
             await ensureDefaultCategories(uid);

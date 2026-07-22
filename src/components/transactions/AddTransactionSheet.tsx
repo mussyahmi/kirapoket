@@ -57,7 +57,14 @@ export function AddTransactionProvider({ children }: { children: React.ReactNode
         open={open}
         onOpenChange={(v) => { setOpen(v); if (!v) { setEditId(null); setConfirmOpen(false); } }}
       >
-        <SheetContent side="bottom" className="max-h-[92vh] rounded-t-2xl p-0 sm:mx-auto sm:max-w-xl">
+        <SheetContent
+          side="bottom"
+          className="max-h-[92vh] rounded-t-2xl p-0 sm:mx-auto sm:max-w-xl"
+          // Hide the sheet's own close button while the confirm dialog is up —
+          // it sits outside the receded area, so it'd otherwise stay sharp and
+          // could close the whole sheet from behind the dialog.
+          showCloseButton={!confirmOpen}
+        >
           <SheetHeader className={cn("border-b shrink-0 transition-[filter,opacity] duration-200", recede)}>
             <SheetTitle>{editId ? "Edit Transaction" : "New Transaction"}</SheetTitle>
           </SheetHeader>

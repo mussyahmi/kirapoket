@@ -74,6 +74,16 @@ export default function AdminPage() {
     [users]
   );
 
+  // App-version distribution (most common first), for spotting stale/cached builds
+  const versionDist = useMemo(() => {
+    const counts: Record<string, number> = {};
+    users.forEach((u) => {
+      const v = u.lastAppVersion ?? "unknown";
+      counts[v] = (counts[v] ?? 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [users]);
+
   const mauPct = users.length ? Math.round((mau / users.length) * 100) : 0;
   const currentTarget = mau < EARLY_ADOPTER_TARGET ? EARLY_ADOPTER_TARGET : FULL_MONETIZE_TARGET;
   const currentLabel = mau < EARLY_ADOPTER_TARGET ? "early adopter launch" : "full monetization";
@@ -220,6 +230,21 @@ export default function AdminPage() {
             <p className="text-[10px] text-muted-foreground/60">
               {targetPct}% — {currentTarget - mau > 0 ? `${currentTarget - mau} more to unlock ${currentLabel}` : "Ready to monetize 🎉"}
             </p>
+          </div>
+
+          {/* App-version distribution */}
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+              App versions
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {versionDist.map(([v, count]) => (
+                <span key={v} className="text-[11px] tabular-nums rounded-md bg-muted px-2 py-1">
+                  <span className="font-medium">{v === "unknown" ? "—" : `v${v}`}</span>
+                  <span className="text-muted-foreground"> · {count}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -394,9 +419,11 @@ export default function AdminPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{u.email ?? "—"}</p>
-                      {u.lastLogin && (
+                      {(u.lastLogin || u.lastAppVersion) && (
                         <p className="text-[10px] text-muted-foreground/50 mt-0.5">
-                          {formatTimestamp(u.lastLogin)}
+                          {u.lastLogin && formatTimestamp(u.lastLogin)}
+                          {u.lastLogin && u.lastAppVersion && " · "}
+                          {u.lastAppVersion && `v${u.lastAppVersion}`}
                         </p>
                       )}
                     </div>
