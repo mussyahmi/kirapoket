@@ -717,6 +717,17 @@ function DashboardPage() {
                   {formatMoney(totalBalance)}
                 </span>
               </div>
+              {/* Reframe a negative balance (common right after the first expense
+                  against the auto-created RM0 account) as "set your real balance" */}
+              {!isReadOnly && accounts.some((a) => a.balance < 0) && (
+                <Link
+                  href="/accounts"
+                  className="flex items-start gap-1.5 pt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <WalletIcon className="size-3.5 shrink-0 mt-0.5" />
+                  <span>Balance below zero? Set your account&apos;s real starting balance so it reflects what you actually have.</span>
+                </Link>
+              )}
             </>
           )}
         </CardContent>

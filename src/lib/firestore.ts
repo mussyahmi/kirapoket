@@ -12,6 +12,8 @@ import {
   limit,
   setDoc,
   deleteField,
+  getCountFromServer,
+  runTransaction,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -234,6 +236,21 @@ export async function updateUserProfile(
   await setDoc(docRef, { uid, ...data }, { merge: true });
 }
 
+/**
+ * Atomically claims the one-time default-account seed. Returns true only for the
+ * caller that flips `defaultAccountSeeded` from unset → true; any concurrent
+ * tab/session gets false. Prevents duplicate starter accounts under races.
+ */
+export async function claimDefaultAccountSeed(uid: string): Promise<boolean> {
+  const ref = doc(db, "users", uid);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists() && snap.data().defaultAccountSeeded) return false;
+    tx.set(ref, { defaultAccountSeeded: true }, { merge: true });
+    return true;
+  });
+}
+
 export async function deleteCycleStart(uid: string, cycleKey: string): Promise<void> {
   const docRef = doc(db, "users", uid);
   await updateDoc(docRef, { [`cycleStarts.${cycleKey}`]: deleteField() });
@@ -369,6 +386,23 @@ export async function updateTransaction(
 
 export async function deleteTransaction(id: string): Promise<void> {
   await deleteDoc(doc(db, "transactions", id));
+}
+
+/**
+ * Server-side count of transactions linked to an account (as source OR
+ * destination), across the WHOLE collection — not the client's capped in-memory
+ * list. Uses aggregation counts so it never reads the docs themselves.
+ */
+export async function countAccountTransactions(
+  userId: string,
+  accountId: string
+): Promise<number> {
+  const base = collection(db, "transactions");
+  const [fromSnap, toSnap] = await Promise.all([
+    getCountFromServer(query(base, where("userId", "==", userId), where("accountId", "==", accountId))),
+    getCountFromServer(query(base, where("userId", "==", userId), where("toAccountId", "==", accountId))),
+  ]);
+  return fromSnap.data().count + toSnap.data().count;
 }
 
 export async function reorderCategories(

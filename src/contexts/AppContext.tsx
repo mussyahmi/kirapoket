@@ -11,6 +11,7 @@ import React, {
 import type { Account, Category, Transaction, UserProfile, Debt, Partnership } from "@/lib/types";
 import {
   getAccounts,
+  claimDefaultAccountSeed,
   addAccount,
   updateAccount,
   deleteAccount,
@@ -434,9 +435,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     seededDefaultAccountRef.current = true;
     (async () => {
       try {
+        // Atomically claim the one-time seed — only one session/tab wins, so
+        // reloads or multiple tabs can't create duplicate Cash accounts.
+        const won = await claimDefaultAccountSeed(uid);
+        setUserProfile((p) => (p ? { ...p, defaultAccountSeeded: true } : p));
+        setOwnProfile((p) => (p ? { ...p, defaultAccountSeeded: true } : p));
+
+        // Re-check the server; only create if the user genuinely has no accounts
+        // (another session may have already seeded, or local state was stale).
+        const existing = await getAccounts(uid);
+        if (!won || existing.length > 0) {
+          setAccounts(sortAccounts(existing));
+          return;
+        }
         const account = await addAccount(uid, { name: "Cash", type: "cash", balance: 0, sortOrder: 0 });
         setAccounts((prev) => (prev.length ? prev : [account]));
-        markSeeded();
       } catch {
         seededDefaultAccountRef.current = false; // allow a retry next load
       }

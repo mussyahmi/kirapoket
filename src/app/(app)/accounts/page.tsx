@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { countAccountTransactions } from "@/lib/firestore";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
   CircleEllipsisIcon,
   GripVerticalIcon,
   ListIcon,
+  Loader2Icon,
 } from "lucide-react";
 import {
   DndContext,
@@ -315,15 +317,31 @@ function AccountsPage() {
     }
   };
 
-  const deleteBlockReason = useMemo(() => {
-    if (!deleteTarget) return null;
-    const txCount = transactions.filter(
-      (t) => t.accountId === deleteTarget.id || t.toAccountId === deleteTarget.id
-    ).length;
-    if (txCount > 0)
-      return `${txCount} transaction${txCount > 1 ? "s are" : " is"} linked to this account. Reassign or delete them first.`;
-    return null;
+  // Linked-transaction count for the delete target — queried server-side across
+  // the WHOLE collection (the in-memory list is capped at 500). null = checking.
+  const [linkedCount, setLinkedCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!deleteTarget) { setLinkedCount(null); return; }
+    let cancelled = false;
+    setLinkedCount(null); // show "checking…"
+    countAccountTransactions(deleteTarget.userId, deleteTarget.id)
+      .then((n) => { if (!cancelled) setLinkedCount(n); })
+      .catch(() => {
+        // Fall back to the (capped) in-memory count so we never delete blindly
+        if (!cancelled) {
+          setLinkedCount(
+            transactions.filter((t) => t.accountId === deleteTarget.id || t.toAccountId === deleteTarget.id).length
+          );
+        }
+      });
+    return () => { cancelled = true; };
   }, [deleteTarget, transactions]);
+
+  const checkingLinked = !!deleteTarget && linkedCount === null;
+  const deleteBlockReason = useMemo(() => {
+    if (!deleteTarget || linkedCount == null || linkedCount <= 0) return null;
+    return `${linkedCount} transaction${linkedCount > 1 ? "s are" : " is"} linked to this account. Reassign or delete them first.`;
+  }, [deleteTarget, linkedCount]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -497,7 +515,12 @@ function AccountsPage() {
           <DialogHeader>
             <DialogTitle>Delete Account</DialogTitle>
           </DialogHeader>
-          {deleteBlockReason ? (
+          {checkingLinked ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin" />
+              Checking linked transactions…
+            </p>
+          ) : deleteBlockReason ? (
             <div className="space-y-3">
               <p className="text-sm text-destructive">{deleteBlockReason}</p>
               <Link
@@ -526,7 +549,7 @@ function AccountsPage() {
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={deleting}
+                disabled={deleting || checkingLinked}
               >
                 {deleting ? "Deleting..." : "Delete"}
               </Button>
