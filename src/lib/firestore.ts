@@ -506,12 +506,76 @@ export async function getRecentFeedback(n = 100): Promise<Feedback[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Feedback));
 }
 
-export async function getUserStats(userId: string): Promise<{ transactions: number; accounts: number }> {
+export interface UserStats {
+  transactions: number;
+  accounts: number;
+  /** Earliest signup signal (earliest account, else earliest transaction date). null if none. */
+  memberSince: Date | null;
+  /** Distinct salary cycles that have at least one transaction. null if salaryDay unset. */
+  activeCycles: number | null;
+  /** Salary cycles elapsed from first activity to now, inclusive. null if salaryDay unset. */
+  totalCycles: number | null;
+}
+
+/** Monotonic index of the salary cycle a date falls into, for counting distinct cycles. */
+function cycleIndex(date: Date, salaryDay: number): number {
+  const day = date.getDate();
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  // Cycle start month: this month if on/after salaryDay, else previous month.
+  const startAbsMonth = day >= salaryDay ? y * 12 + m : y * 12 + m - 1;
+  return startAbsMonth;
+}
+
+export async function getUserStats(
+  userId: string,
+  salaryDay?: number | null
+): Promise<UserStats> {
   const [txSnap, accSnap] = await Promise.all([
     getDocs(query(collection(db, "transactions"), where("userId", "==", userId))),
     getDocs(query(collection(db, "accounts"), where("userId", "==", userId))),
   ]);
-  return { transactions: txSnap.size, accounts: accSnap.size };
+
+  const toDate = (v: Timestamp | string | undefined): Date | null => {
+    if (!v) return null;
+    if (typeof v === "string") { const d = new Date(v); return isNaN(d.getTime()) ? null : d; }
+    try { return v.toDate(); } catch { return null; }
+  };
+
+  // Member since — earliest account createdAt (signup proxy), else earliest tx date.
+  let memberSince: Date | null = null;
+  for (const d of accSnap.docs) {
+    const c = toDate((d.data() as Account).createdAt);
+    if (c && (!memberSince || c < memberSince)) memberSince = c;
+  }
+
+  // Cycle engagement.
+  let activeCycles: number | null = null;
+  let totalCycles: number | null = null;
+  if (salaryDay != null) {
+    const cycles = new Set<number>();
+    let firstIdx = Infinity;
+    for (const d of txSnap.docs) {
+      const dateStr = (d.data() as Transaction).date;
+      if (!dateStr) continue;
+      const dt = new Date(dateStr);
+      if (isNaN(dt.getTime())) continue;
+      const idx = cycleIndex(dt, salaryDay);
+      cycles.add(idx);
+      if (idx < firstIdx) firstIdx = idx;
+      if (!memberSince || dt < memberSince) memberSince = dt;
+    }
+    if (cycles.size > 0) {
+      activeCycles = cycles.size;
+      const nowIdx = cycleIndex(new Date(), salaryDay);
+      totalCycles = Math.max(nowIdx - firstIdx + 1, activeCycles);
+    } else {
+      activeCycles = 0;
+      totalCycles = 0;
+    }
+  }
+
+  return { transactions: txSnap.size, accounts: accSnap.size, memberSince, activeCycles, totalCycles };
 }
 
 /** Latest activities for a single user — for admin per-user drill-down. */

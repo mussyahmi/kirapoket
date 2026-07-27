@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
-import { getAllUsers, getUserActivities, getUserStats, clearAndSeedDemoData, DEMO_UID, getRecentFeedback } from "@/lib/firestore";
+import { getAllUsers, getUserActivities, getUserStats, clearAndSeedDemoData, DEMO_UID, getRecentFeedback, type UserStats } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [userActivities, setUserActivities] = useState<Record<string, Activity[]>>({});
-  const [userStats, setUserStats] = useState<Record<string, { transactions: number; accounts: number }>>({});
+  const [userStats, setUserStats] = useState<Record<string, UserStats>>({});
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
@@ -125,7 +125,7 @@ export default function AdminPage() {
     }
   };
 
-  const toggleExpand = async (uid: string) => {
+  const toggleExpand = async (uid: string, salaryDay: number | null) => {
     if (expandedUid === uid) { setExpandedUid(null); return; }
     setExpandedUid(uid);
     if (userActivities[uid]) return;
@@ -133,7 +133,7 @@ export default function AdminPage() {
     try {
       const [acts, stats] = await Promise.all([
         getUserActivities(uid, 20),
-        getUserStats(uid),
+        getUserStats(uid, salaryDay),
       ]);
       setUserActivities((prev) => ({ ...prev, [uid]: acts }));
       setUserStats((prev) => ({ ...prev, [uid]: stats }));
@@ -434,7 +434,7 @@ export default function AdminPage() {
                         size="sm"
                         variant="ghost"
                         className="h-7 w-7 p-0"
-                        onClick={() => toggleExpand(u.uid)}
+                        onClick={() => toggleExpand(u.uid, u.salaryDay ?? null)}
                       >
                         {isExpanded
                           ? <ChevronUpIcon className="size-3.5 text-muted-foreground" />
@@ -493,15 +493,37 @@ export default function AdminPage() {
                           </div>
                         </div>
                       ) : stats && (
-                        <div className="flex gap-5">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Transactions</p>
-                            <p className="text-base font-bold">{stats.transactions}</p>
+                        <div className="space-y-2.5">
+                          <div className="flex gap-5">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Transactions</p>
+                              <p className="text-base font-bold">{stats.transactions}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Accounts</p>
+                              <p className="text-base font-bold">{stats.accounts}</p>
+                            </div>
+                            {stats.activeCycles != null && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Active cycles</p>
+                                <p className="text-base font-bold">
+                                  {stats.activeCycles}
+                                  <span className="text-xs font-normal text-muted-foreground">/{stats.totalCycles}</span>
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Accounts</p>
-                            <p className="text-base font-bold">{stats.accounts}</p>
-                          </div>
+                          {(stats.memberSince || stats.totalCycles != null) && (
+                            <p className="text-[11px] text-muted-foreground/60">
+                              {stats.memberSince && (
+                                <>Member since {formatDistanceToNow(stats.memberSince, { addSuffix: true })}</>
+                              )}
+                              {stats.memberSince && stats.totalCycles != null && stats.totalCycles > 0 && " · "}
+                              {stats.totalCycles != null && stats.totalCycles > 0 && (
+                                <>logged {Math.round((stats.activeCycles! / stats.totalCycles) * 100)}% of cycles</>
+                              )}
+                            </p>
+                          )}
                         </div>
                       )}
 
