@@ -36,6 +36,9 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   salaryDay: number | null;
+  // Signup timestamp — stamped once when the profile is first bootstrapped.
+  // Absent on users created before this was tracked (no backfill).
+  createdAt?: Timestamp;
   cycleStarts?: Record<string, string>;
   // User-uploaded avatar (overrides the Google photoURL). null/absent = use Google's.
   customPhotoURL?: string | null;

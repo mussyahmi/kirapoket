@@ -74,6 +74,20 @@ export default function AdminPage() {
     [users]
   );
 
+  // Most recent signup, for spotting a stalled acquisition funnel. Only users
+  // created after signup-time tracking landed carry a createdAt.
+  const newestSignup = useMemo(() => {
+    let best: { when: Date; user: UserProfile } | null = null;
+    for (const u of users) {
+      if (!u.createdAt) continue;
+      let d: Date;
+      try { d = u.createdAt.toDate(); } catch { continue; }
+      if (isNaN(d.getTime())) continue;
+      if (!best || d > best.when) best = { when: d, user: u };
+    }
+    return best;
+  }, [users]);
+
   // App-version distribution (most common first), for spotting stale/cached builds
   const versionDist = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -245,6 +259,23 @@ export default function AdminPage() {
                 </span>
               ))}
             </div>
+          </div>
+
+          {/* Last signup — time since the acquisition funnel last produced a user */}
+          <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Last new user</p>
+              <p className="text-sm font-semibold mt-0.5">
+                {newestSignup
+                  ? formatDistanceToNow(newestSignup.when, { addSuffix: true })
+                  : "No tracked signups yet"}
+              </p>
+            </div>
+            {newestSignup && (
+              <p className="text-xs text-muted-foreground truncate text-right shrink-0 max-w-[45%]">
+                {newestSignup.user.displayName ?? newestSignup.user.email ?? "—"}
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -313,6 +313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           displayName: user?.displayName ?? null,
           photoURL: user?.photoURL ?? null,
           salaryDay: null,
+          createdAt: Timestamp.now(),
           lastLogin: Timestamp.now(),
         };
         await updateUserProfile(uid, bootstrapped);
