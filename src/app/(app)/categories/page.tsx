@@ -57,6 +57,9 @@ import type { Category } from "@/lib/types";
 type L1Type = "needs" | "wants" | "savings";
 
 const PROTECTED_L2_NAMES = ["Debt Repayment", "Money Lent"];
+// Items under these L2 categories are created automatically from the Debts flow,
+// so manual "Add item" is not offered.
+const AUTO_ITEM_L2_NAMES = ["Money Lent"];
 
 const L1_COLORS: Record<L1Type, string> = {
   needs: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -310,6 +313,9 @@ function L2Row({
     isDragging,
   } = useSortable({ id: cat.id });
 
+  const canAddItem = !AUTO_ITEM_L2_NAMES.includes(cat.name);
+  const hasMenu = canAddItem || !isProtected;
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
@@ -359,15 +365,17 @@ function L2Row({
             </span>
           )}
         </button>
-        {!readOnly && (
+        {!readOnly && hasMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
               <MoreHorizontalIcon className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => openCreate(3, cat.id, l1Type)}>
-                <PlusIcon className="size-3.5 mr-2" /> Add item
-              </DropdownMenuItem>
+              {canAddItem && (
+                <DropdownMenuItem onClick={() => openCreate(3, cat.id, l1Type)}>
+                  <PlusIcon className="size-3.5 mr-2" /> Add item
+                </DropdownMenuItem>
+              )}
               {!isProtected && (
                 <>
                   <DropdownMenuItem onClick={() => openEdit(cat)}>

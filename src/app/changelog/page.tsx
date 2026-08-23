@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "21 July 2026";
+const LAST_UPDATED = "23 August 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -34,6 +34,7 @@ const releases: Release[] = [
       { type: "feat", text: "A quick 👍 / 👎 check-in on the home screen lets you tell us how KiraPoket is working for you and what you'd like to see next" },
       { type: "fix", text: "Budget page reads clearer — unbudgeted spending stands out in orange, over-budget items in red, and fully-spent items no longer show a redundant 'RM 0.00 left'" },
       { type: "fix", text: "Recent Transactions now hides while you're browsing a past cycle, and the new/edit transaction sheet stays neatly centred on wider screens" },
+      { type: "fix", text: "Money Lent no longer offers a manual \"Add item\" — those entries are created for you from the Debts page, so the two can't drift apart" },
     ],
   },
   {
