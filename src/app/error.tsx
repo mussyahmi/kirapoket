@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TriangleAlertIcon, RotateCcwIcon } from "lucide-react";
 
@@ -11,9 +11,34 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [resetting, setResetting] = useState(false);
+
   useEffect(() => {
     console.error(error);
   }, [error]);
+
+  /**
+   * An installed PWA can get stuck: the service worker serves cached HTML that
+   * points at JS chunks a later deploy removed, so every load lands here and
+   * `reset()` can't help — the bad bundle is what's being re-run. Tearing down
+   * the worker and its caches is the only way out from inside the app.
+   */
+  const hardReset = async () => {
+    setResetting(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if (typeof caches !== "undefined") {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      /* nothing useful to do — reload regardless */
+    }
+    window.location.replace(`${window.location.origin}/home`);
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-6 text-center">
@@ -45,6 +70,14 @@ export default function ErrorPage({
           Go to dashboard
         </Link>
       </div>
+      <button
+        type="button"
+        onClick={hardReset}
+        disabled={resetting}
+        className="link-underline text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+      >
+        {resetting ? "Resetting…" : "Still stuck? Reset the app"}
+      </button>
       {error.digest && (
         <p className="font-mono text-xs text-muted-foreground">
           Ref: {error.digest}

@@ -62,7 +62,23 @@ export default function GlobalError({
         </p>
         <button
           type="button"
-          onClick={reset}
+          onClick={async () => {
+            // A stuck PWA can't recover by re-running the same bad bundle.
+            try {
+              if ("serviceWorker" in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map((r) => r.unregister()));
+              }
+              if (typeof caches !== "undefined") {
+                const keys = await caches.keys();
+                await Promise.all(keys.map((k) => caches.delete(k)));
+              }
+            } catch {
+              /* reload regardless */
+            }
+            reset();
+            window.location.reload();
+          }}
           style={{
             height: 44,
             padding: "0 24px",
