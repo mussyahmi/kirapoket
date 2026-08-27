@@ -8,6 +8,15 @@
  * (`#f97316` vs `#fb923c` for the same "Wants" root).
  */
 
+import {
+  BanknoteIcon,
+  WalletIcon,
+  SmartphoneIcon,
+  CreditCardIcon,
+  PiggyBankIcon,
+  CircleEllipsisIcon,
+} from "lucide-react";
+
 export type L1Type = "needs" | "wants" | "savings";
 export type AccountKind =
   "bank" | "cash" | "ewallet" | "credit" | "savings" | "other";
@@ -71,3 +80,24 @@ export const L1_DOT_CLASS: Record<L1Type, string> = {
   wants: "bg-cat-wants",
   savings: "bg-cat-savings",
 };
+
+/**
+ * Account-type icon. The type is what the colour encodes, so anywhere a
+ * coloured account dot appears the icon says what the colour *means* —
+ * otherwise two same-type accounts just look like a failed attempt at
+ * per-account colour.
+ */
+export const ACCOUNT_ICON: Record<AccountKind, React.ElementType> = {
+  bank: BanknoteIcon,
+  cash: WalletIcon,
+  ewallet: SmartphoneIcon,
+  credit: CreditCardIcon,
+  savings: PiggyBankIcon,
+  other: CircleEllipsisIcon,
+};
+
+export const accountIcon = (type: string | null | undefined) =>
+  ACCOUNT_ICON[(type ?? "other") as AccountKind] ?? CircleEllipsisIcon;
+
+export const accountIconClass = (type: string | null | undefined) =>
+  (ACCOUNT_TINT[(type ?? "other") as AccountKind] ?? ACCOUNT_TINT.other).icon;

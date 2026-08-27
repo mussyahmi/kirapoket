@@ -10,12 +10,7 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  BanknoteIcon,
   WalletIcon,
-  CreditCardIcon,
-  SmartphoneIcon,
-  PiggyBankIcon,
-  CircleEllipsisIcon,
   GripVerticalIcon,
   ListIcon,
   Loader2Icon,
@@ -58,7 +53,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import type { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ACCOUNT_TINT, accountColor } from "@/lib/palette";
+import { ACCOUNT_TINT, ACCOUNT_ICON, accountColor } from "@/lib/palette";
 
 type AccountType = Account["type"];
 
@@ -71,16 +66,8 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   other: "Other",
 };
 
-const ACCOUNT_TYPE_ICONS: Record<AccountType, React.ElementType> = {
-  bank: BanknoteIcon,
-  cash: WalletIcon,
-  ewallet: SmartphoneIcon,
-  credit: CreditCardIcon,
-  savings: PiggyBankIcon,
-  other: CircleEllipsisIcon,
-};
-
 const ACCOUNT_TYPE_COLORS = ACCOUNT_TINT;
+const ACCOUNT_TYPE_ICONS = ACCOUNT_ICON;
 
 interface AccountFormData {
   name: string;

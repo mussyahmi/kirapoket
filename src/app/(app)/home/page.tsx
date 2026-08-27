@@ -49,7 +49,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import FeedbackPulse from "@/components/common/FeedbackPulse";
 import { CycleSummaryCard } from "@/components/dashboard/CycleSummaryCard";
 import { cn } from "@/lib/utils";
-import { l1Color, accountColor, tint } from "@/lib/palette";
+import {
+  l1Color,
+  accountIcon,
+  accountIconClass,
+  tint,
+} from "@/lib/palette";
 
 const ACCOUNTS_COLLAPSE = 4;
 
@@ -789,10 +794,21 @@ function DashboardPage() {
                     className="flex items-center justify-between gap-2 w-full hover:opacity-70 transition-opacity"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="size-2 rounded-full shrink-0"
-                        style={{ backgroundColor: accountColor(acc.type) }}
-                      />
+                      {/* The type icon, not a bare dot — the colour encodes
+                          account type, so several same-type accounts shared a
+                          dot and it read as broken per-account colour. */}
+                      {(() => {
+                        const Icon = accountIcon(acc.type);
+                        return (
+                          <Icon
+                            aria-hidden
+                            className={cn(
+                              "size-4 shrink-0",
+                              accountIconClass(acc.type),
+                            )}
+                          />
+                        );
+                      })()}
                       <span className="text-sm text-foreground truncate">
                         {acc.name}
                       </span>
