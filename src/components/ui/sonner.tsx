@@ -35,26 +35,30 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
+          // NOTE: Tailwind v4 takes !important as a SUFFIX (`bg-x!`), not the
+          // v3 prefix (`!bg-x`). Every class here used the prefix, so none of
+          // them compiled and the toast rendered with no background at all —
+          // whatever was behind it showed straight through.
           toast: [
             "cn-toast",
-            "!bg-white/75 dark:!bg-white/[0.10]",
-            "!backdrop-blur-xl !backdrop-saturate-[2.2]",
-            "!border !border-black/[0.06] dark:!border-white/[0.08]",
-            "!shadow-[var(--shadow-e4),var(--shadow-lit)]",
-          ].join(""),
-          // Per-state tints. The glass `!bg-white/75` on `toast` above used to
-          // override sonner's richColors entirely, leaving success and error
-          // toasts visually identical apart from their icon.
+            // popover rather than white/10: legible in dark without relying on
+            // backdrop-filter, which a toast has no overlay to fall back on
+            "bg-popover/90!",
+            "backdrop-blur-xl! backdrop-saturate-[2.2]!",
+            "border! border-black/[0.06]! dark:border-white/[0.10]!",
+            "shadow-[var(--shadow-e4),var(--shadow-lit)]!",
+          ].join(" "),
+          // Per-state tints, so success and error aren't identical but for the icon.
           success:
-            "!bg-success-soft/90 !text-success-strong !border-success/20",
-          error: "!bg-danger-soft/90 !text-danger-strong !border-danger/20",
+            "bg-success-soft/90! text-success-strong! border-success/20!",
+          error: "bg-danger-soft/90! text-danger-strong! border-danger/20!",
           warning:
-            "!bg-warning-soft/90 !text-warning-strong !border-warning/25",
-          info: "!bg-info-soft/90 !text-info-strong !border-info/20",
+            "bg-warning-soft/90! text-warning-strong! border-warning/25!",
+          info: "bg-info-soft/90! text-info-strong! border-info/20!",
           actionButton:
-            "!bg-primary !text-primary-foreground !text-xs !font-semibold",
+            "bg-primary! text-primary-foreground! text-xs! font-semibold!",
           cancelButton:
-            "!bg-muted !text-muted-foreground !text-xs !font-semibold",
+            "bg-muted! text-muted-foreground! text-xs! font-semibold!",
         },
       }}
       {...props}

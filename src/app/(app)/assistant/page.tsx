@@ -162,7 +162,7 @@ function AssistantChat() {
             <p className="text-sm text-foreground/80">
               Hi
               {userProfile?.displayName
-                ? `, ${userProfile.displayName.split("")[0]}`
+                ? `, ${userProfile.displayName.split(" ")[0]}`
                 : ""}
               ! I can see your accounts and this salary cycle&apos;s spending.
               Ask me anything, or try:
