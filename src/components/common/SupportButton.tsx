@@ -109,8 +109,15 @@ export default function SupportButton({
                   <button
                     key={i}
                     onClick={() => setActiveIndex(i)}
-                    className={`size-2 rounded-full transition-colors ${i === activeIndex ? "bg-foreground" : "bg-muted-foreground/30"}`}
-                  />
+                    aria-label={`Show QR ${i + 1}`}
+                    className="grid place-items-center p-2 pointer-coarse:p-3"
+                  >
+                    {/* the dot stays small; the hit area around it does not */}
+                    <span
+                      aria-hidden
+                      className={`size-2 rounded-full transition-colors ${i === activeIndex ? "bg-foreground" : "bg-muted-foreground/30"}`}
+                    />
+                  </button>
                 ))}
               </div>
               <button

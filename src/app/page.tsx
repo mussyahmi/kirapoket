@@ -670,7 +670,7 @@ function InAppBrowserBanner() {
       </div>
       <button
         onClick={handleCopy}
-        className="inline-flex items-center justify-center gap-2 h-10 rounded-lg bg-warning text-warning-soft text-sm font-semibold px-4 hover:bg-warning-strong transition-colors w-full"
+        className="inline-flex items-center justify-center gap-2 h-10 pointer-coarse:h-11 rounded-lg bg-warning text-warning-soft text-sm font-semibold px-4 hover:bg-warning-strong transition-colors w-full"
       >
         {copied ? "Copied!" : "Copy link"}
       </button>

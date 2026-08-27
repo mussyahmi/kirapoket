@@ -198,7 +198,7 @@ function DebtCard({
             type="button"
             onClick={() => onSettle(debt)}
             className={cn(
-              "size-7 rounded-lg flex items-center justify-center transition-colors",
+              "size-7 pointer-coarse:size-10 rounded-lg flex items-center justify-center transition-colors",
               debt.settled
                 ? "text-muted-foreground hover:bg-muted"
                 : "text-success hover:bg-success-soft",

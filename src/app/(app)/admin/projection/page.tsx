@@ -167,7 +167,7 @@ export default function ProjectionPage() {
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 -ml-1"
+          className="h-7 w-7 pointer-coarse:h-10 pointer-coarse:w-10 p-0 -ml-1"
           onClick={() => router.push("/admin")}
         >
           <ArrowLeftIcon />

@@ -486,7 +486,7 @@ export default function AdminPage() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-xs gap-1 text-muted-foreground shrink-0"
+              className="h-8 pointer-coarse:h-11 text-xs gap-1 text-muted-foreground shrink-0"
               onClick={() => setSortAsc((v) => !v)}
             >
               {sortAsc ? "Oldest" : "Recent"} {sortAsc ? "↑" : "↓"}
@@ -591,7 +591,7 @@ export default function AdminPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 pointer-coarse:h-10 pointer-coarse:w-10 p-0"
                           onClick={() =>
                             toggleExpand(u.uid, u.salaryDay ?? null)
                           }
@@ -606,7 +606,7 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs px-3"
+                            className="h-7 pointer-coarse:h-10 text-xs px-3"
                             onClick={() => handleImpersonate(u.uid)}
                           >
                             View
@@ -635,7 +635,7 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs px-3 border-warning/40 text-warning-strong hover:bg-warning-soft dark:border-warning/40 dark:text-warning-strong dark:hover:bg-warning-soft"
+                            className="h-7 pointer-coarse:h-10 text-xs px-3 border-warning/40 text-warning-strong hover:bg-warning-soft dark:border-warning/40 dark:text-warning-strong dark:hover:bg-warning-soft"
                             disabled={seedingDemo}
                             onClick={handleSeedDemo}
                           >

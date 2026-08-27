@@ -341,7 +341,7 @@ function SettingsPage() {
                   handleSelectDay(day);
                 }}
                 className={cn(
-                  "h-9 rounded-lg text-sm font-medium transition-all",
+                  "h-9 pointer-coarse:h-11 rounded-lg text-sm font-medium transition-all",
                   salaryDay === day
                     ? "bg-primary text-primary-foreground shadow-e1 scale-105"
                     : isReadOnly
