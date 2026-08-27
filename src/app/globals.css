@@ -275,18 +275,20 @@
   48%, 58%   { transform: translateY(calc(-100% + var(--mock-window))); }
   99%, 100%  { transform: translateY(0); }
 }
+/* Real device metrics at every width — iPhone 15 / Pixel 8 class, 393 x 852
+   CSS px (19.5:9). Previously only the md+ breakpoint was pinned to a device,
+   so on a phone the frame rendered fluid-width against a fixed 30rem height,
+   which is no phone at all. */
 .mock-window {
-  --mock-window: 30rem;
+  /* Derive the height from the width so the ratio holds at any size, without
+     percentages (which would resolve against the parent's height) or a size
+     container (which collapsed the box). 4rem = the page gutter plus bezel. */
+  --screen-w: min(393px, calc(100vw - 4rem));
+  width: var(--screen-w);
+  --mock-window: calc(var(--screen-w) * 852 / 393);
   height: var(--mock-window);
 }
-@media (min-width: 768px) {
-  /* iPhone 15 / Pixel 8 class: 393 x 852 CSS px (19.5:9). Matching a real
-     device rather than eyeballing it — the previous 1:1.67 was no phone. */
-  .mock-window {
-    --mock-window: 852px;
-    width: 393px;
-  }
-}
+
 .mock-pan {
   animation: mock-pan 34s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }

@@ -249,7 +249,7 @@ function MockCard({
 // real app uses instead of a set of one-off sub-12px sizes.
 function MockDashboard() {
   return (
-    <div className="relative mx-auto w-full max-w-sm md:mx-0 md:w-[417px] md:max-w-none">
+    <div className="relative mx-auto w-full max-w-[417px] md:mx-0">
       {/* Device frame. The bezel sits outside the screen so the app inside
           stays at true scale; it is slimmer on a phone, where every pixel of
           width counts. */}
@@ -1012,7 +1012,9 @@ export default function LandingPage() {
             so it isn't a second competing primary. Hidden in an in-app browser
             where Google sign-in is blocked anyway. */}
         {!inAppBrowser && (
-          <section className="px-6 pt-4 pb-12 md:px-12">
+          // Mobile only — on desktop the two-column hero keeps its CTA in view,
+          // so a second one below is redundant.
+          <section className="px-6 pt-4 pb-12 md:hidden">
             <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
               <p className="text-xl font-bold tracking-tight text-foreground">
                 Start tracking in under a minute.
