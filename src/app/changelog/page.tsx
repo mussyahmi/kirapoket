@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "23 August 2026";
+const LAST_UPDATED = "27 August 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,47 @@ const LAST_UPDATED = "23 August 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.12.x",
-    dateRange: "2026-07-21 – present",
+    version: "0.13.x",
+    dateRange: "2026-08-27 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "The home screen now leads with what's left this cycle — one large figure, a meter showing how much of your income you've spent, and income and expenses side by side beneath it",
+      },
+      {
+        type: "feat",
+        text: "Adding a transaction is quicker — the date is now Today / Yesterday / Pick a date instead of a full calendar filling the form, so the amount and category are right where you need them",
+      },
+      {
+        type: "feat",
+        text: "KiraPoket tells you when something goes wrong — proper offline, error and page-not-found screens instead of a blank browser message, and a list that fails to load now says so rather than pretending you have nothing",
+      },
+      {
+        type: "feat",
+        text: "A visual refresh across every screen — consistent sizing, spacing and colour, a warmer palette, and a dark mode that's been checked properly for readability",
+      },
+      {
+        type: "fix",
+        text: "Much easier to use on a phone — every button, field and dropdown now meets the recommended touch size, and pinch-to-zoom works again",
+      },
+      {
+        type: "fix",
+        text: "Better for everyone — animations respect your device's reduced-motion setting, keyboard focus is always visible, and text contrast meets the accessibility standard throughout",
+      },
+      {
+        type: "fix",
+        text: "Percentages no longer round away — the home and budget screens stop saying \"0% left\" while you still have money, and going over budget now says so plainly",
+      },
+      {
+        type: "fix",
+        text: "The monthly PDF report matches the app — a clearer summary at the top, warmer colours and more legible type",
+      },
+    ],
+  },
+  {
+    version: "0.12.x",
+    dateRange: "2026-07-21 – 2026-08-26",
     changes: [
       {
         type: "feat",
