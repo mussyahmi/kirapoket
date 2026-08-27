@@ -234,7 +234,11 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       doc.setFillColor(...(TYPE_COLORS[slice.type] ?? MUTED));
       doc.circle(lx + 3, y - 3, 3, "F");
       doc.setTextColor(...INK);
-      const label = `${slice.name} ${Math.round(slice.pct)}%`;
+      // Savings at 0.07% printed as "0%" next to a real RM 4.55 — the same
+      // rounding that made the web meter say "0% left" with money remaining.
+      const pctLabel =
+        slice.pct > 0 && slice.pct < 0.5 ? "<1" : Math.round(slice.pct);
+      const label = `${slice.name} ${pctLabel}%`;
       doc.text(label, lx + 11, y);
       doc.setTextColor(...MUTED);
       const amt = `  ${rm(slice.amount)}`;

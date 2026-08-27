@@ -49,12 +49,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import FeedbackPulse from "@/components/common/FeedbackPulse";
 import { CycleSummaryCard } from "@/components/dashboard/CycleSummaryCard";
 import { cn } from "@/lib/utils";
-import {
-  l1Color,
-  accountIcon,
-  accountIconClass,
-  tint,
-} from "@/lib/palette";
+import { l1Color, tint } from "@/lib/palette";
 
 const ACCOUNTS_COLLAPSE = 4;
 
@@ -793,26 +788,15 @@ function DashboardPage() {
                     }
                     className="flex items-center justify-between gap-2 w-full hover:opacity-70 transition-opacity"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {/* The type icon, not a bare dot — the colour encodes
-                          account type, so several same-type accounts shared a
-                          dot and it read as broken per-account colour. */}
-                      {(() => {
-                        const Icon = accountIcon(acc.type);
-                        return (
-                          <Icon
-                            aria-hidden
-                            className={cn(
-                              "size-4 shrink-0",
-                              accountIconClass(acc.type),
-                            )}
-                          />
-                        );
-                      })()}
-                      <span className="text-sm text-foreground truncate">
-                        {acc.name}
-                      </span>
-                    </div>
+                    {/* No type marker here. The colour encodes account *type*,
+                        so a user whose accounts are mostly one type saw a column
+                        of identical dots (then identical icons) carrying no
+                        information. This card is a balance list — name and
+                        amount are the content. Type identity lives on
+                        /accounts, next to an explicit label. */}
+                    <span className="min-w-0 truncate text-sm text-foreground">
+                      {acc.name}
+                    </span>
                     <span className="text-sm font-medium tabular-nums shrink-0">
                       {formatMoney(acc.balance)}
                     </span>
