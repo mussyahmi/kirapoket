@@ -250,17 +250,17 @@ function MockCard({
 function MockDashboard() {
   return (
     <div className="relative mx-auto w-full max-w-sm md:mx-0 md:w-[417px] md:max-w-none">
-      {/* Device frame — md+ only. A phone frame on a phone is redundant, and on
-          a narrow viewport the bezel would eat usable width. The bezel sits
-          outside the screen so the app inside stays at true scale. */}
-      <div className="relative md:bg-device-bezel md:rounded-[2.75rem] md:p-3 md:shadow-e5">
+      {/* Device frame. The bezel sits outside the screen so the app inside
+          stays at true scale; it is slimmer on a phone, where every pixel of
+          width counts. */}
+      <div className="bg-device-bezel relative rounded-[2rem] p-2 shadow-e5 md:rounded-[2.75rem] md:p-3">
         <span
           aria-hidden
-          className="absolute top-[7px] left-1/2 hidden h-1 w-14 -translate-x-1/2 rounded-full bg-white/20 md:block"
+          className="absolute top-[5px] left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-white/20 md:top-[7px] md:w-14"
         />
-        <div className="mock-window relative overflow-hidden rounded-2xl border border-border bg-background shadow-e5 select-none md:rounded-[2rem] md:border-0 md:shadow-none">
+        <div className="mock-window relative overflow-hidden rounded-[1.5rem] border-0 bg-background select-none md:rounded-[2rem]">
           {/* Faux status bar — sells the device and covers the panning cut edge */}
-          <div className="text-foreground absolute inset-x-0 top-0 z-10 hidden items-center justify-between bg-background/80 px-4 py-2 text-xs font-medium backdrop-blur-sm md:flex">
+          <div className="text-foreground absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-background/80 px-4 py-2 text-xs font-medium backdrop-blur-sm">
             <span>9:41</span>
             <span className="flex items-center gap-2">
               <SignalHigh className="size-3.5" />
@@ -268,7 +268,7 @@ function MockDashboard() {
               <BatteryFull className="size-4" />
             </span>
           </div>
-          <div className="mock-pan space-y-4 p-3 md:pt-12">
+          <div className="mock-pan space-y-4 p-3 pt-12">
           {/* cycle selector */}
           <div className="flex items-center justify-between px-1">
             <ChevronLeft className="size-4 text-muted-foreground" />
@@ -496,15 +496,15 @@ function MockDashboard() {
           {/* Soften both cut edges so the window reads as a viewport, not a crop */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-background/70 to-transparent md:top-8 md:h-6"
+            className="pointer-events-none absolute inset-x-0 top-8 h-6 bg-gradient-to-b from-background/70 to-transparent"
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/90 to-transparent md:h-10"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background/90 to-transparent"
           />
           <span
             aria-hidden
-            className="absolute bottom-2 left-1/2 hidden h-1 w-28 -translate-x-1/2 rounded-full bg-foreground/25 md:block"
+            className="absolute bottom-2 left-1/2 h-1 w-24 -translate-x-1/2 rounded-full bg-foreground/25 md:w-28"
           />
         </div>
       </div>
@@ -1006,6 +1006,32 @@ export default function LandingPage() {
             </div>
           </div>
         </main>
+
+        {/* Closing CTA — the hero button scrolls away on a phone, and by here
+            the reader has gone through every feature. Same action as the hero,
+            so it isn't a second competing primary. Hidden in an in-app browser
+            where Google sign-in is blocked anyway. */}
+        {!inAppBrowser && (
+          <section className="px-6 pt-4 pb-12 md:px-12">
+            <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+              <p className="text-xl font-bold tracking-tight text-foreground">
+                Start tracking in under a minute.
+              </p>
+              <p className="max-w-[38ch] text-sm text-muted-foreground">
+                Free, no card, no setup. Sign in and log your first expense
+                straight away.
+              </p>
+              <Button
+                onClick={handleSignIn}
+                size="lg"
+                className="h-12 w-full gap-3 rounded-xl text-base font-semibold shadow-e2 sm:w-fit sm:px-8"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </Button>
+            </div>
+          </section>
+        )}
 
         {/* ── Footer ── */}
         <footer className="text-center py-6 text-xs text-muted-foreground space-x-2">

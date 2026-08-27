@@ -165,7 +165,7 @@ export function CycleSummaryCard({
             ({ label, value, prev, direction, icon: Icon, tint, color }) => (
               <div
                 key={label}
-                className="flex items-center justify-center gap-3 px-4 py-4"
+                className="flex flex-col items-center justify-center gap-1.5 px-3 py-4 sm:flex-row sm:gap-3 sm:px-4"
               >
                 <span
                   className={cn(
@@ -175,7 +175,7 @@ export function CycleSummaryCard({
                 >
                   <Icon className="size-5" />
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 text-center sm:text-left">
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p
                     className={cn(
