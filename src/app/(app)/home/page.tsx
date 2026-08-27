@@ -1147,7 +1147,10 @@ function DashboardPage() {
                               <p className="text-xs text-muted-foreground truncate">
                                 {tx.type === "transfer"
                                   ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}${tx.note ? ` · ${tx.note}` : ""}`
-                                  : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
+                                  : tx.type === "income"
+                                    ? // the title already IS the note for income
+                                      (account?.name ?? "—")
+                                    : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
                               </p>
                             </div>
                             <span

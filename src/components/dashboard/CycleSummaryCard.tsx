@@ -141,8 +141,18 @@ export function CycleSummaryCard({
                 />
               </div>
               <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
-                <span>{Math.round(spentPct)}% spent</span>
-                <span>{Math.max(0, 100 - Math.round(spentPct))}% left</span>
+                {/* Never round a non-zero remainder away — "0% left" directly
+                    under "RM 16.97 remaining" reads as a contradiction. */}
+                <span>
+                  {spentPct >= 99.5 && spentPct < 100 ? "~100" : Math.round(spentPct)}%
+                  spent
+                </span>
+                <span>
+                  {remaining > 0 && 100 - spentPct < 0.5
+                    ? "<1"
+                    : Math.max(0, 100 - Math.round(spentPct))}
+                  % left
+                </span>
               </div>
             </div>
           )}
