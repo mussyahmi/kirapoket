@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { l1Color, tint } from "@/lib/palette";
+import { SpendMeter } from "@/components/common/SpendMeter";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
 
 interface L3EditForm {
@@ -649,7 +650,7 @@ export default function BudgetPage() {
             )}
 
             {/* Allocation section */}
-            <div className="overflow-hidden rounded-xl bg-muted/30">
+            <div className="overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/50">
               <div className="px-3 pt-3 pb-1">
                 <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                   Allocation
@@ -734,7 +735,7 @@ export default function BudgetPage() {
             </div>
 
             {/* Actuals section */}
-            <div className="overflow-hidden rounded-xl bg-muted/30">
+            <div className="overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/50">
               <div className="px-3 pt-3 pb-1">
                 <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                   Actuals
@@ -759,32 +760,14 @@ export default function BudgetPage() {
                   </span>
                 </div>
                 {effectiveIncome > 0 && (
-                  <div className="space-y-2">
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all duration-500",
-                          actualRemaining < 0 ? "bg-danger" : "bg-success",
-                        )}
-                        style={{
-                          width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-                      <span>
-                        {Math.round((totalSpent / effectiveIncome) * 100)}%
-                        spent
-                      </span>
-                      <span>
-                        {Math.max(
-                          0,
-                          Math.round((actualRemaining / effectiveIncome) * 100),
-                        )}
-                        % left
-                      </span>
-                    </div>
-                  </div>
+                  <SpendMeter
+                    spent={totalSpent}
+                    total={effectiveIncome}
+                    remaining={actualRemaining}
+                    barClassName={
+                      actualRemaining < 0 ? "bg-danger" : "bg-success"
+                    }
+                  />
                 )}
               </div>
             </div>
@@ -1017,9 +1000,10 @@ export default function BudgetPage() {
                                             l3over
                                               ? "text-danger-strong hover:text-danger"
                                               : l3budget === 0
-                                                ? "text-warning-strong hover:text-warning-strong"
+                                                ? "text-warning-strong hover:text-foreground"
                                                 : "text-muted-foreground/80 hover:text-muted-foreground",
-                                            !l3over &&
+                                            l3budget > 0 &&
+                                              !l3over &&
                                               l3remaining === 0 &&
                                               "line-through",
                                           )}

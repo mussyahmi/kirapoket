@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { SpendMeter } from "@/components/common/SpendMeter";
 
 /**
  * The cycle summary — one hero figure with two supporting ones.
@@ -130,31 +131,13 @@ export function CycleSummaryCard({
             </span>
           )}
           {spentPct !== null && (
-            <div className="w-full max-w-xs space-y-2 pt-3">
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    spentPct >= 100 ? "bg-danger" : "bg-primary",
-                  )}
-                  style={{ width: `${Math.min(spentPct, 100)}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
-                {/* Never round a non-zero remainder away — "0% left" directly
-                    under "RM 16.97 remaining" reads as a contradiction. */}
-                <span>
-                  {spentPct >= 99.5 && spentPct < 100 ? "~100" : Math.round(spentPct)}%
-                  spent
-                </span>
-                <span>
-                  {remaining > 0 && 100 - spentPct < 0.5
-                    ? "<1"
-                    : Math.max(0, 100 - Math.round(spentPct))}
-                  % left
-                </span>
-              </div>
-            </div>
+            <SpendMeter
+              className="max-w-xs pt-3"
+              spent={expenses}
+              total={income}
+              remaining={remaining}
+              barClassName={spentPct >= 100 ? "bg-danger" : "bg-primary"}
+            />
           )}
         </div>
         {/* Supporting — the two inputs that produced the figure above */}
