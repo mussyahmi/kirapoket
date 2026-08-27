@@ -580,7 +580,7 @@ export default function AdminPage() {
                         {(u.lastLogin || u.lastAppVersion) && (
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {u.lastLogin && formatTimestamp(u.lastLogin)}
-                            {u.lastLogin && u.lastAppVersion && " ·"}
+                            {u.lastLogin && u.lastAppVersion && " · "}
                             {u.lastAppVersion && `v${u.lastAppVersion}`}
                           </p>
                         )}
@@ -703,7 +703,7 @@ export default function AdminPage() {
                                   {stats.memberSince &&
                                     stats.totalCycles != null &&
                                     stats.totalCycles > 0 &&
-                                    " ·"}
+                                    " · "}
                                   {stats.totalCycles != null &&
                                     stats.totalCycles > 0 && (
                                       <>

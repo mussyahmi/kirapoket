@@ -161,7 +161,7 @@ function DebtCard({
                 isOverdue ? "text-danger font-medium" : "text-muted-foreground",
               )}
             >
-              {isOverdue ? "⚠ Overdue ·" : "Due ·"}
+              {isOverdue ? "⚠ Overdue · " : "Due · "}
               {format(parseISO(debt.dueDate), "d MMM yyyy")}
             </span>
           )}

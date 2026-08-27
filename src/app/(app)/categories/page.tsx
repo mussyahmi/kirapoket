@@ -211,7 +211,7 @@ function L3Item({
                 </span>
                 <div className="text-right">
                   <p className="text-lg font-bold tabular-nums">
-                    {fmtItemBudget(item)?.replace("·", "")}
+                    {fmtItemBudget(item)?.replace("· ", "")}
                   </p>
                   {item.budgetType === "daily" && item.budgetDays && (
                     <p className="text-xs text-muted-foreground mt-0.5">

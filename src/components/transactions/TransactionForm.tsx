@@ -397,7 +397,7 @@ export function TransactionForm({
     const path = [l1Id, l2Id, l3Id]
       .map((id) => categories.find((c) => c.id === id)?.name)
       .filter(Boolean)
-      .join(" ›");
+      .join(" › ");
     let timeLabel: string | undefined;
     try {
       if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
