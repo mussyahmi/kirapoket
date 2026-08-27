@@ -39,6 +39,47 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Semantic states — warm-biased to sit on the cream ground */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-strong: var(--success-strong);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-strong: var(--danger-strong);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-strong: var(--info-strong);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-strong: var(--warning-strong);
+  /* Category identity (Needs / Wants / Savings) */
+  --color-cat-needs: var(--cat-needs);
+  --color-cat-wants: var(--cat-wants);
+  --color-cat-savings: var(--cat-savings);
+  /* Account type identity */
+  --color-acct-bank: var(--acct-bank);
+  --color-acct-cash: var(--acct-cash);
+  --color-acct-ewallet: var(--acct-ewallet);
+  --color-acct-credit: var(--acct-credit);
+  --color-acct-savings: var(--acct-savings);
+  --color-acct-other: var(--acct-other);
+  /* Landing-page device frame */
+  --color-device-bezel: var(--device-bezel);
+  /* Content measures — two, not five. Peer pages must not change width as
+     the user moves between them; forms get a narrower optimal measure. */
+  --container-content: 42rem; /* 672px — dashboards, lists, settings */
+  --container-form: 32rem;    /* 512px — single-column forms */
+  /* Elevation scale — pick by "where does this sit on the z-axis", never by
+     what looks nice. Each level pairs a soft cast shadow with a tighter
+     ambient-occlusion shadow that fades out as elevation increases. Tinted
+     warm rather than neutral black to match the cream ground. */
+  --shadow-e1: 0 1px 2px -1px oklch(0.15 0.02 55 / 0.10), 0 1px 1px oklch(0.15 0.02 55 / 0.05);
+  --shadow-e2: 0 4px 8px -4px oklch(0.15 0.02 55 / 0.12), 0 1px 2px -1px oklch(0.15 0.02 55 / 0.06);
+  --shadow-e3: 0 12px 20px -8px oklch(0.15 0.02 55 / 0.14), 0 2px 4px -2px oklch(0.15 0.02 55 / 0.05);
+  --shadow-e4: 0 20px 32px -12px oklch(0.15 0.02 55 / 0.18), 0 2px 6px -2px oklch(0.15 0.02 55 / 0.04);
+  --shadow-e5: 0 32px 56px -16px oklch(0.15 0.02 55 / 0.22), 0 4px 10px -4px oklch(0.15 0.02 55 / 0.03);
+  /* Light comes from above: a lit top edge for translucent "glass" surfaces. */
+  --shadow-lit: inset 0 1px 1px rgb(255 255 255 / 0.55);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -57,7 +98,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.02 55);
   /* Warm coral primary */
-  --primary: oklch(0.60 0.20 35);
+  --primary: oklch(0.58 0.207 35);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.96 0.012 55);
   --secondary-foreground: oklch(0.30 0.06 35);
@@ -68,23 +109,60 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.91 0.012 75);
   --input: oklch(0.91 0.012 75);
-  --ring: oklch(0.60 0.20 35);
+  --ring: oklch(0.58 0.207 35);
   /* Warm chart palette */
-  --chart-1: oklch(0.60 0.20 35);
+  --chart-1: oklch(0.58 0.207 35);
   --chart-2: oklch(0.70 0.16 65);
   --chart-3: oklch(0.62 0.15 145);
   --chart-4: oklch(0.62 0.14 225);
   --chart-5: oklch(0.60 0.17 305);
   --radius: 0.75rem;
+  /* ── Semantic palette ──────────────────────────────────────────────
+     Shades are hand-picked, never generated. Lightness moves away from 50%
+     are compensated with saturation, and brightness is changed by rotating
+     hue toward the nearest bright hue (capped well under 30°) so the tints
+     stay rich instead of washing out. */
+  --success: oklch(0.54 0.157 148);
+  --success-soft: oklch(0.95 0.045 160);
+  --success-strong: oklch(0.45 0.14 138);
+  --danger: oklch(0.57 0.19 27);
+  --danger-soft: oklch(0.95 0.04 40);
+  --danger-strong: oklch(0.46 0.17 20);
+  --info: oklch(0.55 0.16 255);
+  --info-soft: oklch(0.95 0.04 270);
+  --info-strong: oklch(0.45 0.15 245);
+  /* fill only — amber sits at a brightness maximum and cannot reach 4.5:1
+     on white. Use --warning-strong for any text. */
+  --warning: oklch(0.66 0.15 70);
+  --warning-soft: oklch(0.96 0.05 85);
+  --warning-strong: oklch(0.50 0.12 60);
+  /* Category identity */
+  --cat-needs: oklch(0.68 0.15 148);
+  --cat-wants: oklch(0.70 0.16 55);
+  --cat-savings: oklch(0.66 0.14 255);
+  /* Account type identity */
+  /* Account hues are deliberately kept clear of the three category hues
+     (55 / 148 / 255) — both sets appear together on the dashboard, and a
+     shared colour made "Maybank" and "Savings" indistinguishable. Minimum
+     35 deg from any category hue, and slightly lower chroma so accounts read
+     as the quieter of the two taxonomies. Bank and Savings are the tightest
+     pair (30 deg), so they are separated on lightness as well. */
+  --acct-bank: oklch(0.50 0.12 220);
+  --acct-cash: oklch(0.58 0.12 105);
+  --acct-ewallet: oklch(0.56 0.14 300);
+  --acct-credit: oklch(0.60 0.14 330);
+  --acct-savings: oklch(0.62 0.11 190);
+  --acct-other: oklch(0.60 0.02 75);
+  --device-bezel: oklch(0.24 0.02 55);
   /* Sidebar matches background */
   --sidebar: oklch(0.99 0.005 75);
   --sidebar-foreground: oklch(0.15 0.02 55);
-  --sidebar-primary: oklch(0.60 0.20 35);
+  --sidebar-primary: oklch(0.58 0.207 35);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.95 0.025 55);
   --sidebar-accent-foreground: oklch(0.30 0.06 35);
   --sidebar-border: oklch(0.91 0.012 75);
-  --sidebar-ring: oklch(0.60 0.20 35);
+  --sidebar-ring: oklch(0.58 0.207 35);
 }
 
 .dark {
@@ -113,6 +191,29 @@
   --chart-3: oklch(0.72 0.14 145);
   --chart-4: oklch(0.70 0.13 225);
   --chart-5: oklch(0.70 0.16 305);
+  /* ── Semantic palette (dark) ── */
+  --success: oklch(0.72 0.15 148);
+  --success-soft: oklch(0.28 0.06 155);
+  --success-strong: oklch(0.85 0.12 155);
+  --danger: oklch(0.70 0.17 27);
+  --danger-soft: oklch(0.28 0.07 27);
+  --danger-strong: oklch(0.85 0.10 35);
+  --info: oklch(0.72 0.14 255);
+  --info-soft: oklch(0.28 0.06 260);
+  --info-strong: oklch(0.86 0.09 265);
+  --warning: oklch(0.78 0.14 75);
+  --warning-soft: oklch(0.28 0.06 75);
+  --warning-strong: oklch(0.88 0.10 85);
+  --cat-needs: oklch(0.75 0.15 148);
+  --cat-wants: oklch(0.76 0.15 55);
+  --cat-savings: oklch(0.72 0.13 255);
+  --acct-bank: oklch(0.66 0.12 220);
+  --acct-cash: oklch(0.74 0.12 105);
+  --acct-ewallet: oklch(0.72 0.14 300);
+  --acct-credit: oklch(0.76 0.14 330);
+  --acct-savings: oklch(0.78 0.11 190);
+  --acct-other: oklch(0.76 0.02 75);
+  --device-bezel: oklch(0.32 0.015 55);
   --sidebar: oklch(0.17 0.015 55);
   --sidebar-foreground: oklch(0.96 0.008 75);
   --sidebar-primary: oklch(0.70 0.18 35);
@@ -121,6 +222,12 @@
   --sidebar-accent-foreground: oklch(0.96 0.008 75);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.70 0.18 35);
+  --shadow-e1: 0 1px 2px -1px oklch(0 0 0 / 0.40), 0 1px 1px oklch(0 0 0 / 0.24);
+  --shadow-e2: 0 4px 8px -4px oklch(0 0 0 / 0.48), 0 1px 2px -1px oklch(0 0 0 / 0.28);
+  --shadow-e3: 0 12px 20px -8px oklch(0 0 0 / 0.55), 0 2px 4px -2px oklch(0 0 0 / 0.25);
+  --shadow-e4: 0 20px 32px -12px oklch(0 0 0 / 0.62), 0 2px 6px -2px oklch(0 0 0 / 0.20);
+  --shadow-e5: 0 32px 56px -16px oklch(0 0 0 / 0.70), 0 4px 10px -4px oklch(0 0 0 / 0.16);
+  --shadow-lit: inset 0 1px 1px rgb(255 255 255 / 0.10);
 }
 
 @keyframes fade-up {
@@ -160,9 +267,109 @@
   animation: pop-in 0.5s cubic-bezier(0.34, 1.3, 0.64, 1) both;
 }
 
+/* Landing hero mock: a fixed viewport that pans through the full-height,
+   true-scale dashboard replica so nothing has to be shrunk to fit. The inner
+   element is translated by its own height minus the window height. */
+@keyframes mock-pan {
+  0%, 7%     { transform: translateY(0); }
+  48%, 58%   { transform: translateY(calc(-100% + var(--mock-window))); }
+  99%, 100%  { transform: translateY(0); }
+}
+.mock-window {
+  --mock-window: 30rem;
+  height: var(--mock-window);
+}
+@media (min-width: 768px) {
+  /* iPhone 15 / Pixel 8 class: 393 x 852 CSS px (19.5:9). Matching a real
+     device rather than eyeballing it — the previous 1:1.67 was no phone. */
+  .mock-window {
+    --mock-window: 852px;
+    width: 393px;
+  }
+}
+.mock-pan {
+  animation: mock-pan 34s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.mock-window:hover .mock-pan {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mock-pan { animation: none; }
+}
+
+/* §8 — one custom underline for every inline link and link-styled button.
+   A full-strength underline crowds descenders; this sits it off the baseline
+   and holds it back to ~40% until hover, so the text stays the loud part. */
+@utility link-underline {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklch, currentColor 40%, transparent);
+  transition: text-decoration-color 150ms ease;
+}
+@utility link-underline {
+  &:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ── Systems ───────────────────────────────────────────────────────────────
+   Spacing ramp (tailwind steps): 0.5 1 2 3 4 6 8 12 16
+     = 2 4 8 12 16 24 32 48 64px. No two adjacent steps are within ~25%, so
+     the choice between them carries meaning. Do not reintroduce 1.5/2.5/5.
+   Type scale: text-xs sm base lg xl 2xl 3xl 4xl (12 14 16 18 20 24 30 36).
+     No arbitrary text-[Npx] / text-[Nrem].
+   Elevation: shadow-e1..e5, chosen by z-position, never by looks.
+   Widths: max-w-content (pages), max-w-form (single-column forms).
+   Radius (roles, not a ramp — sm/md/lg sat within ~33% of each other):
+     rounded-full  circles, dots, pills, avatars
+     rounded-lg    controls: buttons, inputs, selects, menu items, cells
+     rounded-xl    cards and panels
+     rounded-2xl   overlays: dialogs, sheets, the glass surfaces
+     rounded-3xl   reserved for the floating bottom nav
+   Bars: every proportion bar is h-2.
+   Touch: interactive controls get a 44px floor via pointer-coarse:.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* #29 — respect a reduced-motion preference globally. Everything decorative
+   collapses to an instant state change; only genuinely informative motion
+   (progress spinners) keeps running, since a frozen spinner reads as a hang. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  /* Tailwind v4's preflight dropped `cursor: pointer` from buttons, so nothing
+     in the app showed a pointer cursor — hovering a control felt inert even
+     where the hover styles were correct. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+  /* #30 — `outline-ring/50` alone set a colour with no width, so it drew
+     nothing. Raw <button>s (the ~47 that don't go through the Button
+     primitive) now get a real, designed focus ring; the primitives opt out
+     with `outline-none` and supply their own. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
   body {
     @apply bg-background text-foreground;

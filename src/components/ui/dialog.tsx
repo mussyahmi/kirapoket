@@ -58,8 +58,7 @@ function DialogContent({
           "bg-white/75 dark:bg-white/[0.08]",
           "backdrop-blur-xl backdrop-saturate-[2.2]",
           "border border-black/[0.06] dark:border-white/[0.08]",
-          "shadow-[0_24px_60px_-20px_rgba(0,0,0,0.25),0_4px_12px_-4px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.55)]",
-          "dark:shadow-[0_32px_60px_-20px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.1)]",
+          "shadow-[var(--shadow-e5),var(--shadow-lit)]",
           className,
         )}
         {...props}
@@ -143,7 +142,7 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "text-sm text-muted-foreground *:[a]:link-underline *:[a]:hover:text-foreground",
         className,
       )}
       {...props}

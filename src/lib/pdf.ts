@@ -5,19 +5,33 @@ import type { CategoryReportNode, CycleReport } from "@/lib/report";
 
 type RGB = [number, number, number];
 
-const INK: RGB = [15, 23, 42];
-const MUTED: RGB = [100, 116, 139];
-const BRAND: RGB = [210, 96, 63];
-const LINE: RGB = [226, 232, 240];
-const GREEN: RGB = [22, 163, 74];
-const RED: RGB = [220, 38, 38];
-const BLUE: RGB = [37, 99, 235];
+/**
+ * sRGB equivalents of the OKLCH design tokens in `globals.css`. jsPDF needs
+ * numeric channels, so these are transcoded rather than referenced — but they
+ * are the same warm-biased palette the app uses, not a separate cool-slate one.
+ * Keep them in step with the `--foreground` / `--success` / `--cat-*` tokens.
+ */
+const INK: RGB = [40, 32, 26]; // a very dark warm grey, never true black
+const MUTED: RGB = [123, 111, 103];
+const BRAND: RGB = [217, 52, 0];
+const LINE: RGB = [230, 224, 217];
+const PAPER: RGB = [245, 241, 236];
+const ZEBRA: RGB = [249, 246, 242];
+const GREEN: RGB = [29, 139, 61];
+const RED: RGB = [208, 56, 51];
+const BLUE: RGB = [33, 113, 204];
 
 const TYPE_COLORS: Record<string, RGB> = {
-  needs: [34, 197, 94],
-  wants: [234, 88, 12],
-  savings: [37, 99, 235],
+  needs: [75, 177, 96],
+  wants: [232, 127, 37],
+  savings: [82, 148, 230],
 };
+
+/** Print type scale — hand-picked, no two steps closer than ~15%. */
+const T = { title: 20, hero: 22, h2: 12, body: 9, small: 8, label: 8 } as const;
+
+/** All-caps loses the shape cues of lowercase, so it gets extra tracking. */
+const CAPS = { charSpace: 0.8 };
 
 type DocWithTable = jsPDF & { lastAutoTable: { finalY: number } };
 
@@ -28,7 +42,9 @@ const money = new Intl.NumberFormat("en-MY", {
 const rm = (n: number) => {
   // Avoid "-0.00" when a tiny negative float rounds to zero.
   const v = Math.round(n * 100) / 100 || 0;
-  return `RM ${money.format(v)}`;
+  // Sign sits outside the currency prefix — "-RM 16.97", never "RM -16.97" —
+  // matching how the app formats money.
+  return v < 0 ? `-RM ${money.format(Math.abs(v))}` : `RM ${money.format(v)}`;
 };
 const signedRm = (type: string, n: number) =>
   type === "income" ? `+${rm(n)}` : type === "expense" ? `-${rm(n)}` : rm(n);
@@ -84,24 +100,24 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
 
   // ---- Header ----
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
+  doc.setFontSize(T.title);
   doc.setTextColor(...BRAND);
   doc.text("KiraPoket", margin, y + 6);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(T.h2);
   doc.setTextColor(...MUTED);
   doc.text("Monthly Report", pageW - margin, y + 5, { align: "right" });
 
   y += 22;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
+  doc.setFontSize(T.h2);
   doc.setTextColor(...INK);
   doc.text(report.cycleLabel, margin, y + 6);
 
   y += 16;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(T.body);
   doc.setTextColor(...MUTED);
   const who = report.userName ? `${report.userName} · ` : "";
   doc.text(`${who}Generated ${report.generatedDate}`, margin, y + 4);
@@ -112,17 +128,43 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
   doc.line(margin, y, pageW - margin, y);
   y += 18;
 
-  // ---- Summary boxes ----
-  const gap = 10;
-  const boxW = (contentW - gap * 2) / 3;
-  const boxH = report.hasPrev ? 72 : 58;
+  // ---- Summary ----
+  // Mirrors the dashboard: one hero figure, two supporting ones. Three equal
+  // boxes gave the page no primary element at all.
+  const gap = 12;
+  const heroH = report.hasPrev ? 76 : 62;
+  doc.setFillColor(...PAPER);
+  doc.roundedRect(margin, y, contentW, heroH, 8, 8, "F");
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(T.label);
+  doc.setTextColor(...MUTED);
+  doc.text("REMAINING THIS CYCLE", margin + 16, y + 22, CAPS);
+  const netRounded = Math.round(report.net * 100) / 100 || 0;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(T.hero);
+  doc.setTextColor(...(netRounded >= 0 ? INK : RED));
+  doc.text(rm(report.net), margin + 16, y + 50);
+  if (report.hasPrev) {
+    const delta = formatDelta(report.net, report.prevNet, "income");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(T.small);
+    doc.setTextColor(...(delta.text ? delta.color : MUTED));
+    doc.text(
+      delta.text ? `${delta.text} vs last cycle` : "same as last cycle",
+      margin + 16,
+      y + 66,
+    );
+  }
+  y += heroH + gap;
+
+  const boxW = (contentW - gap) / 2;
+  const boxH = report.hasPrev ? 66 : 54;
   const summary: {
     label: string;
     value: number;
     prev?: number;
     direction: DeltaDirection;
     color: RGB;
-    signed?: boolean;
   }[] = [
     {
       label: "INCOME",
@@ -138,41 +180,30 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       direction: "expense",
       color: RED,
     },
-    {
-      label: "REMAINING",
-      value: report.net,
-      prev: report.prevNet,
-      direction: "income",
-      color: (Math.round(report.net * 100) / 100 || 0) >= 0 ? BLUE : RED,
-      signed: true,
-    },
   ];
   summary.forEach((box, i) => {
     const x = margin + i * (boxW + gap);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(x, y, boxW, boxH, 6, 6, "F");
+    doc.setFillColor(...PAPER);
+    doc.roundedRect(x, y, boxW, boxH, 8, 8, "F");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(T.label);
     doc.setTextColor(...MUTED);
-    doc.text(box.label, x + 12, y + 20);
+    doc.text(box.label, x + 16, y + 20, CAPS);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(T.h2 + 2);
     doc.setTextColor(...box.color);
-    const text =
-      box.signed && box.value >= 0 ? `+${rm(box.value)}` : rm(box.value);
-    doc.text(text, x + 12, y + 42);
+    doc.text(rm(box.value), x + 16, y + 40);
 
     if (report.hasPrev) {
       const delta = formatDelta(box.value, box.prev, box.direction);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      if (delta.text) {
-        doc.setTextColor(...delta.color);
-        doc.text(`${delta.text} vs last`, x + 12, y + 60);
-      } else {
-        doc.setTextColor(...MUTED);
-        doc.text("same as last", x + 12, y + 60);
-      }
+      doc.setFontSize(T.small);
+      doc.setTextColor(...(delta.text ? delta.color : MUTED));
+      doc.text(
+        delta.text ? `${delta.text} vs last` : "same as last",
+        x + 16,
+        y + 56,
+      );
     }
   });
   y += boxH + 24;
@@ -180,7 +211,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
   // ---- Spending split bar ----
   if (report.split.length > 0 && report.expenses > 0) {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(T.h2);
     doc.setTextColor(...INK);
     doc.text("Spending split", margin, y);
     y += 18;
@@ -197,7 +228,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
 
     // Legend
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(T.body);
     let lx = margin;
     report.split.forEach((slice) => {
       doc.setFillColor(...(TYPE_COLORS[slice.type] ?? MUTED));
@@ -216,7 +247,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
 
   // ---- Category breakdown ----
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(T.h2);
   doc.setTextColor(...INK);
   doc.text("Spending by category", margin, y);
   y += 14;
@@ -224,7 +255,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
   if (report.categoryTree.length === 0) {
     y += 14;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(T.body);
     doc.setTextColor(...MUTED);
     doc.text("No expenses recorded in this cycle.", margin, y);
     y += 16;
@@ -261,12 +292,12 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       head,
       body,
       headStyles: {
-        fillColor: [241, 245, 249],
+        fillColor: PAPER,
         textColor: MUTED,
         fontStyle: "bold",
-        fontSize: 8,
+        fontSize: T.label,
       },
-      bodyStyles: { fontSize: 9, textColor: INK },
+      bodyStyles: { fontSize: T.body, textColor: INK },
       columnStyles: hasPrev
         ? {
             1: { halign: "right", cellWidth: 85 },
@@ -307,7 +338,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
         if (level === 1) {
           data.cell.styles.fontStyle = "bold";
         } else if (level === 3) {
-          data.cell.styles.fontSize = 8;
+          data.cell.styles.fontSize = T.small;
           // Mute name + amount, but preserve the delta column's red/green color
           if (data.column.index !== 2) {
             data.cell.styles.textColor = MUTED;
@@ -328,14 +359,14 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
     y = continuationTop;
   }
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(T.h2);
   doc.setTextColor(...INK);
   doc.text(`Transactions (${report.transactions.length})`, margin, y);
 
   if (report.transactions.length === 0) {
     y += 18;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(T.body);
     doc.setTextColor(...MUTED);
     doc.text("No transactions in this cycle.", margin, y);
   } else {
@@ -375,8 +406,8 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
         fontStyle: "bold",
         fontSize: 8,
       },
-      bodyStyles: { fontSize: 8, textColor: INK },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
+      bodyStyles: { fontSize: T.small, textColor: INK },
+      alternateRowStyles: { fillColor: ZEBRA },
       columnStyles: {
         0: { cellWidth: 16 },
         1: { cellWidth: 50 },
@@ -410,7 +441,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
 
     if (i > 1) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(T.body);
       doc.setTextColor(...BRAND);
       doc.text("KiraPoket", margin, margin + 4);
       const brandW = doc.getTextWidth("KiraPoket");
@@ -426,7 +457,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
     }
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(T.small);
     doc.setTextColor(...MUTED);
     doc.text("Generated by KiraPoket", margin, pageH - 24);
     doc.text(`Page ${i} of ${pageCount}`, pageW - margin, pageH - 24, {

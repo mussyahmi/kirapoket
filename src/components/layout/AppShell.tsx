@@ -18,11 +18,13 @@ import {
   CoffeeIcon,
   PlusIcon,
   SparklesIcon,
+  LockIcon,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAddTransaction } from "@/components/transactions/AddTransactionSheet";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import FeedbackButton from "@/components/common/FeedbackButton";
 import SupportButton from "@/components/common/SupportButton";
@@ -58,6 +60,10 @@ const menuItems = [
 
 // Desktop sidebar — all pages
 const allNavItems = [...bottomNavItems, ...menuItems];
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Light haptic tap on supported devices (Android/Chrome; a no-op on iOS Safari)
 function haptic(ms = 8) {
@@ -101,7 +107,7 @@ export function AppShell({
   const pillRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [lens, setLens] = useState({ x: 0, top: 0, w: 0, h: 0, show: false });
   const [lensReady, setLensReady] = useState(false);
-  // Transient "liquid" squash applied while the lens is in transit
+  // Transient"liquid" squash applied while the lens is in transit
   const [stretch, setStretch] = useState({ active: false, toRight: true });
   const prevIdxRef = useRef<number | null>(null);
   const stretchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -222,26 +228,38 @@ export function AppShell({
       navVisible ? "w-12 h-9" : "w-9 h-7",
     );
     const iconSize = navVisible ? "size-6" : "size-5";
+    // #17 — a gated tab used to be a near-invisible icon that silently did
+    // nothing when tapped (`title` never fires on touch). It now reads as
+    // locked and says why.
     return disabled ? (
-      <span
+      <button
         key={href}
-        title={label}
-        className="flex items-center justify-center flex-1 cursor-not-allowed select-none"
+        type="button"
+        aria-label={`${label} — add an account first`}
+        onClick={() =>
+          toast.info("Add an account first to start logging transactions.", {
+            id: "nav-locked",
+          })
+        }
+        className="flex flex-1 items-center justify-center select-none"
       >
         <span
           ref={(el) => {
             pillRefs.current[i] = el;
           }}
-          className={pillCls}
+          className={cn(pillCls, "relative opacity-40")}
         >
           <Icon
             className={cn(
-              "text-muted-foreground/30 transition-all duration-300",
+              "text-muted-foreground transition-all duration-300",
               iconSize,
             )}
           />
+          <span className="absolute -right-0.5 -bottom-0.5 flex size-3.5 items-center justify-center rounded-full bg-muted">
+            <LockIcon className="size-2.5 text-muted-foreground" />
+          </span>
         </span>
-      </span>
+      </button>
     ) : (
       <Link
         key={href}
@@ -250,8 +268,10 @@ export function AppShell({
         onClick={(e) => {
           if (active || pendingIdx !== null) return;
           // Let the lens slide to this tab first; navigate once it lands
-          e.preventDefault();
           haptic();
+          // No lens to wait for when motion is reduced — go straight there
+          if (prefersReducedMotion()) return;
+          e.preventDefault();
           setPendingIdx(i);
           if (navTimer.current) clearTimeout(navTimer.current);
           navTimer.current = setTimeout(() => router.push(href), 420);
@@ -272,7 +292,7 @@ export function AppShell({
             )}
           />
           {href === "/debts" && unsettledCount > 0 && (
-            <span className="absolute top-0.5 right-1.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-background" />
+            <span className="absolute top-0.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-white dark:ring-background" />
           )}
         </span>
       </Link>
@@ -303,7 +323,7 @@ export function AppShell({
               <span
                 key={href}
                 title="Complete setup first"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground cursor-not-allowed select-none opacity-50"
               >
                 <Icon className="size-4 shrink-0" />
                 {label}
@@ -322,7 +342,7 @@ export function AppShell({
                 <Icon className="size-4 shrink-0" />
                 <span className="flex-1">{label}</span>
                 {href === "/debts" && unsettledCount > 0 && (
-                  <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                  <span className="ml-auto min-w-5 h-5 rounded-full bg-danger text-white text-xs font-semibold flex items-center justify-center px-1">
                     {unsettledCount > 99 ? "99+" : unsettledCount}
                   </span>
                 )}
@@ -339,7 +359,7 @@ export function AppShell({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
+              <ShieldAlertIcon className="size-4 shrink-0 text-warning-strong" />
               <span className="flex-1">Admin</span>
             </Link>
           )}
@@ -349,9 +369,7 @@ export function AppShell({
           </div>
         </nav>
         <div className="px-4 py-3 border-t border-border">
-          <span className="text-xs text-muted-foreground/50">
-            v{pkg.version}
-          </span>
+          <span className="text-xs text-muted-foreground">v{pkg.version}</span>
         </div>
       </aside>
 
@@ -381,7 +399,7 @@ export function AppShell({
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
                 className={cn(
-                  "size-9 flex items-center justify-center rounded-lg transition-colors",
+                  "size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg transition-colors",
                   menuOpen
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:bg-muted",
@@ -393,12 +411,12 @@ export function AppShell({
               {menuOpen && (
                 <div
                   className={cn(
-                    "absolute right-0 top-full mt-1.5 w-44 rounded-xl overflow-hidden z-[60]",
+                    "absolute right-0 top-full mt-2 w-44 rounded-xl overflow-hidden z-[60]",
                     // High opacity — menu sits over live content with no overlay, so readability wins
                     "bg-popover/90",
                     "border border-black/[0.06] dark:border-white/[0.08]",
                     "backdrop-blur-xl backdrop-saturate-[2.2]",
-                    "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.5)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.1)]",
+                    "shadow-[var(--shadow-e3),var(--shadow-lit)]",
                   )}
                 >
                   {menuItems.map(({ href, label, icon: Icon }) => (
@@ -426,7 +444,7 @@ export function AppShell({
                           : "text-foreground hover:bg-muted",
                       )}
                     >
-                      <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
+                      <ShieldAlertIcon className="size-4 shrink-0 text-warning-strong" />
                       Admin
                     </Link>
                   )}
@@ -452,7 +470,7 @@ export function AppShell({
                       Buy Me a Coffee
                     </button>
                     <div className="px-4 py-2">
-                      <span className="text-xs text-muted-foreground/50">
+                      <span className="text-xs text-muted-foreground">
                         v{pkg.version}
                       </span>
                     </div>
@@ -477,7 +495,7 @@ export function AppShell({
 
         {/* Page Content */}
         {banner}
-        <main className="flex-1 overflow-auto pb-28 md:pb-0">
+        <main className="flex-1 overflow-auto pb-32 md:pb-0">
           <PullToRefresh onRefresh={refreshAll}>{children}</PullToRefresh>
         </main>
       </div>
@@ -497,7 +515,7 @@ export function AppShell({
             "width 350ms cubic-bezier(0.34,1.4,0.5,1), height 350ms cubic-bezier(0.34,1.4,0.5,1), bottom 350ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 250ms ease",
         }}
         className={cn(
-          "md:hidden fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-around px-1.5",
+          "md:hidden fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-around px-2",
           "rounded-3xl",
           // Slide out of the way while the add-transaction sheet is open
           addOpen && "translate-y-[140%] opacity-0 pointer-events-none",
@@ -507,9 +525,8 @@ export function AppShell({
           "border border-black/[0.06] dark:border-white/[0.06]",
           // Light lens-blur + strong saturation so content colour bleeds through vividly
           "backdrop-blur-sm backdrop-saturate-[2.2]",
-          // Outer drop shadow + a soft lit top edge and gentle corner glints (no full ring)
-          "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.5),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.5),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.5)]",
-          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.22),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.22)]",
+          // e4 drop + lit top edge, plus two corner glints unique to this surface
+          "shadow-[var(--shadow-e4),var(--shadow-lit),inset_-8px_-6px_5px_-9px_rgb(255_255_255/0.5),inset_8px_-6px_5px_-9px_rgb(255_255_255/0.5)]",
         )}
       >
         {/* Top-down gloss — specular sheen across the glass surface */}
@@ -552,7 +569,7 @@ export function AppShell({
             <span
               className={cn(
                 "flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 active:scale-95",
-                "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]",
+                "shadow-e2",
                 navVisible ? "size-12" : "size-10",
               )}
             >

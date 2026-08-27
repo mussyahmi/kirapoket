@@ -118,7 +118,7 @@ export default function PullToRefresh({
         style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}
       >
         <span
-          className="flex size-9 items-center justify-center rounded-full bg-background/80 shadow-md backdrop-blur-sm border border-border"
+          className="flex size-9 items-center justify-center rounded-full bg-background/80 shadow-e2 backdrop-blur-sm border border-border"
           style={{
             transform: `translateY(${pull / 2 - 18}px)`,
             opacity: pull > 4 ? 1 : 0,

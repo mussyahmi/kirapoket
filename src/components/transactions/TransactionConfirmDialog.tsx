@@ -41,9 +41,9 @@ const money = (n: number) => {
 };
 
 const typeAccent: Record<TxConfirmSummary["type"], string> = {
-  expense: "text-red-600 dark:text-red-400",
-  income: "text-green-600 dark:text-green-400",
-  transfer: "text-blue-600 dark:text-blue-400",
+  expense: "text-danger",
+  income: "text-success",
+  transfer: "text-info",
 };
 
 const typeSign: Record<TxConfirmSummary["type"], string> = {
@@ -131,7 +131,7 @@ export function TransactionConfirmDialog({
               </Row>
               {summary.type === "transfer" ? (
                 <Row label="Accounts">
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-2">
                     {summary.fromAccount}
                     <ArrowRightIcon className="size-3.5 text-muted-foreground" />
                     {summary.toAccount}
@@ -158,7 +158,7 @@ export function TransactionConfirmDialog({
                     <div
                       key={acc.id}
                       className={cn(
-                        "rounded-xl border px-3 py-2.5",
+                        "rounded-xl border px-3 py-3",
                         short
                           ? "border-destructive/40 bg-destructive/5"
                           : "border-border bg-muted/30",
@@ -166,7 +166,7 @@ export function TransactionConfirmDialog({
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-medium">{acc.name}</span>
-                        <span className="flex items-center gap-1.5 tabular-nums text-sm">
+                        <span className="flex items-center gap-2 tabular-nums text-sm">
                           <span className="text-muted-foreground">
                             {money(acc.current)}
                           </span>
@@ -210,7 +210,7 @@ export function TransactionConfirmDialog({
                     </p>
                     <div
                       className={cn(
-                        "rounded-xl border px-3 py-2.5",
+                        "rounded-xl border px-3 py-3",
                         over
                           ? "border-destructive/40 bg-destructive/5"
                           : "border-border bg-muted/30",
@@ -237,7 +237,7 @@ export function TransactionConfirmDialog({
                       </div>
 
                       {/* Progress bar */}
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className={cn(
                             "h-full rounded-full",
@@ -249,7 +249,7 @@ export function TransactionConfirmDialog({
 
                       {/* Spent → projected of budget */}
                       <div className="mt-2 flex items-center justify-between gap-3 text-xs tabular-nums text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-2">
                           {money(budget.spent)}
                           <ArrowRightIcon className="size-3.5" />
                           <span

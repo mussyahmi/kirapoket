@@ -717,7 +717,7 @@ const releases: Release[] = [
 
 const typeBadge: Record<"feat" | "fix", string> = {
   feat: "bg-primary/10 text-primary",
-  fix: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  fix: "bg-warning-soft text-warning-strong",
 };
 
 const typeLabel: Record<"feat" | "fix", string> = {
@@ -748,7 +748,7 @@ export default function ChangelogPage() {
 
         <div className="space-y-8">
           {releases.map((release) => (
-            <div key={release.version} className="relative pl-7">
+            <div key={release.version} className="relative pl-8">
               <div className="absolute left-0 top-1.5 size-[10px] rounded-full border-2 border-primary bg-background" />
 
               <div className="space-y-2">
@@ -757,7 +757,7 @@ export default function ChangelogPage() {
                     {release.version}
                   </span>
                   {release.latest && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground leading-tight">
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground leading-tight">
                       Latest
                     </span>
                   )}
@@ -766,7 +766,7 @@ export default function ChangelogPage() {
                   </span>
                 </div>
 
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {[...release.changes]
                     .sort((a, b) =>
                       a.type === b.type ? 0 : a.type === "feat" ? -1 : 1,
@@ -774,11 +774,11 @@ export default function ChangelogPage() {
                     .map((change, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <span
-                          className={`shrink-0 mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight ${typeBadge[change.type]}`}
+                          className={`shrink-0 mt-0.5 rounded-lg px-2 py-0.5 text-xs font-semibold leading-tight ${typeBadge[change.type]}`}
                         >
                           {typeLabel[change.type]}
                         </span>
-                        <span className="text-foreground/80 leading-snug">
+                        <span className="leading-snug text-foreground">
                           {change.text}
                         </span>
                       </li>

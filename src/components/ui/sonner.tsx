@@ -40,9 +40,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "!bg-white/75 dark:!bg-white/[0.10]",
             "!backdrop-blur-xl !backdrop-saturate-[2.2]",
             "!border !border-black/[0.06] dark:!border-white/[0.08]",
-            "!shadow-[0_16px_40px_-12px_rgba(0,0,0,0.22),0_2px_6px_-2px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.55)]",
-            "dark:!shadow-[0_24px_50px_-14px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.1)]",
-          ].join(" "),
+            "!shadow-[var(--shadow-e4),var(--shadow-lit)]",
+          ].join(""),
+          // Per-state tints. The glass `!bg-white/75` on `toast` above used to
+          // override sonner's richColors entirely, leaving success and error
+          // toasts visually identical apart from their icon.
+          success:
+            "!bg-success-soft/90 !text-success-strong !border-success/20",
+          error: "!bg-danger-soft/90 !text-danger-strong !border-danger/20",
+          warning:
+            "!bg-warning-soft/90 !text-warning-strong !border-warning/25",
+          info: "!bg-info-soft/90 !text-info-strong !border-info/20",
           actionButton:
             "!bg-primary !text-primary-foreground !text-xs !font-semibold",
           cancelButton:

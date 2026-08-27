@@ -79,6 +79,12 @@ interface AppContextValue {
   loadingCategories: boolean;
   loadingTransactions: boolean;
   loadingProfile: boolean;
+  loadError: {
+    accounts: boolean;
+    categories: boolean;
+    transactions: boolean;
+    debts: boolean;
+  };
   isImpersonating: boolean;
   impersonate: (uid: string) => void;
   stopImpersonating: () => void;
@@ -167,6 +173,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingDebts, setLoadingDebts] = useState(true);
+  const [loadError, setLoadError] = useState({
+    accounts: false,
+    categories: false,
+    transactions: false,
+    debts: false,
+  });
   const [partnerDeclinedAlert, setPartnerDeclinedAlert] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -410,12 +422,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity),
     );
 
+  // A swallowed read failure used to leave state as [] with loading false,
+  // so the UI rendered the "you have nothing yet" empty state to a user whose
+  // data simply failed to arrive. Track the failure and let pages say so.
   const refreshAccounts = useCallback(async () => {
     if (!uid) return;
     setLoadingAccounts(true);
     try {
       const data = await getAccounts(uid);
       setAccounts(sortAccounts(data));
+      setLoadError((e) => ({ ...e, accounts: false }));
+    } catch (err) {
+      console.error("Failed to load accounts", err);
+      setLoadError((e) => ({ ...e, accounts: true }));
     } finally {
       setLoadingAccounts(false);
     }
@@ -427,6 +446,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getCategories(uid);
       setCategories(data);
+      setLoadError((e) => ({ ...e, categories: false }));
+    } catch (err) {
+      console.error("Failed to load categories", err);
+      setLoadError((e) => ({ ...e, categories: true }));
     } finally {
       setLoadingCategories(false);
     }
@@ -438,6 +461,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getTransactions(uid);
       setTransactions(sortTransactions(data));
+      setLoadError((e) => ({ ...e, transactions: false }));
+    } catch (err) {
+      console.error("Failed to load transactions", err);
+      setLoadError((e) => ({ ...e, transactions: true }));
     } finally {
       setLoadingTransactions(false);
     }
@@ -449,6 +476,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getDebts(uid);
       setDebts(data);
+      setLoadError((e) => ({ ...e, debts: false }));
+    } catch (err) {
+      console.error("Failed to load debts", err);
+      setLoadError((e) => ({ ...e, debts: true }));
     } finally {
       setLoadingDebts(false);
     }
@@ -513,8 +544,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     impersonatedUid,
   ]);
 
-  // Give brand-new users a starter "Cash" account so they aren't stopped at the
-  // "add an account" setup wall — the single biggest onboarding drop-off. Runs
+  // Give brand-new users a starter"Cash" account so they aren't stopped at the
+  //"add an account" setup wall — the single biggest onboarding drop-off. Runs
   // once per user (flagged on the profile) and never re-seeds after deletion.
   const seededDefaultAccountRef = useRef(false);
   useEffect(() => {
@@ -589,7 +620,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [impersonatedUid, userProfile]);
 
-  // Returns "L1 > L2 > L3" for a given categoryId, or "" if not found
+  // Returns"L1 > L2 > L3" for a given categoryId, or"" if not found
   const categoryPath = useCallback(
     (categoryId: string | undefined, cats: Category[]): string => {
       if (!categoryId) return "";
@@ -614,7 +645,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!uid) throw new Error("Not authenticated");
       const account = await addAccount(uid, data);
       setAccounts((prev) => [...prev, account]);
-      void logActivity(uid, "account_add", `Added account "${data.name}"`);
+      void logActivity(uid, "account_add", `Added account"${data.name}"`);
       return account;
     },
     [uid],
@@ -639,11 +670,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await deleteAccount(id);
       setAccounts((prev) => prev.filter((a) => a.id !== id));
       if (acc && uid)
-        void logActivity(
-          uid,
-          "account_delete",
-          `Deleted account "${acc.name}"`,
-        );
+        void logActivity(uid, "account_delete", `Deleted account"${acc.name}"`);
     },
     [accounts, uid],
   );
@@ -986,6 +1013,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         loadingCategories,
         loadingTransactions,
         loadingProfile,
+        loadError,
         refreshAccounts,
         createAccount,
         editAccount,

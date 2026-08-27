@@ -161,7 +161,7 @@ export default function ProjectionPage() {
   }));
 
   return (
-    <div className="p-4 md:p-8 max-w-lg mx-auto space-y-10 pb-16">
+    <div className="p-4 md:p-8 max-w-lg mx-auto space-y-12 pb-16">
       {/* Header */}
       <div className="space-y-3">
         <Button
@@ -170,15 +170,15 @@ export default function ProjectionPage() {
           className="h-7 w-7 p-0 -ml-1"
           onClick={() => router.push("/admin")}
         >
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon />
         </Button>
 
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-3xl font-black tracking-tight leading-tight">
+          <h1 className="text-3xl font-bold tracking-tight leading-tight">
             Growth &<br />
             Monetization
           </h1>
-          <span className="mt-1.5 shrink-0 rounded-full bg-orange-100 dark:bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+          <span className="mt-2 shrink-0 rounded-full bg-warning-soft px-3 py-0.5 text-xs font-semibold uppercase tracking-widest text-warning-strong">
             Internal
           </span>
         </div>
@@ -192,7 +192,7 @@ export default function ProjectionPage() {
 
       {/* Milestones */}
       <section className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Path to Monetization
         </p>
 
@@ -202,13 +202,13 @@ export default function ProjectionPage() {
               {/* connector */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`size-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-3 ${
+                  className={`size-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 mt-3 ${
                     m.status === "done"
                       ? "bg-primary/20 text-primary"
                       : m.status === "current"
                         ? "bg-primary text-primary-foreground"
                         : m.status === "upcoming"
-                          ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                          ? "bg-info-soft text-info"
                           : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -225,19 +225,19 @@ export default function ProjectionPage() {
               <div className="pb-6 pt-3 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <p
-                    className={`text-sm font-bold ${
+                    className={`text-sm font-semibold ${
                       m.status === "done"
                         ? "text-primary/60 line-through"
                         : m.status === "current"
                           ? "text-primary"
                           : m.status === "upcoming"
-                            ? "text-blue-600 dark:text-blue-400"
+                            ? "text-info"
                             : "text-muted-foreground"
                     }`}
                   >
                     {m.phase}
                   </p>
-                  <p className="text-[10px] font-mono text-muted-foreground/60">
+                  <p className="text-xs font-mono text-muted-foreground">
                     {m.mau}
                   </p>
                 </div>
@@ -252,7 +252,7 @@ export default function ProjectionPage() {
 
       {/* Pricing */}
       <section className="space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Pricing Model — Freemium + Annual Sub
         </p>
 
@@ -260,18 +260,18 @@ export default function ProjectionPage() {
           {/* Free */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Free
               </p>
-              <p className="text-xl font-black mt-0.5">RM 0</p>
+              <p className="text-xl font-bold mt-0.5">RM 0</p>
             </div>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {FREE_FEATURES.map((f) => (
                 <li
                   key={f}
-                  className="text-[11px] text-muted-foreground flex gap-2 items-start leading-snug"
+                  className="text-xs text-muted-foreground flex gap-2 items-start leading-relaxed"
                 >
-                  <span className="shrink-0 text-muted-foreground/50 mt-0.5">
+                  <span className="shrink-0 text-muted-foreground mt-0.5">
                     —
                   </span>
                   {f}
@@ -282,28 +282,28 @@ export default function ProjectionPage() {
 
           {/* Pro */}
           <div className="rounded-xl border-2 border-primary bg-primary/5 dark:bg-primary/10 p-4 space-y-3 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-bl-lg">
+            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-semibold uppercase tracking-widest px-2 py-0.5 rounded-bl-lg">
               Recommended
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">
                 Pro
               </p>
-              <p className="text-xl font-black mt-0.5">
+              <p className="text-xl font-bold mt-0.5">
                 RM 59
                 <span className="text-xs font-normal text-muted-foreground">
                   /yr
                 </span>
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 ≈ RM 4.90/mo · or RM 6.90/mo monthly
               </p>
             </div>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {PRO_FEATURES.map((f) => (
                 <li
                   key={f}
-                  className="text-[11px] text-foreground flex gap-2 items-start leading-snug"
+                  className="text-xs text-foreground flex gap-2 items-start leading-relaxed"
                 >
                   <span className="shrink-0 text-primary mt-0.5 font-bold">
                     ✓
@@ -315,16 +315,16 @@ export default function ProjectionPage() {
           </div>
         </div>
 
-        <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">
+        <p className="text-xs text-muted-foreground italic leading-relaxed">
           Why RM 59/year — Malaysian users resist monthly subs but accept annual
-          if value is clear. Under the "feels expensive" threshold. Comparable
+          if value is clear. Under the"feels expensive" threshold. Comparable
           local apps: RM 40–80/year.
         </p>
       </section>
 
       {/* Revenue Table */}
       <section className="space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Revenue Projection · 5% Conversion
         </p>
 
@@ -332,16 +332,16 @@ export default function ProjectionPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-muted/50 border-b border-border">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">
                   MAU
                 </th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                <th className="text-right px-4 py-3 font-semibold text-muted-foreground">
                   Paying
                 </th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                <th className="text-right px-4 py-3 font-semibold text-muted-foreground">
                   Monthly
                 </th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                <th className="text-right px-4 py-3 font-semibold text-muted-foreground">
                   Annual
                 </th>
               </tr>
@@ -361,7 +361,7 @@ export default function ProjectionPage() {
                       {r.mau}
                     </span>
                     {r.highlight && (
-                      <span className="ml-1.5 text-[9px] font-semibold uppercase tracking-wider text-primary/70">
+                      <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-primary/70">
                         ★ target
                       </span>
                     )}
@@ -379,7 +379,7 @@ export default function ProjectionPage() {
                       >
                         {r.annual}
                       </span>
-                      <div className="w-16 h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary/60"
                           style={{ width: `${r.pct}%` }}
@@ -391,8 +391,8 @@ export default function ProjectionPage() {
               ))}
             </tbody>
           </table>
-          <div className="px-4 py-2.5 bg-muted/30 border-t border-border">
-            <p className="text-[10px] text-muted-foreground/60">
+          <div className="px-4 py-3 bg-muted/30 border-t border-border">
+            <p className="text-xs text-muted-foreground">
               Sweet spot: RM 1,000–2,000/mo at 3k–5k MAU — Firebase costs stay
               low, product sustains itself.
             </p>
@@ -402,7 +402,7 @@ export default function ProjectionPage() {
 
       {/* Moats */}
       <section className="space-y-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Competitive Advantages
         </p>
 
@@ -412,11 +412,11 @@ export default function ProjectionPage() {
               key={m.n}
               className="rounded-xl border border-border bg-card p-4 space-y-2"
             >
-              <p className="text-2xl font-black text-primary/20 leading-none">
+              <p className="text-2xl font-bold text-primary/20 leading-none">
                 {m.n}
               </p>
-              <p className="text-xs font-bold">{m.title}</p>
-              <p className="text-[11px] text-muted-foreground leading-snug">
+              <p className="text-xs font-semibold">{m.title}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {m.desc}
               </p>
             </div>
@@ -425,8 +425,8 @@ export default function ProjectionPage() {
       </section>
 
       {/* Growth callout */}
-      <section className="rounded-xl bg-primary/8 dark:bg-primary/12 border border-primary/20 p-5 space-y-2">
-        <p className="text-base font-black leading-snug">
+      <section className="rounded-xl bg-primary/8 dark:bg-primary/12 border border-primary/20 p-6 space-y-2">
+        <p className="text-base font-bold leading-snug">
           "The biggest lever isn&apos;t pricing — it&apos;s MAU growth."
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">

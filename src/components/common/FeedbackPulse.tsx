@@ -22,7 +22,7 @@ import type { FeedbackPromptState } from "@/lib/types";
 const FIRST_MILESTONE_TX = 20; // don't ask until they've actually used the app
 const COOLDOWN_DAYS = 45; // min gap between asks that weren't converted
 const GIVEN_COOLDOWN_DAYS = 120; // long quiet period after they do give feedback
-const MAX_DISMISSALS = 3; // explicit "no" this many times → stop asking
+const MAX_DISMISSALS = 3; // explicit"no" this many times → stop asking
 
 type Sentiment = "up" | "down";
 
@@ -138,7 +138,7 @@ export default function FeedbackPulse() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="absolute top-2.5 right-2.5 text-muted-foreground/50 hover:text-foreground transition-colors"
+        className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground transition-colors"
       >
         <XIcon className="size-4" />
       </button>
@@ -156,43 +156,42 @@ export default function FeedbackPulse() {
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-2"
               onClick={() => pick("up")}
             >
-              <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" />{" "}
-              Good
+              <ThumbsUpIcon className="text-success" /> Good
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-2"
               onClick={() => pick("down")}
             >
-              <ThumbsDownIcon className="size-4 text-red-500" /> Not great
+              <ThumbsDownIcon className="text-danger" /> Not great
             </Button>
           </div>
         </div>
       ) : (
         <div className="pr-6">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setStep("ask")}
               aria-label="Back"
-              className="-ml-0.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+              className="-ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeftIcon className="size-4" />
             </button>
-            <p className="text-sm font-medium flex items-center gap-1.5">
+            <p className="text-sm font-medium flex items-center gap-2">
               {sentiment === "up" ? (
                 <>
-                  <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" />
+                  <ThumbsUpIcon className="size-4 text-success" />
                   Love to hear it!
                 </>
               ) : (
                 <>
-                  <ThumbsDownIcon className="size-4 text-red-500" />
+                  <ThumbsDownIcon className="size-4 text-danger" />
                   Sorry about that.
                 </>
               )}
@@ -213,7 +212,7 @@ export default function FeedbackPulse() {
                 ? "Features, ideas, wins…"
                 : "What's frustrating or missing…"
             }
-            className="mt-2.5 resize-none"
+            className="mt-3 resize-none"
           />
           <div className="flex items-center gap-2 mt-3">
             <Button type="button" size="sm" onClick={send} disabled={busy}>

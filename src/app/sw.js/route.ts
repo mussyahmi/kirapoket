@@ -11,7 +11,7 @@ self.addEventListener("install", (e) => {
   e.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.addAll(["/", "/home", "/manifest.webmanifest"]))
+      .then((c) => c.addAll(["/", "/home", "/offline", "/manifest.webmanifest"]))
   );
 });
 
@@ -46,7 +46,13 @@ self.addEventListener("fetch", (e) => {
           }
           return res;
         })
-        .catch(() => caches.match(e.request).then((cached) => cached ?? Response.error()))
+        .catch(() =>
+          caches
+            .match(e.request)
+            // Never drop the user on the browser's raw network error page
+            .then((cached) => cached ?? caches.match("/offline"))
+            .then((res) => res ?? Response.error())
+        )
     );
   } else {
     // Assets: cache first, update in background

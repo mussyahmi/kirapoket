@@ -16,14 +16,28 @@ const nunito = Nunito({
 
 export const viewport: Viewport = {
   themeColor: "#fefdf9",
-  maximumScale: 1,
-  userScalable: false,
+  // Deliberately NOT locking scale — this app is read as small numbers, and
+  // blocking pinch-zoom fails WCAG 1.4.4.
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kirapoket.web.app"),
   title: "KiraPoket – Expense Tracker",
   description: "Track your spending by salary cycle",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "KiraPoket – Expense Tracker",
+    description:
+      "Track spending by your salary cycle, not the calendar. Organise every cent into Needs, Wants, and Savings.",
+    siteName: "KiraPoket",
+    type: "website",
+    locale: "en_MY",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KiraPoket – Expense Tracker",
+    description: "Track spending by your salary cycle, not the calendar.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
@@ -54,7 +68,7 @@ export default function RootLayout({
           <AuthProvider>
             <AppProvider>
               {children}
-              <Toaster richColors position="top-center" />
+              <Toaster position="top-center" />
               <PwaRegister />
             </AppProvider>
           </AuthProvider>

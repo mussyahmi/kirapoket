@@ -13,6 +13,11 @@ import {
   PencilIcon,
   XIcon,
   DownloadIcon,
+  WalletIcon,
+  TagIcon,
+  StickyNoteIcon,
+  ReceiptTextIcon,
+  SearchXIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
@@ -27,6 +32,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -35,8 +43,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import { cn } from "@/lib/utils";
+import { l1Color } from "@/lib/palette";
 import type { Transaction } from "@/lib/types";
 
 type FilterType = "all" | "expense" | "income" | "transfer";
@@ -52,11 +61,17 @@ function TransactionsPage() {
     removeTransaction,
     isViewingPartner,
     isImpersonating,
+    loadError,
+    refreshTransactions,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { openAdd, openEdit } = useAddTransaction();
 
   const searchParams = useSearchParams();
+
+  // No transactions at all is a different situation from no results for the
+  // current filters — the toolbar is hidden entirely in the first case.
+  const hasAnyTransactions = transactions.length > 0;
 
   const EDIT_RETURN_KEY = "txFilters:editReturn";
 
@@ -136,7 +151,7 @@ function TransactionsPage() {
   const [visibleGroups, setVisibleGroups] = useState(GROUPS_PAGE);
   const resetVisible = () => setVisibleGroups(GROUPS_PAGE);
 
-  // The default cycle range is not considered an "active" filter — only show
+  // The default cycle range is not considered an"active" filter — only show
   // Clear filters when something differs from the default state. Treat the
   // pre-init state as default too, so the button doesn't flash on first load.
   const datesAtDefault =
@@ -260,188 +275,257 @@ function TransactionsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Transactions</h1>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {hasActiveFilters && (
+        <div className="flex items-center gap-2 sm:gap-2">
+          {hasAnyTransactions && hasActiveFilters && (
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="gap-2"
               onClick={clearFilters}
               aria-label="Clear filters"
             >
-              <XIcon className="size-3.5" />
+              <XIcon />
               <span className="hidden sm:inline">Clear filters</span>
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={handleExport}
-            disabled={filtered.length === 0}
-            aria-label="Export"
-          >
-            <DownloadIcon className="size-3.5" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
-          {!isReadOnly && (
-            <Button size="sm" className="gap-1.5" onClick={openAdd}>
-              <PlusIcon className="size-4" /> Add
+          {hasAnyTransactions && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={handleExport}
+              disabled={filtered.length === 0}
+              aria-label="Export"
+            >
+              <DownloadIcon />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+          )}
+          {/* When the list is empty the empty state owns the primary action */}
+          {!isReadOnly && hasAnyTransactions && (
+            <Button size="sm" className="gap-2" onClick={openAdd}>
+              <PlusIcon /> Add
             </Button>
           )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="grid grid-cols-2 gap-2">
-        <Select
-          value={filterType}
-          onValueChange={(v) => {
-            setFilterType((v ?? "all") as FilterType);
-            resetVisible();
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue>
-              {
+      {/* Filters — hidden until there is something to filter */}
+      {hasAnyTransactions && (
+        <div className="grid grid-cols-2 gap-2">
+          <Select
+            value={filterType}
+            onValueChange={(v) => {
+              setFilterType((v ?? "all") as FilterType);
+              resetVisible();
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue>
                 {
-                  all: "All types",
-                  expense: "Expense",
-                  income: "Income",
-                  transfer: "Transfer",
-                }[filterType]
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="expense">Expense</SelectItem>
-            <SelectItem value="income">Income</SelectItem>
-            <SelectItem value="transfer">Transfer</SelectItem>
-          </SelectContent>
-        </Select>
+                  {
+                    all: "All types",
+                    expense: "Expense",
+                    income: "Income",
+                    transfer: "Transfer",
+                  }[filterType]
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="expense">Expense</SelectItem>
+              <SelectItem value="income">Income</SelectItem>
+              <SelectItem value="transfer">Transfer</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={filterAccount}
-          onValueChange={(v) => {
-            setFilterAccount(v ?? "all");
-            resetVisible();
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue>
-              {filterAccount === "all"
-                ? "All accounts"
-                : (accounts.find((a) => a.id === filterAccount)?.name ??
-                  "Account")}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All accounts</SelectItem>
-            {accounts.map((a) => (
-              <SelectItem key={a.id} value={a.id}>
-                {a.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={filterAccount}
+            onValueChange={(v) => {
+              setFilterAccount(v ?? "all");
+              resetVisible();
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue>
+                {filterAccount === "all"
+                  ? "All accounts"
+                  : (accounts.find((a) => a.id === filterAccount)?.name ??
+                    "Account")}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All accounts</SelectItem>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {/* Category filter — full width */}
-        {(() => {
-          const l1Cats = categories
-            .filter((c) => c.level === 1)
-            .sort((a, b) => {
-              const order: Record<string, number> = {
-                needs: 0,
-                wants: 1,
-                savings: 2,
-              };
-              return (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9);
-            });
-          const selectedCat =
-            filterCategory !== "all" ? categoryMap[filterCategory] : null;
-          return (
-            <Select
-              value={filterCategory}
-              onValueChange={(v) => {
-                setFilterCategory(v ?? "all");
+          {/* Category filter — full width */}
+          {(() => {
+            const l1Cats = categories
+              .filter((c) => c.level === 1)
+              .sort((a, b) => {
+                const order: Record<string, number> = {
+                  needs: 0,
+                  wants: 1,
+                  savings: 2,
+                };
+                return (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9);
+              });
+            const selectedCat =
+              filterCategory !== "all" ? categoryMap[filterCategory] : null;
+            return (
+              <Select
+                value={filterCategory}
+                onValueChange={(v) => {
+                  setFilterCategory(v ?? "all");
+                  resetVisible();
+                }}
+              >
+                <SelectTrigger className="w-full col-span-2">
+                  <SelectValue>
+                    {selectedCat ? selectedCat.name : "All categories"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {/* §8 — a dropdown is just a floating box: it can carry the
+                      same Needs/Wants/Savings grouping the rest of the app
+                      uses. This previously flattened all three roots away and
+                      faked depth with a "·" prefix. */}
+                  {l1Cats.map((l1) => {
+                    const l2s = categories
+                      .filter((c) => c.level === 2 && c.parentId === l1.id)
+                      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                    if (l2s.length === 0) return null;
+                    return (
+                      <SelectGroup key={l1.id}>
+                        <SelectSeparator />
+                        <SelectLabel className="flex items-center gap-2">
+                          <span
+                            className="size-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: l1Color(l1.type) }}
+                          />
+                          {l1.name}
+                        </SelectLabel>
+                        {l2s.map((l2) => {
+                          const l3s = categories
+                            .filter(
+                              (c) => c.level === 3 && c.parentId === l2.id,
+                            )
+                            .sort(
+                              (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+                            );
+                          return [
+                            <SelectItem key={l2.id} value={l2.id}>
+                              {l2.name}
+                            </SelectItem>,
+                            ...l3s.map((l3) => (
+                              <SelectItem
+                                key={l3.id}
+                                value={l3.id}
+                                className="pl-8 text-muted-foreground"
+                              >
+                                {l3.name}
+                              </SelectItem>
+                            )),
+                          ];
+                        })}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            );
+          })()}
+
+          <label className="flex h-8 pointer-coarse:h-11 items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+            <span className="text-xs text-muted-foreground shrink-0">From</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
                 resetVisible();
               }}
-            >
-              <SelectTrigger className="w-full col-span-2">
-                <SelectValue>
-                  {selectedCat ? selectedCat.name : "All categories"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {l1Cats.map((l1) => {
-                  const l2s = categories
-                    .filter((c) => c.level === 2 && c.parentId === l1.id)
-                    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-                  return l2s.map((l2) => {
-                    const l3s = categories
-                      .filter((c) => c.level === 3 && c.parentId === l2.id)
-                      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-                    return [
-                      <SelectItem key={l2.id} value={l2.id}>
-                        {l2.name}
-                      </SelectItem>,
-                      ...l3s.map((l3) => (
-                        <SelectItem key={l3.id} value={l3.id}>
-                          <span className="pl-3 text-muted-foreground">
-                            · {l3.name}
-                          </span>
-                        </SelectItem>
-                      )),
-                    ];
-                  });
-                })}
-              </SelectContent>
-            </Select>
-          );
-        })()}
-
-        <label className="flex h-8 items-center gap-1.5 border border-input rounded-lg px-2.5 bg-background">
-          <span className="text-xs text-muted-foreground shrink-0">From</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => {
-              setDateFrom(e.target.value);
-              resetVisible();
-            }}
-            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-          />
-        </label>
-        <label className="flex h-8 items-center gap-1.5 border border-input rounded-lg px-2.5 bg-background">
-          <span className="text-xs text-muted-foreground shrink-0">To</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => {
-              setDateTo(e.target.value);
-              resetVisible();
-            }}
-            className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-          />
-        </label>
-      </div>
+              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            />
+          </label>
+          <label className="flex h-8 pointer-coarse:h-11 items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+            <span className="text-xs text-muted-foreground shrink-0">To</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                resetVisible();
+              }}
+              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            />
+          </label>
+        </div>
+      )}
 
       {/* List */}
       {loadingTransactions ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
+            <RowSkeleton key={i} />
           ))}
         </div>
+      ) : loadError.transactions ? (
+        <LoadError what="transactions" onRetry={refreshTransactions} />
       ) : grouped.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-          <p className="text-sm">No transactions found.</p>
-        </div>
+        !hasAnyTransactions ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+              <ReceiptTextIcon className="size-7 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold">No transactions yet</p>
+              <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+                Log your first expense or income and it will show up here,
+                grouped by day.
+              </p>
+            </div>
+            {!isReadOnly && (
+              <Button className="gap-2" onClick={openAdd}>
+                <PlusIcon /> Add your first transaction
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+              <SearchXIcon className="size-7 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold">
+                Nothing matches these filters
+              </p>
+              <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+                Try widening the date range or clearing a filter.
+              </p>
+            </div>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={clearFilters}
+              >
+                <XIcon /> Clear filters
+              </Button>
+            )}
+          </div>
+        )
       ) : (
         <div className="space-y-4">
           {grouped.slice(0, visibleGroups).map(([date, txs]) => (
@@ -470,9 +554,9 @@ function TransactionsPage() {
                       className={cn(
                         "text-xs font-semibold",
                         net > 0
-                          ? "text-green-600 dark:text-green-400"
+                          ? "text-success"
                           : net < 0
-                            ? "text-red-600 dark:text-red-400"
+                            ? "text-danger"
                             : "text-muted-foreground",
                       )}
                     >
@@ -502,10 +586,10 @@ function TransactionsPage() {
                           className={cn(
                             "flex items-center justify-center size-8 rounded-full shrink-0",
                             tx.type === "income"
-                              ? "bg-green-100 text-green-600 dark:bg-green-900/30"
+                              ? "bg-success-soft text-success-strong"
                               : tx.type === "transfer"
-                                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                                : "bg-red-100 text-red-600 dark:bg-red-900/30",
+                                ? "bg-info-soft text-info-strong"
+                                : "bg-danger-soft text-danger-strong",
                           )}
                         >
                           {tx.type === "income" ? (
@@ -539,10 +623,10 @@ function TransactionsPage() {
                           className={cn(
                             "text-sm font-semibold shrink-0",
                             tx.type === "income"
-                              ? "text-green-600 dark:text-green-400"
+                              ? "text-success"
                               : tx.type === "transfer"
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-red-600 dark:text-red-400",
+                                ? "text-info"
+                                : "text-danger",
                           )}
                         >
                           {formatMoney(tx.amount, tx.type)}
@@ -558,7 +642,7 @@ function TransactionsPage() {
             <button
               type="button"
               onClick={() => setVisibleGroups((v) => v + GROUPS_PAGE)}
-              className="w-full text-sm text-muted-foreground py-2 underline underline-offset-2"
+              className="w-full text-sm text-muted-foreground py-2 link-underline"
             >
               Load more ({grouped.length - visibleGroups} more days)
             </button>
@@ -586,16 +670,16 @@ function TransactionsPage() {
               : ArrowUpRightIcon;
         const iconBg =
           tx.type === "income"
-            ? "bg-green-100 dark:bg-green-900/30"
+            ? "bg-success-soft"
             : tx.type === "transfer"
-              ? "bg-blue-100 dark:bg-blue-900/30"
-              : "bg-red-100 dark:bg-red-900/30";
+              ? "bg-info-soft"
+              : "bg-danger-soft";
         const iconColor =
           tx.type === "income"
-            ? "text-green-600 dark:text-green-400"
+            ? "text-success"
             : tx.type === "transfer"
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-red-600 dark:text-red-400";
+              ? "text-info"
+              : "text-danger";
         const title =
           tx.type === "expense"
             ? (category?.name ?? "Expense")
@@ -611,7 +695,7 @@ function TransactionsPage() {
           >
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2.5">
+                <DialogTitle className="flex items-center gap-3">
                   <div
                     className={cn(
                       "flex items-center justify-center size-8 rounded-lg shrink-0",
@@ -624,65 +708,55 @@ function TransactionsPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <div
-                  className={cn(
-                    "flex items-center justify-between rounded-lg px-4 py-3",
-                    iconBg,
-                  )}
-                >
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Amount
-                  </span>
-                  <span
-                    className={cn("text-lg font-bold tabular-nums", iconColor)}
+                {/* #13 — §2: labels are a last resort. The amount needs no
+                    "AMOUNT" caption, a formatted date needs no "Date", and an
+                    account name sits under an account-coloured icon. Folding
+                    them away lets the figure own the dialog. */}
+                <div className={cn("rounded-lg px-4 py-4 text-center", iconBg)}>
+                  <p
+                    className={cn(
+                      "text-3xl leading-none font-bold tabular-nums",
+                      iconColor,
+                    )}
                   >
                     {formatMoney(tx.amount, tx.type)}
-                  </span>
+                  </p>
                 </div>
-                <div className="space-y-2.5 px-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Date</span>
-                    <span className="text-sm">
-                      {format(parseISO(tx.date), "d MMMM yyyy")}
-                      {tx.time
-                        ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}`
-                        : ""}
-                    </span>
-                  </div>
-                  {tx.type === "transfer" ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        From → To
+                <div className="space-y-3 px-0.5 text-sm">
+                  <p>
+                    {format(parseISO(tx.date), "d MMMM yyyy")}
+                    {tx.time
+                      ? ` at ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}`
+                      : ""}
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <WalletIcon className="size-4 shrink-0 text-muted-foreground" />
+                    {tx.type === "transfer" ? (
+                      <span>
+                        {account?.name ?? "—"} → {toAccount?.name ?? "—"}
                       </span>
-                      <span className="text-sm">
-                        {account?.name} → {toAccount?.name ?? "—"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Account
-                      </span>
-                      <span className="text-sm">{account?.name ?? "—"}</span>
-                    </div>
-                  )}
+                    ) : (
+                      <span>{account?.name ?? "—"}</span>
+                    )}
+                  </p>
                   {subcategory && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Subcategory
+                    <p className="flex items-center gap-2">
+                      <TagIcon className="size-4 shrink-0 text-muted-foreground" />
+                      <span>
+                        {subcategory.name}
+                        {category && category.id !== subcategory.id
+                          ? ` › ${category.name}`
+                          : ""}
                       </span>
-                      <span className="text-sm">{subcategory.name}</span>
-                    </div>
+                    </p>
                   )}
                   {tx.note && tx.type !== "income" && (
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        Note
-                      </span>
-                      <span className="text-sm text-right whitespace-pre-wrap">
+                    <p className="flex items-start gap-2">
+                      <StickyNoteIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                      <span className="whitespace-pre-wrap text-muted-foreground">
                         {tx.note}
                       </span>
-                    </div>
+                    </p>
                   )}
                 </div>
                 {!isReadOnly && (
@@ -694,7 +768,7 @@ function TransactionsPage() {
                         openEdit(tx.id);
                       }}
                     >
-                      <PencilIcon className="size-4" /> Edit
+                      <PencilIcon /> Edit
                     </Button>
                     <Button
                       variant="ghost"
@@ -705,7 +779,7 @@ function TransactionsPage() {
                         setDeleteTarget(tx);
                       }}
                     >
-                      <TrashIcon className="size-4" />
+                      <TrashIcon />
                     </Button>
                   </div>
                 )}
@@ -737,7 +811,7 @@ function TransactionsPage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="destructive-solid"
               onClick={handleDelete}
               disabled={deleting}
             >

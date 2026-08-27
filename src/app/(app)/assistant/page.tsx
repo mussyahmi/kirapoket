@@ -34,12 +34,12 @@ export default function AssistantPage() {
 
 function ComingSoon() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center text-center">
-      <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+    <div className="max-w-content mx-auto px-4 py-16 flex flex-col items-center text-center">
+      <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
         <SparklesIcon className="size-8 text-primary" />
       </div>
       <h1 className="text-2xl font-semibold">AI Assistant</h1>
-      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+      <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
         Coming soon
       </span>
       <p className="mt-4 max-w-sm text-sm text-muted-foreground leading-relaxed">
@@ -129,8 +129,8 @@ function AssistantChat() {
 
   if (readOnly) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-10 text-center">
-        <SparklesIcon className="size-8 text-muted-foreground/40 mx-auto mb-3" />
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+        <SparklesIcon className="size-8 text-muted-foreground mx-auto mb-3" />
         <p className="text-sm text-muted-foreground">
           The AI assistant isn&apos;t available while viewing another account.
         </p>
@@ -160,7 +160,7 @@ function AssistantChat() {
             <p className="text-sm text-foreground/80">
               Hi
               {userProfile?.displayName
-                ? `, ${userProfile.displayName.split(" ")[0]}`
+                ? `, ${userProfile.displayName.split("")[0]}`
                 : ""}
               ! I can see your accounts and this salary cycle&apos;s spending.
               Ask me anything, or try:
@@ -171,7 +171,7 @@ function AssistantChat() {
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                  className="rounded-full border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
                 >
                   {s}
                 </button>
@@ -184,7 +184,7 @@ function AssistantChat() {
           <div
             key={i}
             className={cn(
-              "flex gap-2.5",
+              "flex gap-3",
               m.role === "user" ? "justify-end" : "justify-start",
             )}
           >
@@ -195,10 +195,10 @@ function AssistantChat() {
             )}
             <div
               className={cn(
-                "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap leading-relaxed",
+                "max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed",
                 m.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-foreground rounded-bl-md",
+                  ? "bg-primary text-primary-foreground rounded-br-lg"
+                  : "bg-muted text-foreground rounded-bl-lg",
               )}
             >
               {m.text}
@@ -213,7 +213,7 @@ function AssistantChat() {
                     alt={userProfile?.displayName ?? "You"}
                   />
                 )}
-                <AvatarFallback className="text-[10px] font-semibold">
+                <AvatarFallback className="text-xs font-semibold">
                   {getInitials(userProfile?.displayName ?? user?.displayName)}
                 </AvatarFallback>
               </Avatar>
@@ -222,11 +222,11 @@ function AssistantChat() {
         ))}
 
         {loading && (
-          <div className="flex gap-2.5 justify-start">
+          <div className="flex gap-3 justify-start">
             <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
               <SparklesIcon className="size-4 text-primary animate-pulse" />
             </div>
-            <div className="bg-muted rounded-2xl rounded-bl-md px-3.5 py-3 flex items-center gap-1">
+            <div className="bg-muted rounded-2xl rounded-bl-lg px-4 py-3 flex items-center gap-1">
               <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:-0.3s]" />
               <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:-0.15s]" />
               <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce" />
@@ -243,7 +243,7 @@ function AssistantChat() {
             e.preventDefault();
             send(input);
           }}
-          className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm"
+          className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-e1 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
         >
           <textarea
             value={input}
@@ -256,7 +256,7 @@ function AssistantChat() {
             }}
             placeholder="Ask about your money..."
             rows={1}
-            className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none max-h-32"
+            className="flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none max-h-32"
           />
           <Button
             type="submit"
@@ -264,10 +264,10 @@ function AssistantChat() {
             className="shrink-0 rounded-xl"
             disabled={loading || !input.trim()}
           >
-            <SendIcon className="size-4" />
+            <SendIcon />
           </Button>
         </form>
-        <p className="mt-1.5 text-center text-[10px] text-muted-foreground/70">
+        <p className="mt-2 text-center text-xs text-muted-foreground/70">
           AI can make mistakes — double-check important numbers.
         </p>
       </div>

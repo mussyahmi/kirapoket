@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useState } from "react";
 import { CoffeeIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
@@ -34,7 +36,7 @@ const QR_ITEMS = [
           href="https://buymeacoffee.com/mustafasyahmi"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary underline"
+          className="text-primary link-underline"
         >
           here
         </a>
@@ -80,14 +82,16 @@ export default function SupportButton({
           <div className="sm:hidden flex flex-col items-center gap-3">
             <div className="w-full flex flex-col items-center gap-2 border rounded-xl p-3">
               <p className="text-xs font-semibold">{active.label}</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={active.src}
                 alt={active.alt}
-                className="w-full rounded-lg"
+                width={320}
+                height={320}
+                sizes="(max-width: 640px) 80vw, 320px"
+                className="h-auto w-full rounded-lg"
                 draggable={false}
               />
-              <p className="text-[10px] text-muted-foreground text-center">
+              <p className="text-xs text-muted-foreground text-center">
                 {active.caption}
               </p>
             </div>
@@ -100,7 +104,7 @@ export default function SupportButton({
               >
                 <ChevronLeftIcon className="size-4" />
               </button>
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 {QR_ITEMS.map((_, i) => (
                   <button
                     key={i}
@@ -129,14 +133,16 @@ export default function SupportButton({
                 className="flex flex-col items-center gap-2 border rounded-xl p-3"
               >
                 <p className="text-xs font-semibold">{item.label}</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={item.src}
                   alt={item.alt}
-                  className="w-full rounded-lg"
+                  width={320}
+                  height={320}
+                  sizes="(max-width: 640px) 80vw, 320px"
+                  className="h-auto w-full rounded-lg"
                   draggable={false}
                 />
-                <p className="text-[10px] text-muted-foreground text-center">
+                <p className="text-xs text-muted-foreground text-center">
                   {item.caption}
                 </p>
               </div>

@@ -55,9 +55,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import type { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ACCOUNT_TINT, accountColor } from "@/lib/palette";
 
 type AccountType = Account["type"];
 
@@ -79,41 +80,7 @@ const ACCOUNT_TYPE_ICONS: Record<AccountType, React.ElementType> = {
   other: CircleEllipsisIcon,
 };
 
-const ACCOUNT_TYPE_COLORS: Record<
-  AccountType,
-  { bg: string; icon: string; dot: string }
-> = {
-  bank: {
-    bg: "bg-blue-100 dark:bg-blue-900/30",
-    icon: "text-blue-600 dark:text-blue-400",
-    dot: "#3b82f6",
-  },
-  cash: {
-    bg: "bg-green-100 dark:bg-green-900/30",
-    icon: "text-green-600 dark:text-green-400",
-    dot: "#22c55e",
-  },
-  ewallet: {
-    bg: "bg-purple-100 dark:bg-purple-900/30",
-    icon: "text-purple-600 dark:text-purple-400",
-    dot: "#a855f7",
-  },
-  credit: {
-    bg: "bg-orange-100 dark:bg-orange-900/30",
-    icon: "text-orange-500 dark:text-orange-400",
-    dot: "#f97316",
-  },
-  savings: {
-    bg: "bg-teal-100 dark:bg-teal-900/30",
-    icon: "text-teal-600 dark:text-teal-400",
-    dot: "#14b8a6",
-  },
-  other: {
-    bg: "bg-slate-100 dark:bg-slate-800",
-    icon: "text-slate-500 dark:text-slate-400",
-    dot: "#94a3b8",
-  },
-};
+const ACCOUNT_TYPE_COLORS = ACCOUNT_TINT;
 
 interface AccountFormData {
   name: string;
@@ -163,7 +130,7 @@ function SortableAccountRow({
           {!readOnly && (
             <button
               type="button"
-              className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
+              className="text-muted-foreground/70 hover:text-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
               aria-label="Drag to reorder"
               {...attributes}
               {...listeners}
@@ -200,7 +167,7 @@ function SortableAccountRow({
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2.5">
+            <DialogTitle className="flex items-center gap-3">
               <div
                 className={cn(
                   "flex items-center justify-center size-8 rounded-lg shrink-0",
@@ -234,7 +201,7 @@ function SortableAccountRow({
                 onClick={() => setDetailOpen(false)}
               >
                 <Button variant="outline" className="w-full gap-2">
-                  <ListIcon className="size-4" /> Transactions
+                  <ListIcon /> Transactions
                 </Button>
               </Link>
               {onEdit && (
@@ -246,7 +213,7 @@ function SortableAccountRow({
                     onEdit(account);
                   }}
                 >
-                  <PencilIcon className="size-4" /> Edit
+                  <PencilIcon /> Edit
                 </Button>
               )}
               {onDelete && (
@@ -259,7 +226,7 @@ function SortableAccountRow({
                     onDelete(account);
                   }}
                 >
-                  <TrashIcon className="size-4" />
+                  <TrashIcon />
                 </Button>
               )}
             </div>
@@ -283,6 +250,8 @@ function AccountsPage() {
     reorderAccounts,
     isViewingPartner,
     isImpersonating,
+    loadError,
+    refreshAccounts,
   } = useApp();
 
   const isReadOnly = isViewingPartner || isImpersonating;
@@ -404,7 +373,7 @@ function AccountsPage() {
       return;
     }
     let cancelled = false;
-    setLinkedCount(null); // show "checking…"
+    setLinkedCount(null); // show"checking…"
     countAccountTransactions(deleteTarget.userId, deleteTarget.id)
       .then((n) => {
         if (!cancelled) setLinkedCount(n);
@@ -447,12 +416,12 @@ function AccountsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Accounts</h1>
         {!isReadOnly && (
-          <Button size="sm" onClick={openCreate} className="gap-1.5">
-            <PlusIcon className="size-4" /> Add
+          <Button size="sm" onClick={openCreate} className="gap-2">
+            <PlusIcon /> Add
           </Button>
         )}
       </div>
@@ -472,14 +441,14 @@ function AccountsPage() {
           </div>
           {accounts.length > 0 && totalBalance > 0 && (
             <>
-              <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
+              <div className="flex h-2 rounded-full overflow-hidden gap-px">
                 {typeBreakdown.map(([type, val]) => (
                   <div
                     key={type}
                     className="h-full rounded-full"
                     style={{
                       width: `${(val / totalBalance) * 100}%`,
-                      backgroundColor: ACCOUNT_TYPE_COLORS[type].dot,
+                      backgroundColor: accountColor(type),
                     }}
                   />
                 ))}
@@ -488,11 +457,11 @@ function AccountsPage() {
                 {typeBreakdown.map(([type, val]) => (
                   <div
                     key={type}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
                   >
                     <span
                       className="size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: ACCOUNT_TYPE_COLORS[type].dot }}
+                      style={{ backgroundColor: accountColor(type) }}
                     />
                     <span>{ACCOUNT_TYPE_LABELS[type]}</span>
                     <span className="tabular-nums font-medium text-foreground">
@@ -510,12 +479,28 @@ function AccountsPage() {
       {loadingAccounts ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
+            <RowSkeleton key={i} />
           ))}
         </div>
+      ) : loadError.accounts ? (
+        <LoadError what="accounts" onRetry={refreshAccounts} />
       ) : accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-          <p className="text-sm">No accounts yet. Add your first one!</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+            <WalletIcon className="size-7 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold">No accounts yet</p>
+            <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+              Add the bank, cash, or e-wallet you spend from. Every transaction
+              is tracked against an account.
+            </p>
+          </div>
+          {!isReadOnly && (
+            <Button className="gap-2" onClick={openCreate}>
+              <PlusIcon /> Add your first account
+            </Button>
+          )}
         </div>
       ) : (
         <DndContext
@@ -552,7 +537,7 @@ function AccountsPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="account-name">Name</Label>
               <Input
                 id="account-name"
@@ -562,7 +547,7 @@ function AccountsPage() {
                 required
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Type</Label>
               <Select
                 value={form.type}
@@ -587,7 +572,7 @@ function AccountsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="account-balance">Current Balance (MYR)</Label>
               <Input
                 id="account-balance"
@@ -637,7 +622,7 @@ function AccountsPage() {
               <Link
                 href={`/transactions?account=${deleteTarget?.id}`}
                 onClick={() => setDeleteTarget(null)}
-                className="inline-flex items-center justify-center w-full rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                className="inline-flex items-center justify-center w-full rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
               >
                 View linked transactions
               </Link>
@@ -658,7 +643,7 @@ function AccountsPage() {
             </Button>
             {!deleteBlockReason && (
               <Button
-                variant="destructive"
+                variant="destructive-solid"
                 onClick={handleDelete}
                 disabled={deleting || checkingLinked}
               >

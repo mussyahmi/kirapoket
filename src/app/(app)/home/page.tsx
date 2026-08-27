@@ -41,25 +41,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  SummarySkeleton,
+  CardListSkeleton,
+} from "@/components/common/Skeletons";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import FeedbackPulse from "@/components/common/FeedbackPulse";
+import { CycleSummaryCard } from "@/components/dashboard/CycleSummaryCard";
 import { cn } from "@/lib/utils";
-
-const L1_COLORS: Record<string, string> = {
-  needs: "#4ade80",
-  wants: "#f97316",
-  savings: "#60a5fa",
-};
-
-const ACCOUNT_TYPE_DOT: Record<string, string> = {
-  bank: "#3b82f6",
-  cash: "#22c55e",
-  ewallet: "#a855f7",
-  credit: "#f97316",
-  savings: "#14b8a6",
-  other: "#94a3b8",
-};
+import { l1Color, accountColor, tint } from "@/lib/palette";
 
 const ACCOUNTS_COLLAPSE = 4;
 
@@ -139,7 +129,7 @@ function DashboardPage() {
 
   const currentCycleManualStart = cycleStarts?.[autoCycleStartKey];
 
-  // Near salary day on current cycle — show quick "Mark today" prompt.
+  // Near salary day on current cycle — show quick"Mark today" prompt.
   const nearSalaryDay = useMemo(() => {
     if (cycleOffset !== 0 || !userProfile?.salaryDay) return false;
     const today = new Date();
@@ -444,7 +434,7 @@ function DashboardPage() {
   ) => {
     const dir = options.direction ?? "expense";
     if (!hasPrev) return null;
-    // Category didn't exist last cycle (undefined) or had zero spending → show "new"
+    // Category didn't exist last cycle (undefined) or had zero spending → show"new"
     if ((prev === undefined || prev === 0) && current > 0) {
       return (
         <span className="block text-xs text-muted-foreground tabular-nums">
@@ -466,9 +456,7 @@ function DashboardPage() {
     }
     const up = diff > 0;
     const isGood = dir === "expense" ? !up : up;
-    const color = isGood
-      ? "text-green-600 dark:text-green-400"
-      : "text-red-600 dark:text-red-400";
+    const color = isGood ? "text-success" : "text-danger";
     const abs = new Intl.NumberFormat("ms-MY", {
       style: "currency",
       currency: "MYR",
@@ -512,7 +500,7 @@ function DashboardPage() {
   const onboardingComplete = onboardingSteps.every((s) => s.done);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 space-y-6 max-w-content mx-auto">
       {/* Onboarding Checklist */}
       {!loading &&
         !onboardingComplete &&
@@ -530,7 +518,7 @@ function DashboardPage() {
                 </CardAction>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="h-1 rounded-full bg-primary/15 overflow-hidden">
+                <div className="h-2 rounded-full bg-primary/15 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-500"
                     style={{
@@ -539,7 +527,7 @@ function DashboardPage() {
                   />
                 </div>
                 {doneSteps.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {doneSteps.map(({ label }) => (
                       <div
                         key={label}
@@ -552,7 +540,7 @@ function DashboardPage() {
                   </div>
                 )}
                 <div className="rounded-lg bg-background border border-border p-3 space-y-3">
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-start gap-3">
                     <CircleIcon className="size-4 text-primary shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{activeStep.label}</p>
@@ -590,7 +578,7 @@ function DashboardPage() {
             }}
             aria-label="Previous cycle"
           >
-            <ChevronLeftIcon className="size-4" />
+            <ChevronLeftIcon />
           </Button>
         ) : (
           <div className="size-9" />
@@ -606,14 +594,14 @@ function DashboardPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={handleDownloadReport}
                   disabled={generatingReport}
                 >
                   {generatingReport ? (
-                    <Loader2Icon className="size-3.5 animate-spin" />
+                    <Loader2Icon className="animate-spin" />
                   ) : (
-                    <FileDownIcon className="size-3.5" />
+                    <FileDownIcon />
                   )}
                   Report
                 </Button>
@@ -632,7 +620,7 @@ function DashboardPage() {
                   }}
                   aria-label="Next cycle"
                 >
-                  <ChevronRightIcon className="size-4" />
+                  <ChevronRightIcon />
                 </Button>
               )}
             </div>
@@ -642,7 +630,7 @@ function DashboardPage() {
 
       {/* Cycle start banner — hidden in read-only mode */}
       {!isReadOnly && userProfile?.salaryDay && (
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 pl-3 pr-4 py-2.5 border-l-2 border-l-primary">
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 pl-3 pr-4 py-3 border-l-2 border-l-primary">
           <BanknoteIcon className="size-4 text-primary shrink-0" />
           {editingStart ? (
             <>
@@ -657,7 +645,7 @@ function DashboardPage() {
                 type="button"
                 onClick={handleSetDate}
                 disabled={markingReceived || !editDate}
-                className="size-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
+                className="size-7 pointer-coarse:size-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
                 aria-label="Save"
               >
                 <CheckIcon className="size-3.5" />
@@ -665,7 +653,7 @@ function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setEditingStart(false)}
-                className="size-6 flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                className="size-6 pointer-coarse:size-9 flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Cancel"
               >
                 <XIcon className="size-3.5" />
@@ -688,7 +676,7 @@ function DashboardPage() {
                   setEditDate(currentCycleManualStart);
                   setEditingStart(true);
                 }}
-                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                className="size-7 pointer-coarse:size-10 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Edit cycle start"
               >
                 <PencilIcon className="size-3.5" />
@@ -696,7 +684,7 @@ function DashboardPage() {
               <button
                 type="button"
                 onClick={handleClearManualStart}
-                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                className="size-7 pointer-coarse:size-10 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Reset cycle start"
               >
                 <XIcon className="size-3.5" />
@@ -721,7 +709,7 @@ function DashboardPage() {
                   setEditDate(autoCycleStartKey);
                   setEditingStart(true);
                 }}
-                className="size-7 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                className="size-7 pointer-coarse:size-10 rounded-lg hover:bg-muted flex items-center justify-center shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Pick a date"
               >
                 <PencilIcon className="size-3.5" />
@@ -749,76 +737,24 @@ function DashboardPage() {
 
       {/* Summary Cards */}
       {loading ? (
-        <Skeleton className="h-24 rounded-xl" />
+        <SummarySkeleton />
       ) : (
-        <Card>
-          <CardContent className="px-0 py-4">
-            <div className="grid grid-cols-3">
-              {[
-                {
-                  label: "Income",
-                  value: totalIncome,
-                  prev: prevIncome,
-                  direction: "income" as const,
-                  color: "text-green-600 dark:text-green-400",
-                  barClass: "bg-green-500 dark:bg-green-400",
-                },
-                {
-                  label: "Expenses",
-                  value: totalExpenses,
-                  prev: prevExpenses,
-                  direction: "expense" as const,
-                  color: "text-red-600 dark:text-red-400",
-                  barClass: "bg-red-500 dark:bg-red-400",
-                },
-                {
-                  label: "Remaining",
-                  value: cycleBalance,
-                  prev: prevBalance,
-                  direction: "income" as const,
-                  color:
-                    cycleBalance >= 0
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-red-600 dark:text-red-400",
-                  barClass:
-                    cycleBalance >= 0
-                      ? "bg-blue-500 dark:bg-blue-400"
-                      : "bg-red-500 dark:bg-red-400",
-                },
-              ].map(({ label, value, prev, direction, color, barClass }) => (
-                <div
-                  key={label}
-                  className="flex flex-col items-center px-4 pt-2 pb-1 gap-1"
-                >
-                  <div
-                    className={cn("h-[3px] w-8 rounded-full mb-0.5", barClass)}
-                  />
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p
-                    className={cn(
-                      "text-sm font-bold text-center tabular-nums",
-                      color,
-                    )}
-                  >
-                    {formatMoney(value)}
-                  </p>
-                  {hasPrev && (
-                    <div className="text-center leading-tight">
-                      {renderDelta(value, prev, { direction, showZero: true })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <CycleSummaryCard
+          remaining={cycleBalance}
+          income={totalIncome}
+          expenses={totalExpenses}
+          hasPrev={hasPrev}
+          prevRemaining={prevBalance}
+          prevIncome={prevIncome}
+          prevExpenses={prevExpenses}
+        />
       )}
 
       {!isReadOnly && <FeedbackPulse />}
 
       {/* Account Balances — only shown for current cycle; balance is live and misleading for past cycles */}
       {cycleOffset < 0 ? null : loadingAccounts ? (
-        <Skeleton className="h-28 rounded-xl" />
+        <CardListSkeleton rows={3} />
       ) : (
         <Card>
           <CardHeader>
@@ -829,11 +765,11 @@ function DashboardPage() {
               </Link>
             </CardAction>
           </CardHeader>
-          <CardContent className="space-y-2.5">
+          <CardContent className="space-y-3">
             {accounts.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No accounts yet.{" "}
-                <Link href="/accounts" className="underline">
+                <Link href="/accounts" className="link-underline">
                   Add one
                 </Link>
                 .
@@ -855,10 +791,7 @@ function DashboardPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <span
                         className="size-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            ACCOUNT_TYPE_DOT[acc.type] ?? "#94a3b8",
-                        }}
+                        style={{ backgroundColor: accountColor(acc.type) }}
                       />
                       <span className="text-sm text-foreground truncate">
                         {acc.name}
@@ -893,11 +826,11 @@ function DashboardPage() {
                   </span>
                 </div>
                 {/* Reframe a negative balance (common right after the first expense
-                  against the auto-created RM0 account) as "set your real balance" */}
+                  against the auto-created RM0 account) as"set your real balance" */}
                 {!isReadOnly && accounts.some((a) => a.balance < 0) && (
                   <Link
                     href="/accounts"
-                    className="flex items-start gap-1.5 pt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-start gap-2 pt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <WalletIcon className="size-3.5 shrink-0 mt-0.5" />
                     <span>
@@ -928,13 +861,11 @@ function DashboardPage() {
               (() => {
                 const total = pieData.reduce((s, d) => s + d.value, 0);
                 return (
-                  <div className="space-y-2.5 pb-3 border-b border-border">
-                    <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                      {pieData.map((entry, index) => {
+                  <div className="space-y-3 pb-3 border-b border-border">
+                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+                      {pieData.map((entry) => {
                         const pct = total > 0 ? (entry.value / total) * 100 : 0;
-                        const color =
-                          L1_COLORS[entry.type] ??
-                          `hsl(${index * 60}, 60%, 55%)`;
+                        const color = l1Color(entry.type);
                         return (
                           <span
                             key={entry.name}
@@ -944,18 +875,16 @@ function DashboardPage() {
                       })}
                     </div>
                     <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-                      {pieData.map((entry, index) => {
+                      {pieData.map((entry) => {
                         const pct =
                           total > 0
                             ? ((entry.value / total) * 100).toFixed(0)
                             : 0;
-                        const color =
-                          L1_COLORS[entry.type] ??
-                          `hsl(${index * 60}, 60%, 55%)`;
+                        const color = l1Color(entry.type);
                         return (
                           <div
                             key={entry.name}
-                            className="flex items-center gap-1.5 text-xs"
+                            className="flex items-center gap-2 text-xs"
                           >
                             <span
                               className="size-2 rounded-full shrink-0"
@@ -975,7 +904,7 @@ function DashboardPage() {
               const l1Spent = l1Spending[l1.id] ?? 0;
               if (l1Spent === 0) return null;
 
-              const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
+              const color = l1Color(l1.type);
               const l2s = categories
                 .filter((c) => c.level === 2 && c.parentId === l1.id)
                 .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
@@ -985,7 +914,7 @@ function DashboardPage() {
 
               return (
                 <div key={l1.id} className="space-y-2">
-                  <div className="flex items-center gap-1 -mx-1.5">
+                  <div className="flex items-center gap-1 -mx-2">
                     {l2s.length > 0 ? (
                       <button
                         type="button"
@@ -995,7 +924,7 @@ function DashboardPage() {
                             ? `Collapse ${l1.name}`
                             : `Expand ${l1.name}`
                         }
-                        className="shrink-0 p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        className="shrink-0 p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <ChevronDownIcon
                           className={cn(
@@ -1014,21 +943,21 @@ function DashboardPage() {
                           `/transactions?category=${l1.id}&from=${startStr}&to=${endStr}`,
                         )
                       }
-                      className="flex flex-1 items-center justify-between gap-2 rounded-sm px-1.5 hover:bg-muted/50 transition-colors"
+                      className="flex flex-1 items-center justify-between gap-2 rounded-lg px-2 hover:bg-muted/50 transition-colors"
                     >
                       <span className="flex items-center gap-2">
                         <span
                           className="size-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: color }}
                         />
-                        <span className="text-sm font-bold">{l1.name}</span>
+                        <span className="text-sm font-semibold">{l1.name}</span>
                       </span>
                       <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
-                        <span className="tabular-nums text-sm">
+                        <span className="w-24 text-right text-sm tabular-nums">
                           {formatMoney(l1Spent)}
                         </span>
                         {hasPrev && (
-                          <span className="sm:w-28 sm:text-right">
+                          <span className="w-20 text-right sm:w-28">
                             {renderDelta(l1Spent, prevL1Spending[l1.id])}
                           </span>
                         )}
@@ -1037,8 +966,8 @@ function DashboardPage() {
                   </div>
                   {l2s.length > 0 && isExpanded && (
                     <div
-                      className="space-y-1.5 pl-4 border-l-2"
-                      style={{ borderColor: color + "66" }}
+                      className="space-y-2 pl-4 border-l-2"
+                      style={{ borderColor: tint(color, 40) }}
                     >
                       {l2s.map((l2) => {
                         const l3s = categories
@@ -1057,17 +986,17 @@ function DashboardPage() {
                                   `/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`,
                                 )
                               }
-                              className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground hover:text-foreground"
+                              className="flex items-center justify-between text-xs gap-2 rounded-lg px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground hover:text-foreground"
                             >
                               <span className="truncate text-left">
                                 {l2.name}
                               </span>
                               <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
-                                <span className="tabular-nums">
+                                <span className="w-24 text-right tabular-nums">
                                   {formatMoney(l2Spending[l2.id] ?? 0)}
                                 </span>
                                 {hasPrev && (
-                                  <span className="sm:w-28 sm:text-right">
+                                  <span className="w-20 text-right sm:w-28">
                                     {renderDelta(
                                       l2Spending[l2.id] ?? 0,
                                       prevL2Spending[l2.id],
@@ -1087,17 +1016,17 @@ function DashboardPage() {
                                         `/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`,
                                       )
                                     }
-                                    className="flex items-center justify-between text-xs gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground/70 hover:text-muted-foreground"
+                                    className="flex items-center justify-between text-xs gap-2 rounded-lg px-1 -mx-1 hover:bg-muted/50 transition-colors w-[calc(100%+8px)] text-muted-foreground/70 hover:text-muted-foreground"
                                   >
                                     <span className="truncate text-left">
                                       {l3.name}
                                     </span>
                                     <span className="flex flex-col items-end shrink-0 sm:flex-row sm:items-center sm:gap-4">
-                                      <span className="tabular-nums">
+                                      <span className="w-24 text-right tabular-nums">
                                         {formatMoney(l3Spending[l3.id] ?? 0)}
                                       </span>
                                       {hasPrev && (
-                                        <span className="sm:w-28 sm:text-right">
+                                        <span className="w-20 text-right sm:w-28">
                                           {renderDelta(
                                             l3Spending[l3.id] ?? 0,
                                             prevL3Spending[l3.id],
@@ -1121,9 +1050,9 @@ function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent Transactions — only on the current cycle; "recent" is misleading when viewing a past cycle */}
+      {/* Recent Transactions — only on the current cycle;"recent" is misleading when viewing a past cycle */}
       {cycleOffset < 0 ? null : loadingTransactions ? (
-        <Skeleton className="h-44 rounded-xl" />
+        <CardListSkeleton rows={4} />
       ) : (
         <Card>
           <CardHeader>
@@ -1131,7 +1060,7 @@ function DashboardPage() {
             <CardAction>
               <Link
                 href="/transactions"
-                className="text-xs text-muted-foreground hover:text-foreground underline"
+                className="text-xs text-muted-foreground hover:text-foreground link-underline"
               >
                 View all
               </Link>
@@ -1142,7 +1071,7 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">
                 No transactions yet.{" "}
                 {!isReadOnly && (
-                  <Link href="/transactions/new" className="underline">
+                  <Link href="/transactions/new" className="link-underline">
                     Add one
                   </Link>
                 )}
@@ -1167,7 +1096,7 @@ function DashboardPage() {
                 }
                 return groups.map(({ label, txs }) => (
                   <div key={label}>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 mt-3 first:mt-0">
+                    <p className="text-xs font-medium text-muted-foreground mb-2 mt-3 first:mt-0">
                       {label}
                     </p>
                     <div className="space-y-0.5">
@@ -1184,16 +1113,16 @@ function DashboardPage() {
                         return (
                           <div
                             key={tx.id}
-                            className="flex items-center gap-3 py-1.5"
+                            className="flex items-center gap-3 py-2"
                           >
                             <div
                               className={cn(
                                 "flex items-center justify-center size-8 rounded-full shrink-0",
                                 tx.type === "income"
-                                  ? "bg-green-100 text-green-600 dark:bg-green-900/30"
+                                  ? "bg-success-soft text-success-strong"
                                   : tx.type === "transfer"
-                                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                                    : "bg-red-100 text-red-600 dark:bg-red-900/30",
+                                    ? "bg-info-soft text-info-strong"
+                                    : "bg-danger-soft text-danger-strong",
                               )}
                             >
                               {tx.type === "income" ? (
@@ -1225,10 +1154,10 @@ function DashboardPage() {
                               className={cn(
                                 "text-sm font-semibold shrink-0",
                                 tx.type === "income"
-                                  ? "text-green-600 dark:text-green-400"
+                                  ? "text-success"
                                   : tx.type === "transfer"
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-red-600 dark:text-red-400",
+                                    ? "text-info"
+                                    : "text-danger",
                               )}
                             >
                               {tx.type === "income"

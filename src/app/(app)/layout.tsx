@@ -43,13 +43,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [partnerDeclinedAlert, clearPartnerDeclinedAlert]);
 
-  if (!loading && !user) return null;
+  // #36 — a bare `return null` flashed a blank white page during the redirect
+  if (!loading && !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span className="flex size-10 animate-pulse items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground select-none">
+          KP
+        </span>
+        <span className="sr-only">Redirecting to sign in…</span>
+      </div>
+    );
+  }
 
   const banner = (
     <>
       {mounted && isImpersonating && (
-        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-1.5 text-primary-foreground text-xs font-medium">
-          <span className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2 text-primary-foreground text-xs font-medium">
+          <span className="flex items-center gap-2">
             <HeartHandshakeIcon className="size-3.5" />
             Viewing {userProfile?.displayName ?? userProfile?.email ?? "user"}
             &apos;s finances — read only
@@ -60,15 +70,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               stopImpersonating();
               router.push("/admin");
             }}
-            className="underline shrink-0"
+            className="link-underline shrink-0"
           >
             Stop
           </button>
         </div>
       )}
       {mounted && isViewingPartner && partnership && (
-        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-1.5 text-primary-foreground text-xs font-medium">
-          <span className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-2 bg-primary px-4 py-2 text-primary-foreground text-xs font-medium">
+          <span className="flex items-center gap-2">
             <HeartHandshakeIcon className="size-3.5" />
             Viewing{" "}
             {partnership.inviterUid === user?.uid
@@ -82,7 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               pausePartnerView();
               toast.success("Switched back to your data.");
             }}
-            className="underline shrink-0"
+            className="link-underline shrink-0"
           >
             Stop
           </button>

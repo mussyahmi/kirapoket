@@ -60,11 +60,11 @@ function isActive(lastLogin: Timestamp | null | undefined): boolean {
 
 function ActivityRow({ activity }: { activity: Activity }) {
   return (
-    <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="text-xs text-muted-foreground leading-snug">
+    <div className="flex items-start justify-between gap-2 py-2">
+      <p className="text-xs text-muted-foreground leading-relaxed">
         {activity.description}
       </p>
-      <p className="text-[10px] text-muted-foreground/40 shrink-0 whitespace-nowrap">
+      <p className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
         {formatTimestamp(activity.timestamp)}
       </p>
     </div>
@@ -216,27 +216,29 @@ export default function AdminPage() {
       >
         <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-xs">
           {lightboxUrl && (
-            <img
-              src={lightboxUrl}
-              alt=""
-              className="w-full rounded-2xl object-cover"
-            />
+            <div className="relative overflow-hidden rounded-2xl">
+              <img src={lightboxUrl} alt="" className="w-full object-cover" />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_0_1px_rgb(0_0_0/0.10)]"
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
 
-      <div className="p-4 md:p-6 max-w-lg mx-auto space-y-5 pb-16">
+      <div className="p-4 md:p-6 max-w-lg mx-auto space-y-6 pb-16">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               KiraPoket
             </p>
-            <h1 className="text-2xl font-black tracking-tight">Admin</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] text-muted-foreground font-medium">
+          <div className="flex items-center gap-2">
+            <span className="size-1.5 rounded-full bg-success animate-pulse" />
+            <span className="text-xs text-muted-foreground font-medium">
               Live
             </span>
           </div>
@@ -257,12 +259,12 @@ export default function AdminPage() {
               ))}
             </div>
             <Skeleton className="h-8 w-full rounded-lg" />
-            <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-2.5">
+            <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-2.5 w-32" />
                 <Skeleton className="h-2.5 w-16" />
               </div>
-              <Skeleton className="h-1.5 w-full rounded-full" />
+              <Skeleton className="h-2 w-full rounded-full" />
               <Skeleton className="h-2.5 w-48" />
             </div>
           </div>
@@ -270,26 +272,26 @@ export default function AdminPage() {
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-border bg-card px-3 py-3">
-                <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Total
                 </p>
-                <p className="text-2xl font-black mt-1 leading-none">
+                <p className="text-2xl font-bold mt-1 leading-none">
                   {users.length}
                 </p>
               </div>
               <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-3">
-                <p className="text-[9px] font-semibold uppercase tracking-widest text-primary/70">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                   MAU
                 </p>
-                <p className="text-2xl font-black mt-1 leading-none text-primary">
+                <p className="text-2xl font-bold mt-1 leading-none text-primary">
                   {mau}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-card px-3 py-3">
-                <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Active
                 </p>
-                <p className="text-2xl font-black mt-1 leading-none">
+                <p className="text-2xl font-bold mt-1 leading-none">
                   {mauPct}
                   <span className="text-sm font-normal text-muted-foreground">
                     %
@@ -299,7 +301,7 @@ export default function AdminPage() {
             </div>
 
             {/* MAU calculation note */}
-            <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg px-3 py-2 leading-relaxed">
+            <p className="text-xs text-warning-strong bg-warning-soft border border-warning/25 rounded-lg px-3 py-2 leading-relaxed">
               MAU = <span className="font-semibold">login-based</span>. Switch
               to activity-based at ~50 MAU before the 100 MAU milestone locks in
               early adopter pricing.
@@ -308,23 +310,23 @@ export default function AdminPage() {
             {/* Progress to 500 MAU */}
             <div className="rounded-xl border border-border bg-card px-4 py-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Path to monetization
                 </p>
-                <p className="text-[10px] font-mono text-muted-foreground">
+                <p className="text-xs font-mono text-muted-foreground">
                   {mau}{" "}
-                  <span className="text-muted-foreground/40">
+                  <span className="text-muted-foreground">
                     / {currentTarget} MAU
                   </span>
                 </p>
               </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-700"
                   style={{ width: `${targetPct}%` }}
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground/60">
+              <p className="text-xs text-muted-foreground">
                 {targetPct}% —{" "}
                 {currentTarget - mau > 0
                   ? `${currentTarget - mau} more to unlock ${currentLabel}`
@@ -334,14 +336,14 @@ export default function AdminPage() {
 
             {/* App-version distribution */}
             <div className="rounded-xl border border-border bg-card px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
                 App versions
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {versionDist.map(([v, count]) => (
                   <span
                     key={v}
-                    className="text-[11px] tabular-nums rounded-md bg-muted px-2 py-1"
+                    className="text-xs tabular-nums rounded-lg bg-muted px-2 py-1"
                   >
                     <span className="font-medium">
                       {v === "unknown" ? "—" : `v${v}`}
@@ -355,7 +357,7 @@ export default function AdminPage() {
             {/* Last signup — time since the acquisition funnel last produced a user */}
             <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Last new user
                 </p>
                 <p className="text-sm font-semibold mt-0.5">
@@ -382,8 +384,8 @@ export default function AdminPage() {
           onClick={() => router.push("/admin/projection")}
           className="w-full flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:bg-muted/40 transition-colors group"
         >
-          <div className="flex items-center justify-center size-8 rounded-lg bg-orange-100 dark:bg-orange-500/20 shrink-0">
-            <TrendingUpIcon className="size-4 text-orange-500" />
+          <div className="flex items-center justify-center size-8 rounded-lg bg-warning-soft shrink-0">
+            <TrendingUpIcon className="size-4 text-warning-strong" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">Growth & Monetization</p>
@@ -391,7 +393,7 @@ export default function AdminPage() {
               Milestones · pricing model · revenue projection
             </p>
           </div>
-          <ChevronRightIcon className="size-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+          <ChevronRightIcon className="size-4 text-muted-foreground group-hover:text-muted-foreground transition-colors shrink-0" />
         </button>
 
         {/* Feedback */}
@@ -412,9 +414,9 @@ export default function AdminPage() {
               </p>
             </div>
             {feedbackOpen ? (
-              <ChevronUpIcon className="size-4 text-muted-foreground/50 shrink-0" />
+              <ChevronUpIcon className="size-4 text-muted-foreground shrink-0" />
             ) : (
-              <ChevronDownIcon className="size-4 text-muted-foreground/50 shrink-0" />
+              <ChevronDownIcon className="size-4 text-muted-foreground shrink-0" />
             )}
           </button>
           {feedbackOpen && (
@@ -434,9 +436,9 @@ export default function AdminPage() {
                     <div key={f.id} className="px-4 py-3 flex gap-3">
                       <div className="shrink-0 mt-0.5">
                         {f.sentiment === "up" ? (
-                          <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" />
+                          <ThumbsUpIcon className="size-4 text-success" />
                         ) : (
-                          <ThumbsDownIcon className="size-4 text-red-500" />
+                          <ThumbsDownIcon className="size-4 text-danger" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -449,7 +451,7 @@ export default function AdminPage() {
                             No comment
                           </p>
                         )}
-                        <p className="text-[11px] text-muted-foreground/70 mt-1 truncate">
+                        <p className="text-xs text-muted-foreground/70 mt-1 truncate">
                           {f.displayName || f.email || f.userId}
                           {when && (
                             <>
@@ -478,7 +480,7 @@ export default function AdminPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search users…"
-                className="h-8 pl-7 text-xs bg-background"
+                className="h-8 pl-8 text-xs bg-background"
               />
             </div>
             <Button
@@ -500,7 +502,7 @@ export default function AdminPage() {
                     <Skeleton className="size-9 rounded-full" />
                     <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background bg-muted" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex-1 min-w-0 space-y-2">
                     <Skeleton
                       className={`h-3 ${["w-28", "w-36", "w-24", "w-32"][i]}`}
                     />
@@ -510,8 +512,8 @@ export default function AdminPage() {
                     <Skeleton className="h-2 w-16" />
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Skeleton className="size-7 rounded-md" />
-                    <Skeleton className="h-7 w-12 rounded-md" />
+                    <Skeleton className="size-7 rounded-lg" />
+                    <Skeleton className="h-7 w-12 rounded-lg" />
                   </div>
                 </div>
               ))}
@@ -555,19 +557,19 @@ export default function AdminPage() {
                         })()}
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-background ${
-                            active ? "bg-emerald-500" : "bg-muted-foreground/30"
+                            active ? "bg-success" : "bg-muted-foreground/30"
                           }`}
                         />
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold truncate">
                             {u.displayName ?? "—"}
                           </p>
                           {u.uid === user.uid && (
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                               You
                             </span>
                           )}
@@ -576,9 +578,9 @@ export default function AdminPage() {
                           {u.email ?? "—"}
                         </p>
                         {(u.lastLogin || u.lastAppVersion) && (
-                          <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {u.lastLogin && formatTimestamp(u.lastLogin)}
-                            {u.lastLogin && u.lastAppVersion && " · "}
+                            {u.lastLogin && u.lastAppVersion && " ·"}
                             {u.lastAppVersion && `v${u.lastAppVersion}`}
                           </p>
                         )}
@@ -595,16 +597,16 @@ export default function AdminPage() {
                           }
                         >
                           {isExpanded ? (
-                            <ChevronUpIcon className="size-3.5 text-muted-foreground" />
+                            <ChevronUpIcon className="text-muted-foreground" />
                           ) : (
-                            <ChevronDownIcon className="size-3.5 text-muted-foreground" />
+                            <ChevronDownIcon className="text-muted-foreground" />
                           )}
                         </Button>
                         {u.uid !== user.uid && (
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs px-2.5"
+                            className="h-7 text-xs px-3"
                             onClick={() => handleImpersonate(u.uid)}
                           >
                             View
@@ -618,7 +620,7 @@ export default function AdminPage() {
                       <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/20 space-y-3">
                         {/* UID */}
                         <p
-                          className="text-[10px] font-mono text-muted-foreground/40 cursor-pointer hover:text-muted-foreground/70 transition-colors break-all"
+                          className="text-xs font-mono text-muted-foreground cursor-pointer hover:text-muted-foreground/70 transition-colors break-all"
                           title="Click to copy UID"
                           onClick={() => {
                             navigator.clipboard.writeText(u.uid);
@@ -633,7 +635,7 @@ export default function AdminPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs px-2.5 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-500/10"
+                            className="h-7 text-xs px-3 border-warning/40 text-warning-strong hover:bg-warning-soft dark:border-warning/40 dark:text-warning-strong dark:hover:bg-warning-soft"
                             disabled={seedingDemo}
                             onClick={handleSeedDemo}
                           >
@@ -643,22 +645,22 @@ export default function AdminPage() {
 
                         {/* Stats */}
                         {isLoadingActs ? (
-                          <div className="flex gap-5">
-                            <div className="space-y-1.5">
+                          <div className="flex gap-6">
+                            <div className="space-y-2">
                               <Skeleton className="h-2 w-16" />
                               <Skeleton className="h-5 w-8" />
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                               <Skeleton className="h-2 w-12" />
                               <Skeleton className="h-5 w-5" />
                             </div>
                           </div>
                         ) : (
                           stats && (
-                            <div className="space-y-2.5">
-                              <div className="flex gap-5">
+                            <div className="space-y-3">
+                              <div className="flex gap-6">
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">
+                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
                                     Transactions
                                   </p>
                                   <p className="text-base font-bold">
@@ -666,7 +668,7 @@ export default function AdminPage() {
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">
+                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
                                     Accounts
                                   </p>
                                   <p className="text-base font-bold">
@@ -675,7 +677,7 @@ export default function AdminPage() {
                                 </div>
                                 {stats.activeCycles != null && (
                                   <div>
-                                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
                                       Active cycles
                                     </p>
                                     <p className="text-base font-bold">
@@ -689,7 +691,7 @@ export default function AdminPage() {
                               </div>
                               {(stats.memberSince ||
                                 stats.totalCycles != null) && (
-                                <p className="text-[11px] text-muted-foreground/60">
+                                <p className="text-xs text-muted-foreground">
                                   {stats.memberSince && (
                                     <>
                                       Member since{" "}
@@ -701,7 +703,7 @@ export default function AdminPage() {
                                   {stats.memberSince &&
                                     stats.totalCycles != null &&
                                     stats.totalCycles > 0 &&
-                                    " · "}
+                                    " ·"}
                                   {stats.totalCycles != null &&
                                     stats.totalCycles > 0 && (
                                       <>
@@ -722,11 +724,11 @@ export default function AdminPage() {
 
                         {/* Activity */}
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
                             Recent activity
                           </p>
                           {isLoadingActs ? (
-                            <div className="space-y-2.5">
+                            <div className="space-y-3">
                               {(
                                 [
                                   "w-full",
@@ -746,7 +748,7 @@ export default function AdminPage() {
                               ))}
                             </div>
                           ) : !acts || acts.length === 0 ? (
-                            <p className="text-xs text-muted-foreground/40">
+                            <p className="text-xs text-muted-foreground">
                               No activity recorded.
                             </p>
                           ) : (

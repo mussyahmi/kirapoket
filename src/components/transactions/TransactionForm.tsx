@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay, subDays, isSameDay } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
+import { ArrowLeftIcon, TriangleAlertIcon, CalendarIcon } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,11 @@ export function TransactionForm({
   const [txType, setTxType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const isRecentDate =
+    isSameDay(selectedDate, startOfDay(new Date())) ||
+    isSameDay(selectedDate, startOfDay(subDays(new Date(), 1)));
+  // The calendar stays closed unless the date isn't today/yesterday
+  const [showCalendar, setShowCalendar] = useState(false);
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
@@ -233,7 +238,7 @@ export function TransactionForm({
     const acc = accounts.find((a) => a.id === accId);
     if (!acc) return null;
 
-    // Edit mode uses the net revert-then-apply delta with an "After saving" label
+    // Edit mode uses the net revert-then-apply delta with an"After saving" label
     if (isEdit) {
       const delta = editBalanceChanges[accId] ?? 0;
       const changed = delta !== 0;
@@ -242,7 +247,7 @@ export function TransactionForm({
       return (
         <div
           className={cn(
-            "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
+            "mt-3 rounded-lg border px-3 py-3 text-sm",
             short
               ? "border-destructive/40 bg-destructive/5"
               : "border-border bg-muted/40",
@@ -257,7 +262,7 @@ export function TransactionForm({
           {changed && (
             <div
               className={cn(
-                "mt-1.5 flex items-center justify-between border-t pt-1.5",
+                "mt-2 flex items-center justify-between border-t pt-2",
                 short ? "border-destructive/30" : "border-border/60",
               )}
             >
@@ -314,7 +319,7 @@ export function TransactionForm({
     return (
       <div
         className={cn(
-          "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
+          "mt-3 rounded-lg border px-3 py-3 text-sm",
           short
             ? "border-destructive/40 bg-destructive/5"
             : "border-border bg-muted/40",
@@ -329,7 +334,7 @@ export function TransactionForm({
         {hasAmt && (
           <div
             className={cn(
-              "mt-1.5 flex items-center justify-between border-t pt-1.5",
+              "mt-2 flex items-center justify-between border-t pt-2",
               short ? "border-destructive/30" : "border-border/60",
             )}
           >
@@ -392,7 +397,7 @@ export function TransactionForm({
     const path = [l1Id, l2Id, l3Id]
       .map((id) => categories.find((c) => c.id === id)?.name)
       .filter(Boolean)
-      .join(" › ");
+      .join(" ›");
     let timeLabel: string | undefined;
     try {
       if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
@@ -563,10 +568,10 @@ export function TransactionForm({
   );
 
   const CategoryDrillDown = () => (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* L1 */}
       <div>
-        <Label className="mb-1.5 block">Category</Label>
+        <Label className="mb-2 block">Category</Label>
         {loadingCategories ? (
           <PillSkeletons widths={["w-16", "w-16", "w-20"]} />
         ) : (
@@ -577,7 +582,7 @@ export function TransactionForm({
                 type="button"
                 onClick={() => handleSelectL1(cat.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                  "px-3 py-2 rounded-lg text-sm border transition-colors",
                   l1Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted",
@@ -598,7 +603,7 @@ export function TransactionForm({
       {/* L2 */}
       {l1Id && l2Categories.length > 0 && (
         <div>
-          <Label className="mb-1.5 block">Subcategory</Label>
+          <Label className="mb-2 block">Subcategory</Label>
           <div className="flex flex-wrap gap-2">
             {l2Categories.map((cat) => (
               <button
@@ -606,7 +611,7 @@ export function TransactionForm({
                 type="button"
                 onClick={() => handleSelectL2(cat.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                  "px-3 py-2 rounded-lg text-sm border transition-colors",
                   l2Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted",
@@ -622,7 +627,7 @@ export function TransactionForm({
       {/* L3 */}
       {l2Id && l3Categories.length > 0 && (
         <div>
-          <Label className="mb-1.5 block">Item</Label>
+          <Label className="mb-2 block">Item</Label>
           <div className="flex flex-wrap gap-2">
             {l3Categories.map((cat) => (
               <button
@@ -630,7 +635,7 @@ export function TransactionForm({
                 type="button"
                 onClick={() => setL3Id(l3Id === cat.id ? null : cat.id)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                  "px-3 py-2 rounded-lg text-sm border transition-colors",
                   l3Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background hover:bg-muted",
@@ -648,18 +653,20 @@ export function TransactionForm({
   if (!setupLoading && !setupComplete) {
     return (
       <div
-        className={cn("space-y-4", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}
+        className={cn(
+          "space-y-4",
+          !embedded && "p-4 md:p-6 max-w-form mx-auto",
+        )}
       >
         {!embedded && (
           <div className="flex items-center gap-2 mb-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon-sm"
               type="button"
-              className="h-8 w-8 p-0"
               onClick={onCancel}
             >
-              <ArrowLeftIcon className="size-4" />
+              <ArrowLeftIcon />
             </Button>
             <h1 className="text-xl font-semibold">New Transaction</h1>
           </div>
@@ -672,7 +679,7 @@ export function TransactionForm({
             </p>
             <a
               href="/accounts"
-              className="inline-block underline text-foreground text-sm"
+              className="inline-block link-underline text-foreground text-sm"
             >
               Add an account
             </a>
@@ -686,7 +693,10 @@ export function TransactionForm({
   if (isEdit && !editTx) {
     return (
       <div
-        className={cn("space-y-3", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}
+        className={cn(
+          "space-y-3",
+          !embedded && "p-4 md:p-6 max-w-form mx-auto",
+        )}
       >
         {loadingTransactions ? (
           <>
@@ -704,26 +714,25 @@ export function TransactionForm({
   }
 
   return (
-    <div className={embedded ? "" : "p-4 md:p-6 max-w-lg mx-auto"}>
+    <div className={embedded ? "" : "p-4 md:p-6 max-w-form mx-auto"}>
       {!embedded && (
         <div className="flex items-center gap-2 mb-6">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             type="button"
-            className="h-8 w-8 p-0"
             onClick={onCancel}
           >
-            <ArrowLeftIcon className="size-4" />
+            <ArrowLeftIcon />
           </Button>
           <h1 className="text-xl font-semibold">New Transaction</h1>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Type Selector */}
         <div>
-          <Label className="mb-1.5 block">Type</Label>
+          <Label className="mb-2 block">Type</Label>
           <div className="flex rounded-lg overflow-hidden border border-border">
             {(["expense", "income", "transfer"] as TxType[]).map((type) => (
               <button
@@ -749,7 +758,7 @@ export function TransactionForm({
         </div>
 
         {/* Amount */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="amount">Amount (MYR)</Label>
           <Input
             id="amount"
@@ -767,19 +776,69 @@ export function TransactionForm({
           />
         </div>
 
-        {/* Date & Time */}
-        <div className="space-y-1.5">
+        {/* Date & Time — §3: the date is "today" the overwhelming majority of
+            the time, so a permanently-open 450px calendar was taking the most
+            vertical space in the form for the least-changed field. */}
+        <div className="space-y-2">
           <Label>Date</Label>
-          <div className="rounded-xl border border-border min-h-[450px] bg-background overflow-hidden">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(d) => d && setSelectedDate(d)}
-              disabled={{ after: new Date() }}
-              className="w-full"
-            />
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Today", date: startOfDay(new Date()) },
+              { label: "Yesterday", date: startOfDay(subDays(new Date(), 1)) },
+            ].map(({ label, date }) => {
+              const active = !showCalendar && isSameDay(selectedDate, date);
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate(date);
+                    setShowCalendar(false);
+                  }}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setShowCalendar((v) => !v)}
+              aria-expanded={showCalendar}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                showCalendar || !isRecentDate
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:bg-muted",
+              )}
+            >
+              <CalendarIcon className="size-4" />
+              {isRecentDate
+                ? "Pick a date"
+                : format(selectedDate, "d MMM yyyy")}
+            </button>
           </div>
-          <div className="space-y-1.5 mt-6">
+          {showCalendar && (
+            <div className="overflow-hidden rounded-xl border border-border bg-background">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => {
+                  if (!d) return;
+                  setSelectedDate(d);
+                  setShowCalendar(false);
+                }}
+                disabled={{ after: new Date() }}
+                className="w-full"
+              />
+            </div>
+          )}
+          <div className="mt-6 space-y-2">
             <Label htmlFor="time">Time</Label>
             <Input
               id="time"
@@ -793,7 +852,7 @@ export function TransactionForm({
 
         {/* Account */}
         <div>
-          <Label className="mb-1.5 block">
+          <Label className="mb-2 block">
             {txType === "transfer" ? "From Account" : "Account"}
           </Label>
           {loadingAccounts ? (
@@ -806,7 +865,7 @@ export function TransactionForm({
                   type="button"
                   onClick={() => setAccountId(a.id)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                    "px-3 py-2 rounded-lg text-sm border transition-colors",
                     accountId === a.id
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-background hover:bg-muted",
@@ -823,7 +882,7 @@ export function TransactionForm({
         {/* To Account (Transfer only) */}
         {txType === "transfer" && (
           <div>
-            <Label className="mb-1.5 block">To Account</Label>
+            <Label className="mb-2 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
               {accounts
                 .filter((a) => a.id !== accountId)
@@ -833,7 +892,7 @@ export function TransactionForm({
                     type="button"
                     onClick={() => setToAccountId(a.id)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                      "px-3 py-2 rounded-lg text-sm border transition-colors",
                       toAccountId === a.id
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-background hover:bg-muted",
@@ -851,7 +910,7 @@ export function TransactionForm({
         {txType === "expense" && <CategoryDrillDown />}
 
         {/* Note */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="note">Note (optional)</Label>
           <Textarea
             id="note"

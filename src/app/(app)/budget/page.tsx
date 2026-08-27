@@ -50,6 +50,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { l1Color, tint } from "@/lib/palette";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
 
 interface L3EditForm {
@@ -60,12 +61,6 @@ interface L3EditForm {
   note: string;
   links: string[];
 }
-
-const L1_COLORS: Record<string, string> = {
-  needs: "#4ade80",
-  wants: "#f97316",
-  savings: "#60a5fa",
-};
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("ms-MY", {
@@ -104,7 +99,7 @@ function SortableForecastItem({
         {...attributes}
         {...listeners}
         tabIndex={-1}
-        className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0"
+        className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/70 hover:text-foreground shrink-0"
       >
         <GripVerticalIcon className="size-3" />
       </button>
@@ -459,7 +454,7 @@ export default function BudgetPage() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+      <div className="p-4 md:p-6 max-w-content mx-auto space-y-4">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-36 w-full rounded-xl" />
         <Skeleton className="h-40 w-full rounded-xl" />
@@ -469,32 +464,26 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Budget</h1>
         <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
       </div>
 
-      {/* AI Assistant entry point */}
+      {/* AI Assistant entry point — §2: this feature does not exist yet, so it
+          is a quiet link rather than a full-width gradient banner sitting above
+          the page's actual content. */}
       <button
         type="button"
         onClick={() => router.push("/assistant")}
-        className="w-full rounded-xl border border-amber-200/60 dark:border-amber-700/40 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 px-4 py-3 flex items-center justify-between gap-3 text-left transition-colors hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-950/60 dark:hover:to-orange-950/50"
+        className="flex w-full items-center gap-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-            <SparklesIcon className="size-4 text-amber-500 dark:text-amber-400" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              Ask AI about your spending
-            </p>
-            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">
-              Coming soon
-            </p>
-          </div>
-        </div>
-        <ChevronRightIcon className="size-4 text-amber-500/70 dark:text-amber-400/70 shrink-0" />
+        <SparklesIcon className="size-3.5 shrink-0 text-warning" />
+        <span>Ask AI about your spending</span>
+        <span className="bg-muted rounded-full px-2 py-0.5 text-xs font-medium">
+          Soon
+        </span>
+        <ChevronRightIcon className="ml-auto size-3.5 shrink-0" />
       </button>
 
       <div className="space-y-6">
@@ -512,7 +501,7 @@ export default function BudgetPage() {
                       type="button"
                       onClick={() => setMode(m)}
                       className={cn(
-                        "px-3 py-1.5 capitalize transition-colors",
+                        "px-3 py-2 capitalize transition-colors",
                         mode === m
                           ? "bg-primary text-primary-foreground"
                           : "bg-background text-muted-foreground hover:bg-muted",
@@ -525,12 +514,12 @@ export default function BudgetPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2.5">
+          <CardContent className="space-y-6">
             {/* Income display */}
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">
+                <span className="font-medium tabular-nums text-success">
                   {fmt(actualIncome)}
                 </span>
               </div>
@@ -538,7 +527,7 @@ export default function BudgetPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Expected income</span>
-                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">
+                  <span className="font-medium tabular-nums text-success">
                     {fmt(forecastIncome)}
                   </span>
                 </div>
@@ -553,18 +542,18 @@ export default function BudgetPage() {
                       items={savedItems.map((i) => i.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-1.5 pl-1 border-l-2 border-border">
+                      <div className="space-y-2 pl-1 border-l-2 border-border">
                         {savedItems.map((item) =>
                           editingId === item.id ? (
                             <div
                               key={item.id}
-                              className="flex gap-1.5 items-center pl-4"
+                              className="flex gap-2 items-center pl-4"
                             >
                               <Input
                                 autoFocus
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
-                                className="flex-1 h-7 text-xs"
+                                className="flex-1 h-7 pointer-coarse:h-10 text-xs"
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && handleSaveEdit()
                                 }
@@ -574,7 +563,7 @@ export default function BudgetPage() {
                                 inputMode="decimal"
                                 value={editAmount}
                                 onChange={(e) => setEditAmount(e.target.value)}
-                                className="w-24 h-7 text-xs"
+                                className="w-24 h-7 pointer-coarse:h-10 text-xs"
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && handleSaveEdit()
                                 }
@@ -608,14 +597,14 @@ export default function BudgetPage() {
                                   <button
                                     type="button"
                                     onClick={() => startEdit(item)}
-                                    className="amt tabular-nums text-green-600 dark:text-green-400 hover:underline"
+                                    className="amt tabular-nums text-success hover:link-underline"
                                   >
                                     {fmt(item.amount)}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteItem(item.id)}
-                                    className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                                    className="text-muted-foreground hover:text-danger transition-colors"
                                   >
                                     <Trash2Icon className="size-3" />
                                   </button>
@@ -634,7 +623,7 @@ export default function BudgetPage() {
                     placeholder="e.g. Salary, KWSP"
                     value={newLabel}
                     onChange={(e) => setNewLabel(e.target.value)}
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-8 pointer-coarse:h-11 text-xs"
                     onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
                   />
                   <Input
@@ -643,30 +632,30 @@ export default function BudgetPage() {
                     inputMode="decimal"
                     value={newAmount}
                     onChange={(e) => setNewAmount(e.target.value)}
-                    className="w-28 h-8 text-xs"
+                    className="w-28 h-8 pointer-coarse:h-11 text-xs"
                     onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
                   />
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 px-2"
+                    className="h-8 pointer-coarse:h-11 px-2"
                     onClick={handleAddItem}
                     disabled={saving}
                   >
-                    <PlusIcon className="size-3.5" />
+                    <PlusIcon />
                   </Button>
                 </div>
               </div>
             )}
 
             {/* Allocation section */}
-            <div className="rounded-xl border border-border/60 overflow-hidden">
-              <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">
+            <div className="overflow-hidden rounded-xl bg-muted/30">
+              <div className="px-3 pt-3 pb-1">
+                <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                   Allocation
                 </span>
               </div>
-              <div className="px-3 py-2.5 space-y-2.5">
+              <div className="px-3 py-3 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total budgeted</span>
                   <span className="font-medium amt tabular-nums text-muted-foreground">
@@ -675,46 +664,46 @@ export default function BudgetPage() {
                   </span>
                 </div>
                 {unbudgetedSpending > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <button
                         type="button"
                         onClick={() => setUnbudgetedInfoOpen((v) => !v)}
-                        className="flex items-center gap-1 text-orange-500/80 hover:text-orange-500 transition-colors"
+                        className="flex items-center gap-1 text-warning-strong hover:text-warning-strong transition-colors"
                       >
                         Unbudgeted spending
                         <InfoIcon className="size-3 shrink-0" />
                       </button>
-                      <span className="font-medium tabular-nums text-orange-500">
-                        <span className="text-orange-400/60">−</span>{" "}
+                      <span className="font-medium tabular-nums text-warning-strong">
+                        <span className="text-warning-strong/70">−</span>{" "}
                         {fmt(unbudgetedSpending)}
                       </span>
                     </div>
                     {unbudgetedInfoOpen && (
-                      <p className="text-[11px] text-orange-500/70 leading-snug pl-3 border-l-2 border-orange-300/60 dark:border-orange-700/60">
+                      <p className="text-xs text-warning-strong leading-relaxed pl-3 border-l-2 border-warning/40">
                         Spending on categories that have no budget set.
                       </p>
                     )}
                   </div>
                 )}
                 {totalExceedAmount > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <button
                         type="button"
                         onClick={() => setOverBudgetInfoOpen((v) => !v)}
-                        className="flex items-center gap-1 text-red-500/80 hover:text-red-500 transition-colors"
+                        className="flex items-center gap-1 text-danger-strong hover:text-danger transition-colors"
                       >
                         Over-budget spending
                         <InfoIcon className="size-3 shrink-0" />
                       </button>
-                      <span className="font-medium tabular-nums text-red-500">
-                        <span className="text-red-400/60">−</span>{" "}
+                      <span className="font-medium tabular-nums text-danger">
+                        <span className="text-danger/70">−</span>{" "}
                         {fmt(totalExceedAmount)}
                       </span>
                     </div>
                     {overBudgetInfoOpen && (
-                      <p className="text-[11px] text-red-500/70 leading-snug pl-3 border-l-2 border-red-300/60 dark:border-red-700/60">
+                      <p className="text-xs text-danger leading-relaxed pl-3 border-l-2 border-danger/40">
                         Spending that exceeded category budgets.
                       </p>
                     )}
@@ -722,14 +711,12 @@ export default function BudgetPage() {
                 )}
                 <div
                   className={cn(
-                    "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-2.5 mt-0.5",
+                    "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-3 mt-0.5",
                   )}
                 >
                   <span
                     className={cn(
-                      unallocated < 0
-                        ? "text-red-500"
-                        : "text-blue-500 dark:text-blue-400",
+                      unallocated < 0 ? "text-danger" : "text-info",
                     )}
                   >
                     Unallocated
@@ -737,9 +724,7 @@ export default function BudgetPage() {
                   <span
                     className={cn(
                       "amt tabular-nums",
-                      unallocated < 0
-                        ? "text-red-500"
-                        : "text-blue-500 dark:text-blue-400",
+                      unallocated < 0 ? "text-danger" : "text-info",
                     )}
                   >
                     {fmt(unallocated)}
@@ -749,16 +734,16 @@ export default function BudgetPage() {
             </div>
 
             {/* Actuals section */}
-            <div className="rounded-xl border border-border/60 overflow-hidden">
-              <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">
+            <div className="overflow-hidden rounded-xl bg-muted/30">
+              <div className="px-3 pt-3 pb-1">
+                <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                   Actuals
                 </span>
               </div>
-              <div className="px-3 py-2.5 space-y-2.5">
+              <div className="px-3 py-3 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Spent so far</span>
-                  <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">
+                  <span className="font-medium amt tabular-nums text-danger">
                     {fmt(totalSpent)}
                   </span>
                 </div>
@@ -767,30 +752,26 @@ export default function BudgetPage() {
                   <span
                     className={cn(
                       "amt tabular-nums",
-                      actualRemaining < 0
-                        ? "text-red-500"
-                        : "text-green-500 dark:text-green-400",
+                      actualRemaining < 0 ? "text-danger" : "text-success",
                     )}
                   >
                     {fmt(actualRemaining)}
                   </span>
                 </div>
                 {effectiveIncome > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className="space-y-2">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-500",
-                          actualRemaining < 0
-                            ? "bg-red-500"
-                            : "bg-green-500 dark:bg-green-400",
+                          actualRemaining < 0 ? "bg-danger" : "bg-success",
                         )}
                         style={{
                           width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%`,
                         }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground/60 tabular-nums">
+                    <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
                       <span>
                         {Math.round((totalSpent / effectiveIncome) * 100)}%
                         spent
@@ -818,11 +799,11 @@ export default function BudgetPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-7"
+                className="size-7 pointer-coarse:size-10"
                 onClick={() => router.push("/categories")}
                 aria-label="Go to categories"
               >
-                <TagsIcon className="size-3.5 text-muted-foreground" />
+                <TagsIcon className="text-muted-foreground" />
               </Button>
             </div>
           </CardHeader>
@@ -830,7 +811,10 @@ export default function BudgetPage() {
             {!hasBudgets ? (
               <p className="text-sm text-muted-foreground">
                 No budgets set. Add budgets from the{" "}
-                <a href="/categories" className="underline text-foreground">
+                <a
+                  href="/categories"
+                  className="link-underline text-foreground"
+                >
                   Categories
                 </a>{" "}
                 page.
@@ -848,7 +832,7 @@ export default function BudgetPage() {
                 );
                 if (l2sVisible.length === 0) return null;
 
-                const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
+                const color = l1Color(l1.type);
                 const isExpanded = effectiveExpanded.has(l1.id);
                 const l1spent = l2sVisible.reduce(
                   (s, l2) => s + (l2SpendingMap[l2.id] ?? 0),
@@ -868,7 +852,7 @@ export default function BudgetPage() {
                       aria-label={
                         isExpanded ? `Collapse ${l1.name}` : `Expand ${l1.name}`
                       }
-                      className="flex w-full items-center justify-between gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors"
+                      className="flex w-full items-center justify-between gap-2 rounded-lg px-1 -mx-1 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <ChevronDownIcon
@@ -881,17 +865,17 @@ export default function BudgetPage() {
                           className="size-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: color }}
                         />
-                        <p className="text-sm font-bold">{l1.name}</p>
+                        <p className="text-sm font-semibold">{l1.name}</p>
                       </div>
                       <span
                         className={cn(
                           "amt tabular-nums text-xs shrink-0",
-                          l1over ? "text-red-500" : "text-muted-foreground",
+                          l1over ? "text-danger" : "text-muted-foreground",
                         )}
                       >
                         {fmt(l1spent)}
                         {l1budget > 0 && (
-                          <span className="amt text-muted-foreground/50">
+                          <span className="amt text-muted-foreground">
                             {" "}
                             / {fmt(l1budget)}
                           </span>
@@ -903,7 +887,7 @@ export default function BudgetPage() {
                     {isExpanded && (
                       <div
                         className="space-y-3 pl-4 border-l-2"
-                        style={{ borderColor: color + "66" }}
+                        style={{ borderColor: tint(color, 40) }}
                       >
                         {l2sVisible.map((l2) => {
                           const l2budget = l2BudgetMap[l2.id] ?? 0;
@@ -941,7 +925,7 @@ export default function BudgetPage() {
                           );
 
                           return (
-                            <div key={l2.id} className="space-y-1.5">
+                            <div key={l2.id} className="space-y-2">
                               {/* L2 name + amounts */}
                               <button
                                 type="button"
@@ -950,11 +934,11 @@ export default function BudgetPage() {
                                     `/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`,
                                   )
                                 }
-                                className="flex items-center justify-between gap-2 text-sm rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                                className="flex items-center justify-between gap-2 text-sm rounded-lg px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
                               >
                                 <span
                                   className={cn(
-                                    "font-medium text-left",
+                                    "min-w-0 truncate font-medium text-left",
                                     l2budget > 0 &&
                                       !l2over &&
                                       l2remaining === 0 &&
@@ -967,13 +951,13 @@ export default function BudgetPage() {
                                   className={cn(
                                     "amt tabular-nums shrink-0 text-xs",
                                     l2over
-                                      ? "text-red-500"
+                                      ? "text-danger"
                                       : "text-muted-foreground",
                                   )}
                                 >
                                   {fmt(l2spent)}
                                   {l2budget > 0 && (
-                                    <span className="amt text-muted-foreground/50">
+                                    <span className="amt text-muted-foreground">
                                       {" "}
                                       / {fmt(l2budget)}
                                     </span>
@@ -989,7 +973,7 @@ export default function BudgetPage() {
                                       style={{
                                         width: `${l2pct}%`,
                                         backgroundColor: l2over
-                                          ? "#ef4444"
+                                          ? "var(--danger)"
                                           : color,
                                       }}
                                     />
@@ -997,10 +981,10 @@ export default function BudgetPage() {
                                   {(l2over || l2remaining !== 0) && (
                                     <span
                                       className={cn(
-                                        "text-[10px] tabular-nums amt shrink-0 w-20 text-right",
+                                        "text-xs tabular-nums amt shrink-0 w-24 text-right",
                                         l2over
-                                          ? "text-red-500"
-                                          : "text-muted-foreground/60",
+                                          ? "text-danger"
+                                          : "text-muted-foreground",
                                       )}
                                     >
                                       {l2over
@@ -1025,15 +1009,15 @@ export default function BudgetPage() {
                                         key={l3.id}
                                         type="button"
                                         onClick={() => setSelectedL3(l3)}
-                                        className="flex items-center justify-between gap-2 text-xs rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                                        className="flex items-center justify-between gap-2 text-xs rounded-lg px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
                                       >
                                         <span
                                           className={cn(
-                                            "text-left",
+                                            "min-w-0 truncate text-left",
                                             l3over
-                                              ? "text-red-500-80 hover:text-red-500"
+                                              ? "text-danger-strong hover:text-danger"
                                               : l3budget === 0
-                                                ? "text-orange-500/80 hover:text-orange-500"
+                                                ? "text-warning-strong hover:text-warning-strong"
                                                 : "text-muted-foreground/80 hover:text-muted-foreground",
                                             !l3over &&
                                               l3remaining === 0 &&
@@ -1042,20 +1026,20 @@ export default function BudgetPage() {
                                         >
                                           {l3.name}
                                         </span>
-                                        <div className="flex items-center gap-1.5 shrink-0">
+                                        <div className="flex items-center gap-2 shrink-0">
                                           <span
                                             className={cn(
                                               "amt tabular-nums",
                                               l3over
-                                                ? "text-red-500"
+                                                ? "text-danger"
                                                 : l3budget === 0
-                                                  ? "text-orange-500"
+                                                  ? "text-warning-strong"
                                                   : "text-muted-foreground",
                                             )}
                                           >
                                             {fmt(l3spent)}
                                             {l3budget > 0 && (
-                                              <span className="amt text-muted-foreground/50">
+                                              <span className="amt text-muted-foreground">
                                                 {" "}
                                                 / {fmt(l3budget)}
                                               </span>
@@ -1065,10 +1049,10 @@ export default function BudgetPage() {
                                             (l3over || l3remaining !== 0) && (
                                               <span
                                                 className={cn(
-                                                  "text-[10px] amt tabular-nums",
+                                                  "text-xs amt tabular-nums",
                                                   l3over
-                                                    ? "text-red-400"
-                                                    : "text-muted-foreground/50",
+                                                    ? "text-danger"
+                                                    : "text-muted-foreground",
                                                 )}
                                               >
                                                 (
@@ -1108,7 +1092,7 @@ export default function BudgetPage() {
           const l2 = categories.find((x) => x.id === l3.parentId);
           return l2 && c.id === l2.parentId;
         });
-        const color = L1_COLORS[l1?.type ?? ""] ?? "#94a3b8";
+        const color = l1Color(l1?.type);
         return (
           <Dialog
             open={!!selectedL3}
@@ -1150,17 +1134,13 @@ export default function BudgetPage() {
                   <div
                     className={cn(
                       "rounded-xl px-4 py-3 flex items-center justify-between",
-                      l3over
-                        ? "bg-red-50 dark:bg-red-950/30"
-                        : "bg-green-50 dark:bg-green-950/30",
+                      l3over ? "bg-danger-soft" : "bg-success-soft",
                     )}
                   >
                     <p
                       className={cn(
                         "text-xs font-semibold tracking-widest uppercase",
-                        l3over
-                          ? "text-red-500"
-                          : "text-green-600 dark:text-green-400",
+                        l3over ? "text-danger" : "text-success",
                       )}
                     >
                       Spent
@@ -1168,9 +1148,7 @@ export default function BudgetPage() {
                     <p
                       className={cn(
                         "text-lg font-bold",
-                        l3over
-                          ? "text-red-500"
-                          : "text-green-600 dark:text-green-400",
+                        l3over ? "text-danger" : "text-success",
                       )}
                     >
                       {fmt(l3spent)}
@@ -1186,7 +1164,7 @@ export default function BudgetPage() {
                   </div>
                 )}
                 {l3.links && l3.links.length > 0 && (
-                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1.5">
+                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-2">
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                       Links
                     </p>
@@ -1196,7 +1174,7 @@ export default function BudgetPage() {
                         href={link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block text-sm text-primary underline truncate"
+                        className="block text-sm text-primary link-underline truncate"
                       >
                         {link}
                       </a>
@@ -1206,7 +1184,7 @@ export default function BudgetPage() {
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     variant="outline"
-                    className="flex-1 gap-1.5"
+                    className="flex-1 gap-2"
                     onClick={() => {
                       setSelectedL3(null);
                       router.push(
@@ -1214,15 +1192,15 @@ export default function BudgetPage() {
                       );
                     }}
                   >
-                    <ListIcon className="size-3.5" /> Transactions
+                    <ListIcon /> Transactions
                   </Button>
                   {!isReadOnly && (
                     <Button
                       variant="outline"
-                      className="flex-1 gap-1.5"
+                      className="flex-1 gap-2"
                       onClick={() => openL3Edit(l3)}
                     >
-                      <PencilIcon className="size-3.5" /> Edit
+                      <PencilIcon /> Edit
                     </Button>
                   )}
                 </div>
@@ -1240,7 +1218,7 @@ export default function BudgetPage() {
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleL3Save} className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="l3-name">Name</Label>
               <Input
                 id="l3-name"
@@ -1252,7 +1230,7 @@ export default function BudgetPage() {
               />
             </div>
             <div className="space-y-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Budget (optional)</Label>
                 <div className="flex rounded-lg border border-border overflow-hidden">
                   {(["cycle", "daily"] as const).map((t) => (
@@ -1263,7 +1241,7 @@ export default function BudgetPage() {
                         setL3EditForm({ ...l3EditForm, budgetType: t })
                       }
                       className={cn(
-                        "flex-1 py-1.5 text-sm font-medium transition-colors",
+                        "flex-1 py-2 text-sm font-medium transition-colors",
                         l3EditForm.budgetType === t
                           ? "bg-primary text-primary-foreground"
                           : "bg-background text-muted-foreground hover:bg-muted",
@@ -1275,7 +1253,7 @@ export default function BudgetPage() {
                 </div>
               </div>
               {l3EditForm.budgetType === "cycle" ? (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Amount (MYR)</Label>
                   <Input
                     type="number"
@@ -1291,7 +1269,7 @@ export default function BudgetPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label>Amount / day (MYR)</Label>
                     <Input
                       type="number"
@@ -1305,13 +1283,13 @@ export default function BudgetPage() {
                       }
                     />
                   </div>
-                  <div className="space-y-1.5 mt-4">
+                  <div className="space-y-2 mt-4">
                     <div className="flex items-center justify-between">
                       <Label>Select days this cycle</Label>
                       {l3EditForm.budgetSelectedDates.length > 0 && (
                         <button
                           type="button"
-                          className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                          className="text-xs text-muted-foreground link-underline hover:text-foreground"
                           onClick={() =>
                             setL3EditForm({
                               ...l3EditForm,
@@ -1358,7 +1336,7 @@ export default function BudgetPage() {
                 </div>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="l3-note">Note (optional)</Label>
               <Textarea
                 id="l3-note"
@@ -1370,7 +1348,7 @@ export default function BudgetPage() {
                 }
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Links (optional)</Label>
               <div className="space-y-2">
                 {l3EditForm.links.map((link, i) => (
@@ -1396,7 +1374,7 @@ export default function BudgetPage() {
                         })
                       }
                     >
-                      <Trash2Icon className="size-4 text-muted-foreground" />
+                      <Trash2Icon className="text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
@@ -1412,7 +1390,7 @@ export default function BudgetPage() {
                     })
                   }
                 >
-                  <PlusIcon className="size-4 mr-1.5" /> Add link
+                  <PlusIcon className="mr-2" /> Add link
                 </Button>
               </div>
             </div>

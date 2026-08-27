@@ -241,7 +241,7 @@ function SettingsPage() {
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "?";
     return name
-      .split(" ")
+      .split("")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
@@ -255,10 +255,10 @@ function SettingsPage() {
     : null;
 
   return (
-    <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4 pb-10">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-4 pb-12">
       {/* Profile */}
       <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-        <CardContent className="flex items-center gap-4 py-5">
+        <CardContent className="flex items-center gap-4 py-6">
           {loadingProfile ? (
             <div className="size-16 shrink-0 rounded-full bg-muted animate-pulse" />
           ) : (
@@ -269,7 +269,7 @@ function SettingsPage() {
               aria-label="View photo"
               className="size-16 shrink-0 rounded-full disabled:cursor-default"
             >
-              <Avatar className="size-full shadow-sm">
+              <Avatar className="size-full shadow-e1">
                 {avatarSrc ? (
                   <AvatarImage
                     src={avatarSrc}
@@ -285,8 +285,8 @@ function SettingsPage() {
           <div className="min-w-0 flex-1">
             {loadingProfile ? (
               <div className="space-y-2">
-                <div className="h-4 w-32 rounded-md bg-muted animate-pulse" />
-                <div className="h-3 w-44 rounded-md bg-muted animate-pulse" />
+                <div className="h-4 w-32 rounded-lg bg-muted animate-pulse" />
+                <div className="h-3 w-44 rounded-lg bg-muted animate-pulse" />
               </div>
             ) : (
               <>
@@ -300,7 +300,7 @@ function SettingsPage() {
                   <button
                     type="button"
                     onClick={openEditProfile}
-                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:link-underline"
                   >
                     <PencilIcon className="size-3" /> Edit profile
                   </button>
@@ -312,7 +312,7 @@ function SettingsPage() {
             type="button"
             onClick={() => setSignOutDialogOpen(true)}
             title="Sign out"
-            className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           >
             <LogOutIcon className="size-4" />
           </button>
@@ -343,7 +343,7 @@ function SettingsPage() {
                 className={cn(
                   "h-9 rounded-lg text-sm font-medium transition-all",
                   salaryDay === day
-                    ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                    ? "bg-primary text-primary-foreground shadow-e1 scale-105"
                     : isReadOnly
                       ? "bg-muted text-muted-foreground cursor-not-allowed"
                       : "bg-muted text-foreground hover:bg-muted/70",
@@ -388,7 +388,7 @@ function SettingsPage() {
                 >
                   <div
                     className={cn(
-                      "mb-2 h-10 rounded-md border",
+                      "mb-2 h-10 rounded-lg border",
                       value === "light"
                         ? "bg-white border-zinc-200"
                         : "bg-zinc-900 border-zinc-700",
@@ -396,18 +396,18 @@ function SettingsPage() {
                   >
                     <div
                       className={cn(
-                        "m-1.5 h-2 w-1/2 rounded-full",
+                        "m-2 h-2 w-1/2 rounded-full",
                         value === "light" ? "bg-zinc-200" : "bg-zinc-700",
                       )}
                     />
                     <div
                       className={cn(
-                        "mx-1.5 h-1.5 w-3/4 rounded-full",
+                        "mx-2 h-1.5 w-3/4 rounded-full",
                         value === "light" ? "bg-zinc-100" : "bg-zinc-800",
                       )}
                     />
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <Icon className="size-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium">{label}</span>
                   </div>
@@ -470,7 +470,7 @@ function SettingsPage() {
             >
               <span
                 className={cn(
-                  "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                  "inline-block size-4 rounded-full bg-white shadow-e1 transition-transform",
                   confirmBeforeSaving ? "translate-x-6" : "translate-x-1",
                 )}
               />
@@ -506,11 +506,11 @@ function SettingsPage() {
                   onClick={handleInvitePartner}
                   disabled={inviting || !inviteEmail.trim() || isImpersonating}
                 >
-                  <SendIcon className="size-3.5 mr-1.5" />
+                  <SendIcon className="mr-2" />
                   {inviting ? "Sending…" : "Invite"}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-xs text-muted-foreground">
                 They must have a KiraPoket account with that email.
               </p>
             </>
@@ -518,13 +518,13 @@ function SettingsPage() {
 
           {partnership?.status === "pending" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3">
-                <span className="size-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <div className="flex items-center gap-3 rounded-xl bg-warning-soft border border-warning/30 px-4 py-3">
+                <span className="size-2 rounded-full bg-warning animate-pulse shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                  <p className="text-xs font-medium text-warning-strong">
                     Waiting for acceptance
                   </p>
-                  <p className="text-xs text-amber-700/70 dark:text-amber-400/70 truncate">
+                  <p className="text-xs text-warning-strong/80 truncate">
                     {partnership.inviteeEmail}
                   </p>
                 </div>
@@ -539,7 +539,7 @@ function SettingsPage() {
                   toast.success("Invite cancelled.");
                 }}
               >
-                <XCircleIcon className="size-3.5 mr-1.5" />
+                <XCircleIcon className="mr-2" />
                 Cancel Invite
               </Button>
             </div>
@@ -547,15 +547,13 @@ function SettingsPage() {
 
           {partnership?.status === "active" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40 px-4 py-3">
-                <CheckCircle2Icon className="size-4 text-green-600 dark:text-green-400 shrink-0" />
+              <div className="flex items-center gap-3 rounded-xl bg-success-soft border border-success/25 px-4 py-3">
+                <CheckCircle2Icon className="size-4 text-success shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-green-800 dark:text-green-300">
+                  <p className="text-xs font-medium text-success-strong">
                     Connected
                   </p>
-                  <p className="text-xs text-green-700/70 dark:text-green-400/70 truncate">
-                    {partnerName}
-                  </p>
+                  <p className="text-xs text-success truncate">{partnerName}</p>
                 </div>
               </div>
               {isViewingPartner ? (
@@ -569,7 +567,7 @@ function SettingsPage() {
                     toast.success("Switched back to your data.");
                   }}
                 >
-                  <StopCircleIcon className="size-3.5 mr-1.5" />
+                  <StopCircleIcon className="mr-2" />
                   Stop Viewing
                 </Button>
               ) : (
@@ -583,7 +581,7 @@ function SettingsPage() {
                     toast.success("Viewing partner's finances.");
                   }}
                 >
-                  <HeartHandshakeIcon className="size-3.5 mr-1.5" />
+                  <HeartHandshakeIcon className="mr-2" />
                   View Partner&apos;s Finances
                 </Button>
               )}
@@ -595,7 +593,7 @@ function SettingsPage() {
                   disabled={isImpersonating}
                   onClick={() => setRemovePartnerDialogOpen(true)}
                 >
-                  <StopCircleIcon className="size-3.5 mr-1.5" />
+                  <StopCircleIcon className="mr-2" />
                   Remove Partner Access
                 </Button>
               )}
@@ -628,7 +626,7 @@ function SettingsPage() {
                 className="w-full gap-2 border border-destructive/40 text-destructive hover:bg-destructive hover:text-white hover:border-destructive"
                 onClick={() => setDeleteDialogOpen(true)}
               >
-                <TrashIcon className="size-3.5" />
+                <TrashIcon />
                 Delete Account
               </Button>
             </CardContent>
@@ -636,7 +634,7 @@ function SettingsPage() {
         </>
       )}
 
-      <p className="text-center text-xs text-muted-foreground/40 pb-2 space-x-2">
+      <p className="text-center text-xs text-muted-foreground pb-2 space-x-2">
         <span>KiraPoket &copy; {new Date().getFullYear()}</span>
         <span>·</span>
         <Link
@@ -657,11 +655,13 @@ function SettingsPage() {
       <Dialog open={avatarLightbox} onOpenChange={setAvatarLightbox}>
         <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-xs">
           {avatarSrc && (
-            <img
-              src={avatarSrc}
-              alt=""
-              className="w-full rounded-2xl object-cover"
-            />
+            <div className="relative overflow-hidden rounded-2xl">
+              <img src={avatarSrc} alt="" className="w-full object-cover" />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_0_1px_rgb(0_0_0/0.10)]"
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -679,7 +679,7 @@ function SettingsPage() {
           <SheetHeader className="border-b shrink-0">
             <SheetTitle>Edit Profile</SheetTitle>
           </SheetHeader>
-          <div className="px-4 pt-5 pb-6 space-y-6">
+          <div className="px-4 pt-6 pb-6 space-y-6">
             {/* Photo */}
             <div className="flex flex-col items-center gap-3">
               <button
@@ -689,7 +689,7 @@ function SettingsPage() {
                 aria-label="View photo"
                 className="size-28 shrink-0 rounded-full disabled:cursor-default"
               >
-                <Avatar className="size-full shadow-sm">
+                <Avatar className="size-full shadow-e1">
                   {avatarSrc ? (
                     <AvatarImage
                       src={avatarSrc}
@@ -714,14 +714,14 @@ function SettingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-2"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
                 >
                   {uploadingAvatar ? (
-                    <Loader2Icon className="size-3.5 animate-spin" />
+                    <Loader2Icon className="animate-spin" />
                   ) : (
-                    <CameraIcon className="size-3.5" />
+                    <CameraIcon />
                   )}
                   Change photo
                 </Button>
@@ -739,7 +739,7 @@ function SettingsPage() {
             </div>
 
             {/* Name */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="displayName">Display name</Label>
               <Input
                 id="displayName"
@@ -784,7 +784,7 @@ function SettingsPage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="destructive-solid"
               onClick={async () => {
                 setRemovePartnerDialogOpen(false);
                 await terminatePartnership();
@@ -838,7 +838,7 @@ function SettingsPage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="destructive-solid"
               onClick={handleDeleteAccount}
               disabled={deleting}
             >

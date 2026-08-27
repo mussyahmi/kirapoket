@@ -19,7 +19,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import {
   Dialog,
   DialogContent,
@@ -111,7 +111,7 @@ function DebtCard({
       <div
         className={cn(
           "shrink-0 mt-0.5 size-2.5 rounded-full",
-          debt.direction === "i_owe" ? "bg-red-400" : "bg-green-400",
+          debt.direction === "i_owe" ? "bg-danger" : "bg-success",
         )}
       />
       <div className="flex-1 min-w-0 space-y-0.5">
@@ -123,28 +123,26 @@ function DebtCard({
           )}
           <span
             className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+              "text-xs px-2 py-0.5 rounded-full font-medium shrink-0",
               debt.direction === "i_owe"
-                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
+                ? "bg-danger-soft text-danger-strong"
+                : "bg-success-soft text-success-strong",
             )}
           >
             {debt.direction === "i_owe" ? "I owe" : "Owes me"}
           </span>
         </div>
-        <div className="flex items-baseline gap-1.5">
+        <div className="flex items-baseline gap-2">
           <p
             className={cn(
               "text-base font-bold tabular-nums",
-              debt.direction === "i_owe"
-                ? "text-red-500"
-                : "text-green-600 dark:text-green-400",
+              debt.direction === "i_owe" ? "text-danger" : "text-success",
             )}
           >
             {fmt(debt.amount)}
           </p>
           {hasOriginal && (
-            <span className="text-[10px] text-muted-foreground tabular-nums line-through">
+            <span className="text-xs text-muted-foreground tabular-nums line-through">
               {fmt(debt.originalAmount!)}
             </span>
           )}
@@ -153,24 +151,22 @@ function DebtCard({
           <p className="text-xs text-muted-foreground">{debt.note}</p>
         )}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {format(parseISO(debt.date), "d MMM yyyy")}
           </span>
           {debt.dueDate && (
             <span
               className={cn(
-                "text-[10px]",
-                isOverdue
-                  ? "text-red-500 font-medium"
-                  : "text-muted-foreground",
+                "text-xs",
+                isOverdue ? "text-danger font-medium" : "text-muted-foreground",
               )}
             >
-              {isOverdue ? "⚠ Overdue · " : "Due · "}
+              {isOverdue ? "⚠ Overdue ·" : "Due ·"}
               {format(parseISO(debt.dueDate), "d MMM yyyy")}
             </span>
           )}
           {debt.settled && debt.settledDate && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}
             </span>
           )}
@@ -181,7 +177,7 @@ function DebtCard({
           <button
             type="button"
             onClick={() => onPay(debt)}
-            className="size-7 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="size-7 pointer-coarse:size-10 rounded-lg flex items-center justify-center text-danger hover:bg-danger-soft transition-colors"
             title="Make payment"
           >
             <BanknoteIcon className="size-3.5" />
@@ -191,7 +187,7 @@ function DebtCard({
           <button
             type="button"
             onClick={() => onCollect(debt)}
-            className="size-7 rounded-lg flex items-center justify-center text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+            className="size-7 pointer-coarse:size-10 rounded-lg flex items-center justify-center text-success hover:bg-success-soft transition-colors"
             title="Collect payment"
           >
             <HandCoinsIcon className="size-3.5" />
@@ -205,7 +201,7 @@ function DebtCard({
               "size-7 rounded-lg flex items-center justify-center transition-colors",
               debt.settled
                 ? "text-muted-foreground hover:bg-muted"
-                : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20",
+                : "text-success hover:bg-success-soft",
             )}
             title={debt.settled ? "Mark unsettled" : "Mark settled"}
           >
@@ -218,7 +214,7 @@ function DebtCard({
         )}
         {(onEdit || onDelete || onRecord) && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+            <DropdownMenuTrigger className="size-7 pointer-coarse:size-10 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
               <MoreHorizontalIcon className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
@@ -301,28 +297,24 @@ function DebtGroupCard({
         <div
           className={cn(
             "shrink-0 mt-0.5 size-2.5 rounded-full",
-            allIOwe
-              ? "bg-red-400"
-              : allTheyOwe
-                ? "bg-green-400"
-                : "bg-yellow-400",
+            allIOwe ? "bg-danger" : allTheyOwe ? "bg-success" : "bg-yellow-400",
           )}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{group.displayName}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
               {group.debts.length} entries
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {theyOweTotal > 0 && (
-              <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">
+              <span className="text-sm font-semibold text-success tabular-nums">
                 {fmt(theyOweTotal)}
               </span>
             )}
             {iOweTotal > 0 && (
-              <span className="text-sm font-bold text-red-500 tabular-nums">
+              <span className="text-sm font-semibold text-danger tabular-nums">
                 {fmt(iOweTotal)}
               </span>
             )}
@@ -371,6 +363,8 @@ export default function DebtsPage() {
     createCategory,
     isViewingPartner,
     isImpersonating,
+    loadError,
+    refreshDebts,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
@@ -549,7 +543,7 @@ export default function DebtsPage() {
             });
           } else {
             // Lent money — goes OUT OF the account as expense
-            // Auto-find or create person as L3 under "Money Lent" (Savings)
+            // Auto-find or create person as L3 under"Money Lent" (Savings)
             let categoryId: string | undefined;
             const moneyLentL2 = categories.find(
               (c) => c.level === 2 && c.name === "Money Lent",
@@ -790,12 +784,12 @@ export default function DebtsPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Debts</h1>
         {!isReadOnly && (
-          <Button size="sm" onClick={openCreate} className="gap-1.5">
-            <PlusIcon className="size-4" /> Add
+          <Button size="sm" onClick={openCreate} className="gap-2">
+            <PlusIcon /> Add
           </Button>
         )}
       </div>
@@ -805,13 +799,13 @@ export default function DebtsPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-border bg-card p-3 space-y-0.5">
             <p className="text-xs text-muted-foreground">You owe</p>
-            <p className="text-lg font-bold text-red-500 tabular-nums">
+            <p className="text-lg font-bold text-danger tabular-nums">
               {fmt(totalIOwe)}
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 space-y-0.5">
             <p className="text-xs text-muted-foreground">Owed to you</p>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">
+            <p className="text-lg font-bold text-success tabular-nums">
               {fmt(totalOwedToMe)}
             </p>
           </div>
@@ -822,13 +816,30 @@ export default function DebtsPage() {
       {loadingDebts ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
+            <RowSkeleton key={i} />
           ))}
         </div>
+      ) : loadError.debts ? (
+        <LoadError what="debts" onRetry={refreshDebts} />
       ) : unsettled.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-2 text-muted-foreground">
-          <p className="text-sm">No outstanding debts.</p>
-          <p className="text-xs">Tap Add to track money you owe or are owed.</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+            <HandCoinsIcon className="size-7 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold">
+              {settled.length > 0 ? "All settled up" : "No debts tracked"}
+            </p>
+            <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+              Keep track of money you owe and money owed to you, with Pay and
+              Collect flows for each.
+            </p>
+          </div>
+          {!isReadOnly && (
+            <Button className="gap-2" onClick={openCreate}>
+              <PlusIcon /> Add a debt
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -885,7 +896,7 @@ export default function DebtsPage() {
               setShowSettled((v) => !v);
               setSettledVisible(SETTLED_PAGE);
             }}
-            className="text-xs text-muted-foreground underline underline-offset-2"
+            className="text-xs text-muted-foreground link-underline"
           >
             {showSettled ? "Hide" : "Show"} settled ({settled.length})
           </button>
@@ -918,7 +929,7 @@ export default function DebtsPage() {
                 <button
                   type="button"
                   onClick={() => setSettledVisible((v) => v + SETTLED_PAGE)}
-                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  className="text-xs text-muted-foreground link-underline"
                 >
                   Load more ({settledGroups.length - settledVisible}{" "}
                   {settledGroups.length - settledVisible === 1
@@ -955,8 +966,8 @@ export default function DebtsPage() {
                     "flex-1 py-2 text-sm font-medium transition-colors",
                     form.direction === val
                       ? val === "i_owe"
-                        ? "bg-red-500 text-white"
-                        : "bg-green-600 text-white"
+                        ? "bg-danger text-white"
+                        : "bg-success text-white"
                       : "bg-background text-muted-foreground hover:bg-muted",
                   )}
                 >
@@ -965,7 +976,7 @@ export default function DebtsPage() {
               ))}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="debt-person">Person</Label>
               <Input
                 id="debt-person"
@@ -977,7 +988,7 @@ export default function DebtsPage() {
                 required
               />
               {knownPersons.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                <div className="flex flex-wrap gap-2 pt-0.5">
                   {knownPersons.map((name) => (
                     <button
                       key={name}
@@ -986,7 +997,7 @@ export default function DebtsPage() {
                         setForm((f) => ({ ...f, personName: name }))
                       }
                       className={cn(
-                        "px-2.5 py-1 rounded-full text-xs border transition-colors",
+                        "px-3 py-1 rounded-full text-xs border transition-colors",
                         form.personName === name
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-muted text-muted-foreground hover:bg-accent",
@@ -999,7 +1010,7 @@ export default function DebtsPage() {
               )}
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="debt-amount">Amount (MYR)</Label>
               <Input
                 id="debt-amount"
@@ -1017,7 +1028,7 @@ export default function DebtsPage() {
               {editTarget &&
                 editTarget.originalAmount != null &&
                 editTarget.originalAmount !== editTarget.amount && (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Editing the remaining balance. Original amount was{" "}
                     {fmt(editTarget.originalAmount)}.
                   </p>
@@ -1025,7 +1036,7 @@ export default function DebtsPage() {
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="debt-date">Date</Label>
                 <Input
                   id="debt-date"
@@ -1037,7 +1048,7 @@ export default function DebtsPage() {
                   required
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="debt-due">Due date (optional)</Label>
                 <div className="relative">
                   <Input
@@ -1060,13 +1071,13 @@ export default function DebtsPage() {
 
             {/* Account linkage — only on create, not edit */}
             {!editTarget && accounts.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>
                   {form.direction === "i_owe"
                     ? "Received into account (optional)"
                     : "Lent from account (optional)"}
                 </Label>
-                <p className="text-[11px] text-muted-foreground -mt-1">
+                <p className="text-xs text-muted-foreground -mt-1">
                   {form.direction === "i_owe"
                     ? "Picks an account → records as income automatically"
                     : "Picks an account → records as expense automatically"}
@@ -1083,7 +1094,7 @@ export default function DebtsPage() {
                         }))
                       }
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                        "px-3 py-2 rounded-lg text-sm border transition-colors",
                         form.accountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background hover:bg-muted",
@@ -1096,7 +1107,7 @@ export default function DebtsPage() {
               </div>
             )}
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="debt-note">Note (optional)</Label>
               <Input
                 id="debt-note"
@@ -1145,16 +1156,14 @@ export default function DebtsPage() {
                 <span
                   className={cn(
                     "font-bold tabular-nums",
-                    isIOweDialog
-                      ? "text-red-500"
-                      : "text-green-600 dark:text-green-400",
+                    isIOweDialog ? "text-danger" : "text-success",
                   )}
                 >
                   {fmt(payTarget.amount)}
                 </span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="pay-amount">
                   {isIOweDialog
                     ? "Amount to pay (MYR)"
@@ -1174,7 +1183,7 @@ export default function DebtsPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>
                   {isIOweDialog ? "Pay from account" : "Receive into account"}
                 </Label>
@@ -1185,7 +1194,7 @@ export default function DebtsPage() {
                       type="button"
                       onClick={() => setPayAccountId(a.id)}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                        "px-3 py-2 rounded-lg text-sm border transition-colors",
                         payAccountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background hover:bg-muted",
@@ -1241,8 +1250,8 @@ export default function DebtsPage() {
                     className={cn(
                       "font-bold tabular-nums",
                       recordTarget.direction === "i_owe"
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-500",
+                        ? "text-success"
+                        : "text-danger",
                     )}
                   >
                     {fmt(recordTarget.originalAmount ?? recordTarget.amount)}
@@ -1258,7 +1267,7 @@ export default function DebtsPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Account</Label>
                 <div className="flex flex-wrap gap-2">
                   {accounts.map((a) => (
@@ -1267,7 +1276,7 @@ export default function DebtsPage() {
                       type="button"
                       onClick={() => setRecordAccountId(a.id)}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+                        "px-3 py-2 rounded-lg text-sm border transition-colors",
                         recordAccountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background hover:bg-muted",
@@ -1331,7 +1340,7 @@ export default function DebtsPage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="destructive-solid"
               onClick={handleDelete}
               disabled={deleting}
             >

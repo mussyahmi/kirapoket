@@ -7,6 +7,20 @@ export function PwaRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    // Never register in development. The SW serves assets cache-first keyed on
+    // the app version, so on localhost it pins whatever bundle it saw first and
+    // keeps serving it across rebuilds — changes silently stop appearing.
+    // Also tear down any worker a previous dev session left installed.
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((r) => r.unregister());
+      });
+      if (window.caches) {
+        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+      }
+      return;
+    }
+
     let reloading = false;
     // On iOS standalone PWA, window.location.reload() is a soft reload that keeps
     // the old JS heap alive. window.location.replace() forces a true navigation,

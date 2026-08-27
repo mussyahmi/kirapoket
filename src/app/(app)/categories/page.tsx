@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   PlusIcon,
+  TagIcon,
   PencilIcon,
   TrashIcon,
   ChevronDownIcon,
@@ -52,33 +53,19 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { LoadError } from "@/components/common/Skeletons";
+import { L1_PILL, L1_DOT_CLASS, l1Color, tint } from "@/lib/palette";
 import type { Category } from "@/lib/types";
 
 type L1Type = "needs" | "wants" | "savings";
 
 const PROTECTED_L2_NAMES = ["Debt Repayment", "Money Lent"];
 // Items under these L2 categories are created automatically from the Debts flow,
-// so manual "Add item" is not offered.
+// so manual"Add item" is not offered.
 const AUTO_ITEM_L2_NAMES = ["Money Lent"];
 
-const L1_COLORS: Record<L1Type, string> = {
-  needs: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  wants:
-    "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  savings: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-};
-
-const L1_DOT: Record<L1Type, string> = {
-  needs: "bg-green-400 dark:bg-green-500",
-  wants: "bg-orange-400 dark:bg-orange-500",
-  savings: "bg-blue-400 dark:bg-blue-500",
-};
-
-const L1_HEX: Record<L1Type, string> = {
-  needs: "#4ade80",
-  wants: "#fb923c",
-  savings: "#60a5fa",
-};
+const L1_COLORS = L1_PILL;
+const L1_DOT = L1_DOT_CLASS;
 
 interface CategoryFormData {
   name: string;
@@ -154,7 +141,7 @@ function L3Item({
           transition,
           opacity: isDragging ? 0.4 : 1,
         }}
-        className="flex items-center gap-1 py-1.5 pr-2 hover:bg-muted/50 rounded-lg group"
+        className="flex items-center gap-1 py-2 pr-2 hover:bg-muted/50 rounded-lg group"
       >
         {!readOnly && (
           <button
@@ -163,7 +150,7 @@ function L3Item({
             {...listeners}
             tabIndex={-1}
             aria-label="Drag to reorder"
-            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/70 hover:text-foreground shrink-0 px-1"
           >
             <GripVerticalIcon className="size-3.5" />
           </button>
@@ -171,18 +158,18 @@ function L3Item({
         <button
           type="button"
           onClick={() => setPreviewOpen(true)}
-          className="flex-1 text-sm text-muted-foreground truncate flex items-center gap-1.5 min-w-0 text-left"
+          className="flex-1 text-sm text-muted-foreground truncate flex items-center gap-2 min-w-0 text-left"
         >
           <span className="truncate">{item.name}</span>
           {fmtItemBudget(item) && (
-            <span className="text-xs shrink-0 text-muted-foreground/60">
+            <span className="text-xs shrink-0 text-muted-foreground">
               {fmtItemBudget(item)}
             </span>
           )}
         </button>
         {!readOnly && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
+            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 pointer-coarse:size-9 rounded-lg text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
               <MoreHorizontalIcon className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
@@ -224,7 +211,7 @@ function L3Item({
                 </span>
                 <div className="text-right">
                   <p className="text-lg font-bold tabular-nums">
-                    {fmtItemBudget(item)?.replace("· ", "")}
+                    {fmtItemBudget(item)?.replace("·", "")}
                   </p>
                   {item.budgetType === "daily" && item.budgetDays && (
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -254,7 +241,7 @@ function L3Item({
                       href={link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-sm text-primary truncate underline underline-offset-2"
+                      className="block text-sm text-primary truncate link-underline"
                     >
                       {link}
                     </a>
@@ -269,7 +256,7 @@ function L3Item({
                 onClick={() => setPreviewOpen(false)}
               >
                 <Button variant="outline" className="w-full gap-2">
-                  <ListIcon className="size-4" /> Transactions
+                  <ListIcon /> Transactions
                 </Button>
               </Link>
               {!readOnly && (
@@ -282,7 +269,7 @@ function L3Item({
                       openEdit(item);
                     }}
                   >
-                    <PencilIcon className="size-4" /> Edit
+                    <PencilIcon /> Edit
                   </Button>
                   <Button
                     variant="ghost"
@@ -293,7 +280,7 @@ function L3Item({
                       setDeleteTarget(item);
                     }}
                   >
-                    <TrashIcon className="size-4" />
+                    <TrashIcon />
                   </Button>
                 </>
               )}
@@ -378,7 +365,7 @@ function L2Row({
             {...listeners}
             tabIndex={-1}
             aria-label="Drag to reorder"
-            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/20 hover:text-muted-foreground/60 shrink-0 px-1"
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground/70 hover:text-foreground shrink-0 px-1"
           >
             <GripVerticalIcon className="size-4" />
           </button>
@@ -386,7 +373,7 @@ function L2Row({
         <button
           type="button"
           onClick={() => toggleExpand(cat.id)}
-          className="flex items-center gap-1.5 flex-1 text-left min-w-0"
+          className="flex items-center gap-2 flex-1 text-left min-w-0"
         >
           <span
             className={cn("size-1.5 rounded-full shrink-0", L1_DOT[l1Type])}
@@ -402,14 +389,14 @@ function L2Row({
           )}
           <span className="text-sm font-medium truncate">{cat.name}</span>
           {subtotal > 0 && (
-            <span className="text-xs text-muted-foreground/50 italic shrink-0">
+            <span className="text-xs text-muted-foreground italic shrink-0">
               {fmtBudget(subtotal)}
             </span>
           )}
         </button>
         {!readOnly && hasMenu && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
+            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 pointer-coarse:size-9 rounded-lg text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
               <MoreHorizontalIcon className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
@@ -449,7 +436,7 @@ function L2Row({
           >
             <div
               className="ml-8 pl-3 space-y-0.5 border-l-2 my-1"
-              style={{ borderColor: (L1_HEX[l1Type] ?? "#94a3b8") + "66" }}
+              style={{ borderColor: tint(l1Color(l1Type), 40) }}
             >
               {l3.map((item) => (
                 <L3Item
@@ -482,6 +469,8 @@ export default function CategoriesPage() {
     reorderCategoryItems,
     isViewingPartner,
     isImpersonating,
+    loadError,
+    refreshCategories,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
@@ -728,7 +717,7 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-content mx-auto space-y-6">
       <h1 className="text-xl font-semibold">Categories</h1>
 
       {loadingCategories ? (
@@ -737,11 +726,28 @@ export default function CategoriesPage() {
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
         </div>
+      ) : loadError.categories ? (
+        <LoadError what="categories" onRetry={refreshCategories} />
       ) : l1Categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-          <p className="text-sm">
-            No categories yet. Start by adding Needs, Wants &amp; Savings.
-          </p>
+        <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+            <TagIcon className="size-7 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold">No categories yet</p>
+            <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+              Categories sort your spending into Needs, Wants, and Savings — and
+              are where budgets are set.
+            </p>
+          </div>
+          {!isReadOnly && (
+            <Button
+              className="gap-2"
+              onClick={() => openCreate(1, null, "needs")}
+            >
+              <PlusIcon /> Add categories
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -780,7 +786,7 @@ export default function CategoriesPage() {
                       {(() => {
                         const s = l1Subtotal(l1.id);
                         return s > 0 ? (
-                          <span className="text-xs text-muted-foreground/50 italic">
+                          <span className="text-xs text-muted-foreground italic">
                             {fmtBudget(s)}
                           </span>
                         ) : null;
@@ -790,7 +796,7 @@ export default function CategoriesPage() {
                       <button
                         type="button"
                         onClick={() => openCreate(2, l1.id, l1Type)}
-                        className="inline-flex items-center justify-center size-6 rounded-md text-muted-foreground hover:bg-accent transition-colors shrink-0"
+                        className="inline-flex items-center justify-center size-6 pointer-coarse:size-9 rounded-lg text-muted-foreground hover:bg-accent transition-colors shrink-0"
                       >
                         <PlusIcon className="size-4" />
                       </button>
@@ -834,7 +840,7 @@ export default function CategoriesPage() {
                               No subcategories.{" "}
                               <button
                                 type="button"
-                                className="underline"
+                                className="link-underline"
                                 onClick={() => openCreate(2, l1.id, l1Type)}
                               >
                                 Add one
@@ -860,7 +866,7 @@ export default function CategoriesPage() {
             <DialogTitle>{dialogTitle()}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="cat-name">Name</Label>
               <Input
                 id="cat-name"
@@ -876,7 +882,7 @@ export default function CategoriesPage() {
             </div>
 
             {dialogContext?.level === 1 && !editTarget && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label>Type</Label>
                 <div className="flex gap-2">
                   {(["needs", "wants", "savings"] as L1Type[]).map((t) => (
@@ -905,7 +911,7 @@ export default function CategoriesPage() {
             {dialogContext?.level === 3 && (
               <div className="space-y-3">
                 {/* Budget type toggle */}
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Budget (optional)</Label>
                   <div className="flex rounded-lg border border-border overflow-hidden">
                     {(["cycle", "daily"] as const).map((t) => (
@@ -914,7 +920,7 @@ export default function CategoriesPage() {
                         type="button"
                         onClick={() => setForm({ ...form, budgetType: t })}
                         className={cn(
-                          "flex-1 py-1.5 text-sm font-medium transition-colors",
+                          "flex-1 py-2 text-sm font-medium transition-colors",
                           form.budgetType === t
                             ? "bg-primary text-primary-foreground"
                             : "bg-background text-muted-foreground hover:bg-muted",
@@ -927,7 +933,7 @@ export default function CategoriesPage() {
                 </div>
 
                 {form.budgetType === "cycle" ? (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label htmlFor="cat-budget">Amount (MYR)</Label>
                     <Input
                       id="cat-budget"
@@ -944,7 +950,7 @@ export default function CategoriesPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label htmlFor="cat-budget-daily">
                         Amount / day (MYR)
                       </Label>
@@ -961,13 +967,13 @@ export default function CategoriesPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-1.5 mt-4">
+                    <div className="space-y-2 mt-4">
                       <div className="flex items-center justify-between">
                         <Label>Select days this cycle</Label>
                         {form.budgetSelectedDates.length > 0 && (
                           <button
                             type="button"
-                            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            className="text-xs text-muted-foreground link-underline hover:text-foreground"
                             onClick={() =>
                               setForm({ ...form, budgetSelectedDates: [] })
                             }
@@ -1014,7 +1020,7 @@ export default function CategoriesPage() {
             )}
             {dialogContext?.level === 3 && (
               <>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="cat-note">Note (optional)</Label>
                   <Textarea
                     id="cat-note"
@@ -1024,7 +1030,7 @@ export default function CategoriesPage() {
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
                   />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label>Links (optional)</Label>
                   <div className="space-y-2">
                     {form.links.map((link, i) => (
@@ -1050,7 +1056,7 @@ export default function CategoriesPage() {
                             })
                           }
                         >
-                          <TrashIcon className="size-4 text-muted-foreground" />
+                          <TrashIcon className="text-muted-foreground" />
                         </Button>
                       </div>
                     ))}
@@ -1063,7 +1069,7 @@ export default function CategoriesPage() {
                         setForm({ ...form, links: [...form.links, ""] })
                       }
                     >
-                      <PlusIcon className="size-4 mr-1.5" />
+                      <PlusIcon className="mr-2" />
                       Add link
                     </Button>
                   </div>
@@ -1105,7 +1111,7 @@ export default function CategoriesPage() {
                 <Link
                   href={`/transactions?category=${deleteTarget.id}`}
                   onClick={() => setDeleteTarget(null)}
-                  className="inline-flex items-center justify-center w-full rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                  className="inline-flex items-center justify-center w-full rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
                 >
                   View linked transactions
                 </Link>
@@ -1127,7 +1133,7 @@ export default function CategoriesPage() {
             </Button>
             {!deleteBlockReason && (
               <Button
-                variant="destructive"
+                variant="destructive-solid"
                 onClick={handleDelete}
                 disabled={deleting}
               >

@@ -68,7 +68,7 @@ To exercise any of these rights, email us at mussyahmi31@gmail.com.`,
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-2xl mx-auto px-5 py-10 space-y-10">
+    <div className="mx-auto max-w-[34em] px-6 py-12 space-y-12">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Privacy Policy
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <p className="text-xs text-muted-foreground/50 pt-4 border-t border-border">
+      <p className="text-xs text-muted-foreground pt-4 border-t border-border">
         KiraPoket &copy; {new Date().getFullYear()}
       </p>
     </div>
