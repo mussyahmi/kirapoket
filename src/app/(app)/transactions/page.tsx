@@ -42,8 +42,17 @@ import type { Transaction } from "@/lib/types";
 type FilterType = "all" | "expense" | "income" | "transfer";
 
 function TransactionsPage() {
-  const { transactions, accounts, categories, userProfile, loadingProfile, loadingTransactions, removeTransaction, isViewingPartner, isImpersonating } =
-    useApp();
+  const {
+    transactions,
+    accounts,
+    categories,
+    userProfile,
+    loadingProfile,
+    loadingTransactions,
+    removeTransaction,
+    isViewingPartner,
+    isImpersonating,
+  } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { openAdd, openEdit } = useAddTransaction();
 
@@ -51,7 +60,11 @@ function TransactionsPage() {
 
   const EDIT_RETURN_KEY = "txFilters:editReturn";
 
-  const hasUrlParams = searchParams.get("account") !== null || searchParams.get("category") !== null || searchParams.get("from") !== null || searchParams.get("to") !== null;
+  const hasUrlParams =
+    searchParams.get("account") !== null ||
+    searchParams.get("category") !== null ||
+    searchParams.get("from") !== null ||
+    searchParams.get("to") !== null;
 
   // Read once and immediately clear — only relevant when returning from edit
   const editReturn = useMemo(() => {
@@ -60,8 +73,10 @@ function TransactionsPage() {
       if (!raw) return null;
       sessionStorage.removeItem(EDIT_RETURN_KEY);
       return JSON.parse(raw);
-    } catch { return null; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch {
+      return null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [filterType, setFilterType] = useState<FilterType>(() => {
@@ -93,7 +108,7 @@ function TransactionsPage() {
       cycleStarts: userProfile?.cycleStarts,
     });
     return { from: format(start, "yyyy-MM-dd"), to: format(end, "yyyy-MM-dd") };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
 
   // Default the date range to the current salary cycle once the profile loads,
@@ -125,8 +140,13 @@ function TransactionsPage() {
   // Clear filters when something differs from the default state. Treat the
   // pre-init state as default too, so the button doesn't flash on first load.
   const datesAtDefault =
-    !dateInitDone || (dateFrom === defaultDates.from && dateTo === defaultDates.to);
-  const hasActiveFilters = filterType !== "all" || filterAccount !== "all" || filterCategory !== "all" || !datesAtDefault;
+    !dateInitDone ||
+    (dateFrom === defaultDates.from && dateTo === defaultDates.to);
+  const hasActiveFilters =
+    filterType !== "all" ||
+    filterAccount !== "all" ||
+    filterCategory !== "all" ||
+    !datesAtDefault;
 
   const clearFilters = () => {
     setFilterType("all");
@@ -135,12 +155,16 @@ function TransactionsPage() {
     setDateFrom(defaultDates.from);
     setDateTo(defaultDates.to);
     resetVisible();
-    try { sessionStorage.removeItem(EDIT_RETURN_KEY); } catch { /* ignore */ }
+    try {
+      sessionStorage.removeItem(EDIT_RETURN_KEY);
+    } catch {
+      /* ignore */
+    }
   };
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
-    [categories]
+    [categories],
   );
 
   // Build a set of matching categoryIds for the category filter
@@ -162,15 +186,28 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
-      if (filterAccount !== "all" && t.accountId !== filterAccount && t.toAccountId !== filterAccount) return false;
+      if (
+        filterAccount !== "all" &&
+        t.accountId !== filterAccount &&
+        t.toAccountId !== filterAccount
+      )
+        return false;
       if (matchingCategoryIds !== null) {
-        if (!t.categoryId || !matchingCategoryIds.has(t.categoryId)) return false;
+        if (!t.categoryId || !matchingCategoryIds.has(t.categoryId))
+          return false;
       }
       if (dateFrom && t.date < dateFrom) return false;
       if (dateTo && t.date > dateTo) return false;
       return true;
     });
-  }, [transactions, filterType, filterAccount, matchingCategoryIds, dateFrom, dateTo]);
+  }, [
+    transactions,
+    filterType,
+    filterAccount,
+    matchingCategoryIds,
+    dateFrom,
+    dateTo,
+  ]);
 
   // Group by date
   const grouped = useMemo(() => {
@@ -180,9 +217,7 @@ function TransactionsPage() {
       if (!map.has(date)) map.set(date, []);
       map.get(date)!.push(t);
     }
-    return Array.from(map.entries()).sort(([a], [b]) =>
-      b.localeCompare(a)
-    );
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
   }, [filtered]);
 
   const handleDelete = async () => {
@@ -206,10 +241,10 @@ function TransactionsPage() {
       dateFrom && dateTo
         ? `${dateFrom}_to_${dateTo}`
         : dateFrom
-        ? `from-${dateFrom}`
-        : dateTo
-        ? `until-${dateTo}`
-        : today;
+          ? `from-${dateFrom}`
+          : dateTo
+            ? `until-${dateTo}`
+            : today;
     downloadCsv(`kirapoket-transactions-${rangeSuffix}.csv`, csv);
   };
 
@@ -264,11 +299,21 @@ function TransactionsPage() {
       <div className="grid grid-cols-2 gap-2">
         <Select
           value={filterType}
-          onValueChange={(v) => { setFilterType((v ?? "all") as FilterType); resetVisible(); }}
+          onValueChange={(v) => {
+            setFilterType((v ?? "all") as FilterType);
+            resetVisible();
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue>
-              {{ all: "All types", expense: "Expense", income: "Income", transfer: "Transfer" }[filterType]}
+              {
+                {
+                  all: "All types",
+                  expense: "Expense",
+                  income: "Income",
+                  transfer: "Transfer",
+                }[filterType]
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -281,11 +326,17 @@ function TransactionsPage() {
 
         <Select
           value={filterAccount}
-          onValueChange={(v) => { setFilterAccount(v ?? "all"); resetVisible(); }}
+          onValueChange={(v) => {
+            setFilterAccount(v ?? "all");
+            resetVisible();
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue>
-              {filterAccount === "all" ? "All accounts" : accounts.find((a) => a.id === filterAccount)?.name ?? "Account"}
+              {filterAccount === "all"
+                ? "All accounts"
+                : (accounts.find((a) => a.id === filterAccount)?.name ??
+                  "Account")}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -300,15 +351,25 @@ function TransactionsPage() {
 
         {/* Category filter — full width */}
         {(() => {
-          const l1Cats = categories.filter((c) => c.level === 1).sort((a, b) => {
-            const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
-            return (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9);
-          });
-          const selectedCat = filterCategory !== "all" ? categoryMap[filterCategory] : null;
+          const l1Cats = categories
+            .filter((c) => c.level === 1)
+            .sort((a, b) => {
+              const order: Record<string, number> = {
+                needs: 0,
+                wants: 1,
+                savings: 2,
+              };
+              return (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9);
+            });
+          const selectedCat =
+            filterCategory !== "all" ? categoryMap[filterCategory] : null;
           return (
             <Select
               value={filterCategory}
-              onValueChange={(v) => { setFilterCategory(v ?? "all"); resetVisible(); }}
+              onValueChange={(v) => {
+                setFilterCategory(v ?? "all");
+                resetVisible();
+              }}
             >
               <SelectTrigger className="w-full col-span-2">
                 <SelectValue>
@@ -331,7 +392,9 @@ function TransactionsPage() {
                       </SelectItem>,
                       ...l3s.map((l3) => (
                         <SelectItem key={l3.id} value={l3.id}>
-                          <span className="pl-3 text-muted-foreground">· {l3.name}</span>
+                          <span className="pl-3 text-muted-foreground">
+                            · {l3.name}
+                          </span>
                         </SelectItem>
                       )),
                     ];
@@ -347,7 +410,10 @@ function TransactionsPage() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => { setDateFrom(e.target.value); resetVisible(); }}
+            onChange={(e) => {
+              setDateFrom(e.target.value);
+              resetVisible();
+            }}
             className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
         </label>
@@ -356,7 +422,10 @@ function TransactionsPage() {
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); resetVisible(); }}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              resetVisible();
+            }}
             className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
           />
         </label>
@@ -379,7 +448,11 @@ function TransactionsPage() {
             <div key={date}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-medium text-muted-foreground">
-                  {isToday(parseISO(date)) ? "Today" : isYesterday(parseISO(date)) ? "Yesterday" : format(parseISO(date), "EEEE, d MMMM yyyy")}
+                  {isToday(parseISO(date))
+                    ? "Today"
+                    : isYesterday(parseISO(date))
+                      ? "Yesterday"
+                      : format(parseISO(date), "EEEE, d MMMM yyyy")}
                 </p>
                 {(() => {
                   const net = txs.reduce((sum, t) => {
@@ -393,11 +466,18 @@ function TransactionsPage() {
                     minimumFractionDigits: 2,
                   }).format(Math.abs(net));
                   return (
-                    <p className={cn(
-                      "text-xs font-semibold",
-                      net > 0 ? "text-green-600 dark:text-green-400" : net < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
-                    )}>
-                      {net > 0 ? "+" : net < 0 ? "-" : ""}{formatted}
+                    <p
+                      className={cn(
+                        "text-xs font-semibold",
+                        net > 0
+                          ? "text-green-600 dark:text-green-400"
+                          : net < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {net > 0 ? "+" : net < 0 ? "-" : ""}
+                      {formatted}
                     </p>
                   );
                 })()}
@@ -406,7 +486,9 @@ function TransactionsPage() {
                 <CardContent className="divide-y divide-border p-0">
                   {txs.map((tx) => {
                     const account = accounts.find((a) => a.id === tx.accountId);
-                    const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
+                    const toAccount = tx.toAccountId
+                      ? accounts.find((a) => a.id === tx.toAccountId)
+                      : null;
                     const category = tx.categoryId
                       ? categoryMap[tx.categoryId]
                       : null;
@@ -422,8 +504,8 @@ function TransactionsPage() {
                             tx.type === "income"
                               ? "bg-green-100 text-green-600 dark:bg-green-900/30"
                               : tx.type === "transfer"
-                              ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                              : "bg-red-100 text-red-600 dark:bg-red-900/30"
+                                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
+                                : "bg-red-100 text-red-600 dark:bg-red-900/30",
                           )}
                         >
                           {tx.type === "income" ? (
@@ -439,15 +521,18 @@ function TransactionsPage() {
                             {tx.type === "expense"
                               ? (category?.name ?? "Expense")
                               : tx.type === "income"
-                              ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
-                              : "Transfer"}
+                                ? tx.note
+                                  ? tx.note.charAt(0).toUpperCase() +
+                                    tx.note.slice(1)
+                                  : "Income"
+                                : "Transfer"}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
                             {tx.type === "transfer"
                               ? `${account?.name ?? "—"} → ${toAccount?.name ?? "—"}${tx.note ? ` · ${tx.note}` : ""}`
                               : tx.type === "income"
-                              ? account?.name
-                              : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
+                                ? account?.name
+                                : `${account?.name}${tx.note ? ` · ${tx.note}` : ""}`}
                           </p>
                         </div>
                         <span
@@ -456,8 +541,8 @@ function TransactionsPage() {
                             tx.type === "income"
                               ? "text-green-600 dark:text-green-400"
                               : tx.type === "transfer"
-                              ? "text-blue-600 dark:text-blue-400"
-                              : "text-red-600 dark:text-red-400"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-red-600 dark:text-red-400",
                           )}
                         >
                           {formatMoney(tx.amount, tx.type)}
@@ -486,32 +571,71 @@ function TransactionsPage() {
         const tx = selectedTx;
         if (!tx) return null;
         const account = accounts.find((a) => a.id === tx.accountId);
-        const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null;
+        const toAccount = tx.toAccountId
+          ? accounts.find((a) => a.id === tx.toAccountId)
+          : null;
         const category = tx.categoryId ? categoryMap[tx.categoryId] : null;
-        const subcategory = category?.parentId ? categoryMap[category.parentId] : null;
-        const TypeIcon = tx.type === "income" ? ArrowDownRightIcon : tx.type === "transfer" ? ArrowLeftRightIcon : ArrowUpRightIcon;
-        const iconBg = tx.type === "income" ? "bg-green-100 dark:bg-green-900/30" : tx.type === "transfer" ? "bg-blue-100 dark:bg-blue-900/30" : "bg-red-100 dark:bg-red-900/30";
-        const iconColor = tx.type === "income" ? "text-green-600 dark:text-green-400" : tx.type === "transfer" ? "text-blue-600 dark:text-blue-400" : "text-red-600 dark:text-red-400";
-        const title = tx.type === "expense"
-          ? (category?.name ?? "Expense")
-          : tx.type === "income"
-          ? (tx.note ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1) : "Income")
-          : "Transfer";
+        const subcategory = category?.parentId
+          ? categoryMap[category.parentId]
+          : null;
+        const TypeIcon =
+          tx.type === "income"
+            ? ArrowDownRightIcon
+            : tx.type === "transfer"
+              ? ArrowLeftRightIcon
+              : ArrowUpRightIcon;
+        const iconBg =
+          tx.type === "income"
+            ? "bg-green-100 dark:bg-green-900/30"
+            : tx.type === "transfer"
+              ? "bg-blue-100 dark:bg-blue-900/30"
+              : "bg-red-100 dark:bg-red-900/30";
+        const iconColor =
+          tx.type === "income"
+            ? "text-green-600 dark:text-green-400"
+            : tx.type === "transfer"
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400";
+        const title =
+          tx.type === "expense"
+            ? (category?.name ?? "Expense")
+            : tx.type === "income"
+              ? tx.note
+                ? tx.note.charAt(0).toUpperCase() + tx.note.slice(1)
+                : "Income"
+              : "Transfer";
         return (
-          <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
+          <Dialog
+            open={!!selectedTx}
+            onOpenChange={(open) => !open && setSelectedTx(null)}
+          >
             <DialogContent className="max-w-sm">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2.5">
-                  <div className={cn("flex items-center justify-center size-8 rounded-lg shrink-0", iconBg)}>
+                  <div
+                    className={cn(
+                      "flex items-center justify-center size-8 rounded-lg shrink-0",
+                      iconBg,
+                    )}
+                  >
                     <TypeIcon className={cn("size-4", iconColor)} />
                   </div>
                   {title}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <div className={cn("flex items-center justify-between rounded-lg px-4 py-3", iconBg)}>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
-                  <span className={cn("text-lg font-bold tabular-nums", iconColor)}>
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-4 py-3",
+                    iconBg,
+                  )}
+                >
+                  <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Amount
+                  </span>
+                  <span
+                    className={cn("text-lg font-bold tabular-nums", iconColor)}
+                  >
                     {formatMoney(tx.amount, tx.type)}
                   </span>
                 </div>
@@ -520,30 +644,44 @@ function TransactionsPage() {
                     <span className="text-xs text-muted-foreground">Date</span>
                     <span className="text-sm">
                       {format(parseISO(tx.date), "d MMMM yyyy")}
-                      {tx.time ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}` : ""}
+                      {tx.time
+                        ? `, ${format(parseISO(`2000-01-01T${tx.time}`), "h:mm a")}`
+                        : ""}
                     </span>
                   </div>
                   {tx.type === "transfer" ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">From → To</span>
-                      <span className="text-sm">{account?.name} → {toAccount?.name ?? "—"}</span>
+                      <span className="text-xs text-muted-foreground">
+                        From → To
+                      </span>
+                      <span className="text-sm">
+                        {account?.name} → {toAccount?.name ?? "—"}
+                      </span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Account</span>
+                      <span className="text-xs text-muted-foreground">
+                        Account
+                      </span>
                       <span className="text-sm">{account?.name ?? "—"}</span>
                     </div>
                   )}
                   {subcategory && (
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Subcategory</span>
+                      <span className="text-xs text-muted-foreground">
+                        Subcategory
+                      </span>
                       <span className="text-sm">{subcategory.name}</span>
                     </div>
                   )}
                   {tx.note && tx.type !== "income" && (
                     <div className="flex items-start justify-between gap-4">
-                      <span className="text-xs text-muted-foreground shrink-0">Note</span>
-                      <span className="text-sm text-right whitespace-pre-wrap">{tx.note}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        Note
+                      </span>
+                      <span className="text-sm text-right whitespace-pre-wrap">
+                        {tx.note}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -551,7 +689,10 @@ function TransactionsPage() {
                   <div className="flex gap-2 pt-1">
                     <Button
                       className="flex-1 w-full gap-2"
-                      onClick={() => { setSelectedTx(null); openEdit(tx.id); }}
+                      onClick={() => {
+                        setSelectedTx(null);
+                        openEdit(tx.id);
+                      }}
                     >
                       <PencilIcon className="size-4" /> Edit
                     </Button>
@@ -559,7 +700,10 @@ function TransactionsPage() {
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                      onClick={() => { setSelectedTx(null); setDeleteTarget(tx); }}
+                      onClick={() => {
+                        setSelectedTx(null);
+                        setDeleteTarget(tx);
+                      }}
                     >
                       <TrashIcon className="size-4" />
                     </Button>

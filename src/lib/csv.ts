@@ -26,23 +26,24 @@ const HEADERS = [
 export function transactionsToCsv(
   transactions: Transaction[],
   accounts: Account[],
-  categories: Category[]
+  categories: Category[],
 ): string {
   const accountMap = new Map(accounts.map((a) => [a.id, a]));
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
   const rows = transactions.map((t) => {
     const category = t.categoryId ? categoryMap.get(t.categoryId) : null;
-    const parent = category?.parentId ? categoryMap.get(category.parentId) : null;
-    const signedAmount =
-      t.type === "expense" ? -t.amount : t.amount;
+    const parent = category?.parentId
+      ? categoryMap.get(category.parentId)
+      : null;
+    const signedAmount = t.type === "expense" ? -t.amount : t.amount;
     return toRow([
       t.date,
       t.time ?? "",
       t.type,
       signedAmount.toFixed(2),
       accountMap.get(t.accountId)?.name ?? "",
-      t.toAccountId ? accountMap.get(t.toAccountId)?.name ?? "" : "",
+      t.toAccountId ? (accountMap.get(t.toAccountId)?.name ?? "") : "",
       category?.name ?? "",
       parent?.name ?? "",
       t.note ?? "",

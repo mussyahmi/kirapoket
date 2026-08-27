@@ -52,7 +52,7 @@ const TYPE_ORDER: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
 function aggregateSpending(
   txs: Transaction[],
   categoryMap: Map<string, Category>,
-  targetLevel: 1 | 2 | 3
+  targetLevel: 1 | 2 | 3,
 ): Record<string, number> {
   const result: Record<string, number> = {};
   for (const t of txs) {
@@ -74,7 +74,7 @@ export function buildCycleReport(
   accounts: Account[],
   start: Date,
   end: Date,
-  opts: { userName: string; prev?: { start: Date; end: Date } }
+  opts: { userName: string; prev?: { start: Date; end: Date } },
 ): CycleReport {
   const startStr = format(start, "yyyy-MM-dd");
   const endStr = format(end, "yyyy-MM-dd");
@@ -84,7 +84,9 @@ export function buildCycleReport(
 
   const cycleTx = transactions
     .filter((t) => t.date >= startStr && t.date <= endStr)
-    .sort((a, b) => (b.date + (b.time ?? "")).localeCompare(a.date + (a.time ?? "")));
+    .sort((a, b) =>
+      (b.date + (b.time ?? "")).localeCompare(a.date + (a.time ?? "")),
+    );
 
   const income = cycleTx
     .filter((t) => t.type === "income")
@@ -110,7 +112,7 @@ export function buildCycleReport(
     const prevStartStr = format(opts.prev.start, "yyyy-MM-dd");
     const prevEndStr = format(opts.prev.end, "yyyy-MM-dd");
     const prevTx = transactions.filter(
-      (t) => t.date >= prevStartStr && t.date <= prevEndStr
+      (t) => t.date >= prevStartStr && t.date <= prevEndStr,
     );
     if (prevTx.length > 0) {
       hasPrev = true;
@@ -139,7 +141,10 @@ export function buildCycleReport(
 
   const l1Categories = categories
     .filter((c) => c.level === 1)
-    .sort((a, b) => (TYPE_ORDER[a.type ?? ""] ?? 9) - (TYPE_ORDER[b.type ?? ""] ?? 9));
+    .sort(
+      (a, b) =>
+        (TYPE_ORDER[a.type ?? ""] ?? 9) - (TYPE_ORDER[b.type ?? ""] ?? 9),
+    );
 
   const categoryTree: CategoryReportNode[] = l1Categories
     .filter((l1) => (l1Spending[l1.id] ?? 0) > 0)
@@ -151,7 +156,12 @@ export function buildCycleReport(
       amount: l1Spending[l1.id] ?? 0,
       prevAmount: prevAt(1, l1.id),
       children: categories
-        .filter((c) => c.level === 2 && c.parentId === l1.id && (l2Spending[c.id] ?? 0) > 0)
+        .filter(
+          (c) =>
+            c.level === 2 &&
+            c.parentId === l1.id &&
+            (l2Spending[c.id] ?? 0) > 0,
+        )
         .sort(sortBySortOrder)
         .map((l2) => ({
           id: l2.id,
@@ -160,7 +170,12 @@ export function buildCycleReport(
           amount: l2Spending[l2.id] ?? 0,
           prevAmount: prevAt(2, l2.id),
           children: categories
-            .filter((c) => c.level === 3 && c.parentId === l2.id && (l3Spending[c.id] ?? 0) > 0)
+            .filter(
+              (c) =>
+                c.level === 3 &&
+                c.parentId === l2.id &&
+                (l3Spending[c.id] ?? 0) > 0,
+            )
             .sort(sortBySortOrder)
             .map((l3) => ({
               id: l3.id,
@@ -186,10 +201,10 @@ export function buildCycleReport(
     const category = t.categoryId ? categoryMap.get(t.categoryId) : null;
     const label =
       t.type === "expense"
-        ? category?.name ?? "Expense"
+        ? (category?.name ?? "Expense")
         : t.type === "income"
-        ? t.note?.trim() || "Income"
-        : "Transfer";
+          ? t.note?.trim() || "Income"
+          : "Transfer";
     return {
       date: t.date,
       time: t.time,
@@ -197,7 +212,9 @@ export function buildCycleReport(
       amount: t.amount,
       label,
       accountName: accountMap.get(t.accountId)?.name ?? "—",
-      toAccountName: t.toAccountId ? accountMap.get(t.toAccountId)?.name ?? "—" : undefined,
+      toAccountName: t.toAccountId
+        ? (accountMap.get(t.toAccountId)?.name ?? "—")
+        : undefined,
       note: t.note?.trim() || undefined,
     };
   });

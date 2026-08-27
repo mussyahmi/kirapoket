@@ -3,9 +3,33 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { PlusIcon, Trash2Icon, GripVerticalIcon, SparklesIcon, TagsIcon, ListIcon, PencilIcon, InfoIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import {
+  PlusIcon,
+  Trash2Icon,
+  GripVerticalIcon,
+  SparklesIcon,
+  TagsIcon,
+  ListIcon,
+  PencilIcon,
+  InfoIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
@@ -18,7 +42,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
 
@@ -44,13 +74,29 @@ const fmt = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-
-function SortableForecastItem({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+function SortableForecastItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
       className="flex items-center gap-1"
     >
       <button
@@ -85,7 +131,8 @@ export default function BudgetPage() {
   const [mode, setMode] = useState<"actual" | "forecast">("actual");
 
   // Forecast income items (local draft, saved on change)
-  const savedItems: ForecastIncomeItem[] = userProfile?.forecastIncomeItems ?? [];
+  const savedItems: ForecastIncomeItem[] =
+    userProfile?.forecastIncomeItems ?? [];
   const [newLabel, setNewLabel] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [saving, setSaving] = useState(false);
@@ -100,7 +147,14 @@ export default function BudgetPage() {
 
   const [l3EditOpen, setL3EditOpen] = useState(false);
   const [l3EditTarget, setL3EditTarget] = useState<Category | null>(null);
-  const [l3EditForm, setL3EditForm] = useState<L3EditForm>({ name: "", budgetType: "cycle", budget: "", budgetSelectedDates: [], note: "", links: [] });
+  const [l3EditForm, setL3EditForm] = useState<L3EditForm>({
+    name: "",
+    budgetType: "cycle",
+    budget: "",
+    budgetSelectedDates: [],
+    note: "",
+    links: [],
+  });
   const [l3EditSaving, setL3EditSaving] = useState(false);
   // null = no saved preference yet; fall back to auto-expanding the largest root
   const [expandedL1, setExpandedL1] = useState<Set<string> | null>(() => {
@@ -121,7 +175,10 @@ export default function BudgetPage() {
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
       budgetSelectedDates: cat.budgetSelectedDates
-        ? cat.budgetSelectedDates.map(s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); })
+        ? cat.budgetSelectedDates.map((s) => {
+            const [y, m, d] = s.split("-").map(Number);
+            return new Date(y, m - 1, d);
+          })
         : [],
       note: cat.note ?? "",
       links: cat.links ?? [],
@@ -132,12 +189,27 @@ export default function BudgetPage() {
   const handleL3Save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!l3EditTarget || !l3EditForm.name.trim()) return;
-    const budget = l3EditForm.budget.trim() ? parseFloat(l3EditForm.budget) : undefined;
-    if (l3EditForm.budget.trim() && (isNaN(budget!) || budget! < 0)) { toast.error("Invalid budget amount."); return; }
-    const budgetType = l3EditForm.budget.trim() ? l3EditForm.budgetType : undefined;
-    const budgetDays = budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0 ? l3EditForm.budgetSelectedDates.length : undefined;
-    const budgetSelectedDates = budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
-      ? l3EditForm.budgetSelectedDates.map(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`) : undefined;
+    const budget = l3EditForm.budget.trim()
+      ? parseFloat(l3EditForm.budget)
+      : undefined;
+    if (l3EditForm.budget.trim() && (isNaN(budget!) || budget! < 0)) {
+      toast.error("Invalid budget amount.");
+      return;
+    }
+    const budgetType = l3EditForm.budget.trim()
+      ? l3EditForm.budgetType
+      : undefined;
+    const budgetDays =
+      budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
+        ? l3EditForm.budgetSelectedDates.length
+        : undefined;
+    const budgetSelectedDates =
+      budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
+        ? l3EditForm.budgetSelectedDates.map(
+            (d) =>
+              `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+          )
+        : undefined;
     setL3EditSaving(true);
     try {
       await editCategory(l3EditTarget.id, {
@@ -147,7 +219,10 @@ export default function BudgetPage() {
         budgetDays,
         budgetSelectedDates,
         note: l3EditForm.note.trim() || undefined,
-        links: l3EditForm.links.filter(l => l.trim()).length > 0 ? l3EditForm.links.filter(l => l.trim()) : undefined,
+        links:
+          l3EditForm.links.filter((l) => l.trim()).length > 0
+            ? l3EditForm.links.filter((l) => l.trim())
+            : undefined,
       });
       toast.success("Category updated.");
       setL3EditOpen(false);
@@ -177,7 +252,9 @@ export default function BudgetPage() {
   };
 
   const handleDeleteItem = async (id: string) => {
-    await saveUserProfile({ forecastIncomeItems: savedItems.filter((i) => i.id !== id) });
+    await saveUserProfile({
+      forecastIncomeItems: savedItems.filter((i) => i.id !== id),
+    });
   };
 
   const startEdit = (item: ForecastIncomeItem) => {
@@ -191,7 +268,7 @@ export default function BudgetPage() {
     if (!editLabel.trim() || isNaN(amount) || amount <= 0) return;
     await saveUserProfile({
       forecastIncomeItems: savedItems.map((i) =>
-        i.id === editingId ? { ...i, label: editLabel.trim(), amount } : i
+        i.id === editingId ? { ...i, label: editLabel.trim(), amount } : i,
       ),
     });
     setEditingId(null);
@@ -199,7 +276,9 @@ export default function BudgetPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   );
 
   const handleReorderItems = async (event: DragEndEvent) => {
@@ -211,12 +290,15 @@ export default function BudgetPage() {
     await saveUserProfile({ forecastIncomeItems: reordered });
   };
 
-
   const salaryDay = userProfile?.salaryDay ?? 25;
   const cycleStarts = userProfile?.cycleStarts;
   const cycleOptions = { cycleStarts };
 
-  const { start, end } = getSalaryCycleRange(salaryDay, new Date(), cycleOptions);
+  const { start, end } = getSalaryCycleRange(
+    salaryDay,
+    new Date(),
+    cycleOptions,
+  );
   const cycleLabel = `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;
 
   const startStr = format(start, "yyyy-MM-dd");
@@ -225,12 +307,12 @@ export default function BudgetPage() {
   const cycleTransactions = useMemo(
     () => transactions.filter((t) => t.date >= startStr && t.date <= endStr),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transactions, startStr, endStr]
+    [transactions, startStr, endStr],
   );
 
   const categoryMap = useMemo(
     () => Object.fromEntries(categories.map((c) => [c.id, c])),
-    [categories]
+    [categories],
   );
 
   const l2BudgetMap = useMemo(() => {
@@ -260,32 +342,39 @@ export default function BudgetPage() {
     for (const t of cycleTransactions) {
       if (t.type !== "expense" || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
-      while (cat && cat.level !== 2 && cat.parentId) cat = categoryMap[cat.parentId];
+      while (cat && cat.level !== 2 && cat.parentId)
+        cat = categoryMap[cat.parentId];
       if (cat?.level === 2) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
     }
     return result;
   }, [cycleTransactions, categoryMap]);
 
   const actualIncome = useMemo(
-    () => cycleTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0),
-    [cycleTransactions]
+    () =>
+      cycleTransactions
+        .filter((t) => t.type === "income")
+        .reduce((s, t) => s + t.amount, 0),
+    [cycleTransactions],
   );
 
   const forecastIncome = useMemo(
     () => savedItems.reduce((s, i) => s + i.amount, 0),
-    [savedItems]
+    [savedItems],
   );
 
   const effectiveIncome = mode === "forecast" ? forecastIncome : actualIncome;
 
   const totalSpent = useMemo(
-    () => cycleTransactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0),
-    [cycleTransactions]
+    () =>
+      cycleTransactions
+        .filter((t) => t.type === "expense")
+        .reduce((s, t) => s + t.amount, 0),
+    [cycleTransactions],
   );
 
   const totalBudgeted = useMemo(
     () => Object.values(l2BudgetMap).reduce((s, v) => s + v, 0),
-    [l2BudgetMap]
+    [l2BudgetMap],
   );
 
   const unbudgetedSpending = useMemo(() => {
@@ -294,8 +383,10 @@ export default function BudgetPage() {
       .reduce((s, t) => {
         const cat = categoryMap[t.categoryId!];
         if (!cat) return s + t.amount;
-        if (cat.level === 3) return effectiveCatBudget(cat) === 0 ? s + t.amount : s;
-        if (cat.level === 2) return (l2BudgetMap[cat.id] ?? 0) === 0 ? s + t.amount : s;
+        if (cat.level === 3)
+          return effectiveCatBudget(cat) === 0 ? s + t.amount : s;
+        if (cat.level === 2)
+          return (l2BudgetMap[cat.id] ?? 0) === 0 ? s + t.amount : s;
         return s;
       }, 0);
   }, [cycleTransactions, categoryMap, l2BudgetMap]);
@@ -311,7 +402,8 @@ export default function BudgetPage() {
       }, 0);
   }, [categories, l3SpendingMap]);
 
-  const unallocated = effectiveIncome - totalBudgeted - unbudgetedSpending - totalExceedAmount;
+  const unallocated =
+    effectiveIncome - totalBudgeted - unbudgetedSpending - totalExceedAmount;
   const actualRemaining = effectiveIncome - totalSpent;
 
   const l1Categories = useMemo(() => {
@@ -323,7 +415,7 @@ export default function BudgetPage() {
 
   const hasBudgets = useMemo(
     () => Object.values(l2BudgetMap).some((v) => v > 0),
-    [l2BudgetMap]
+    [l2BudgetMap],
   );
 
   // Per-root spending totals, used to auto-expand the largest root by default
@@ -378,7 +470,6 @@ export default function BudgetPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
-
       <div>
         <h1 className="text-xl font-semibold">Budget</h1>
         <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
@@ -395,15 +486,18 @@ export default function BudgetPage() {
             <SparklesIcon className="size-4 text-amber-500 dark:text-amber-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Ask AI about your spending</p>
-            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">Coming soon</p>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              Ask AI about your spending
+            </p>
+            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">
+              Coming soon
+            </p>
           </div>
         </div>
         <ChevronRightIcon className="size-4 text-amber-500/70 dark:text-amber-400/70 shrink-0" />
       </button>
 
       <div className="space-y-6">
-
         {/* Forecast Summary */}
         <Card>
           <CardHeader>
@@ -419,7 +513,9 @@ export default function BudgetPage() {
                       onClick={() => setMode(m)}
                       className={cn(
                         "px-3 py-1.5 capitalize transition-colors",
-                        mode === m ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                        mode === m
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-muted-foreground hover:bg-muted",
                       )}
                     >
                       {m}
@@ -434,28 +530,44 @@ export default function BudgetPage() {
             {mode === "actual" ? (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Income</span>
-                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmt(actualIncome)}</span>
+                <span className="font-medium tabular-nums text-green-600 dark:text-green-400">
+                  {fmt(actualIncome)}
+                </span>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Expected income</span>
-                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">{fmt(forecastIncome)}</span>
+                  <span className="font-medium tabular-nums text-green-600 dark:text-green-400">
+                    {fmt(forecastIncome)}
+                  </span>
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorderItems}>
-                    <SortableContext items={savedItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleReorderItems}
+                  >
+                    <SortableContext
+                      items={savedItems.map((i) => i.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
                       <div className="space-y-1.5 pl-1 border-l-2 border-border">
                         {savedItems.map((item) =>
                           editingId === item.id ? (
-                            <div key={item.id} className="flex gap-1.5 items-center pl-4">
+                            <div
+                              key={item.id}
+                              className="flex gap-1.5 items-center pl-4"
+                            >
                               <Input
                                 autoFocus
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
                                 className="flex-1 h-7 text-xs"
-                                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && handleSaveEdit()
+                                }
                               />
                               <Input
                                 type="number"
@@ -463,10 +575,24 @@ export default function BudgetPage() {
                                 value={editAmount}
                                 onChange={(e) => setEditAmount(e.target.value)}
                                 className="w-24 h-7 text-xs"
-                                onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && handleSaveEdit()
+                                }
                               />
-                              <button type="button" onClick={handleSaveEdit} className="text-xs font-medium text-primary shrink-0">Save</button>
-                              <button type="button" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground shrink-0">Cancel</button>
+                              <button
+                                type="button"
+                                onClick={handleSaveEdit}
+                                className="text-xs font-medium text-primary shrink-0"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingId(null)}
+                                className="text-xs text-muted-foreground shrink-0"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           ) : (
                             <SortableForecastItem key={item.id} id={item.id}>
@@ -496,7 +622,7 @@ export default function BudgetPage() {
                                 </div>
                               </div>
                             </SortableForecastItem>
-                          )
+                          ),
                         )}
                       </div>
                     </SortableContext>
@@ -520,7 +646,13 @@ export default function BudgetPage() {
                     className="w-28 h-8 text-xs"
                     onKeyDown={(e) => e.key === "Enter" && handleAddItem()}
                   />
-                  <Button size="sm" variant="outline" className="h-8 px-2" onClick={handleAddItem} disabled={saving}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2"
+                    onClick={handleAddItem}
+                    disabled={saving}
+                  >
                     <PlusIcon className="size-3.5" />
                   </Button>
                 </div>
@@ -530,12 +662,17 @@ export default function BudgetPage() {
             {/* Allocation section */}
             <div className="rounded-xl border border-border/60 overflow-hidden">
               <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">Allocation</span>
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">
+                  Allocation
+                </span>
               </div>
               <div className="px-3 py-2.5 space-y-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total budgeted</span>
-                  <span className="font-medium amt tabular-nums text-muted-foreground"><span className="text-foreground/40">−</span> {fmt(totalBudgeted)}</span>
+                  <span className="font-medium amt tabular-nums text-muted-foreground">
+                    <span className="text-foreground/40">−</span>{" "}
+                    {fmt(totalBudgeted)}
+                  </span>
                 </div>
                 {unbudgetedSpending > 0 && (
                   <div className="space-y-1.5">
@@ -548,7 +685,10 @@ export default function BudgetPage() {
                         Unbudgeted spending
                         <InfoIcon className="size-3 shrink-0" />
                       </button>
-                      <span className="font-medium tabular-nums text-orange-500"><span className="text-orange-400/60">−</span> {fmt(unbudgetedSpending)}</span>
+                      <span className="font-medium tabular-nums text-orange-500">
+                        <span className="text-orange-400/60">−</span>{" "}
+                        {fmt(unbudgetedSpending)}
+                      </span>
                     </div>
                     {unbudgetedInfoOpen && (
                       <p className="text-[11px] text-orange-500/70 leading-snug pl-3 border-l-2 border-orange-300/60 dark:border-orange-700/60">
@@ -568,7 +708,10 @@ export default function BudgetPage() {
                         Over-budget spending
                         <InfoIcon className="size-3 shrink-0" />
                       </button>
-                      <span className="font-medium tabular-nums text-red-500"><span className="text-red-400/60">−</span> {fmt(totalExceedAmount)}</span>
+                      <span className="font-medium tabular-nums text-red-500">
+                        <span className="text-red-400/60">−</span>{" "}
+                        {fmt(totalExceedAmount)}
+                      </span>
                     </div>
                     {overBudgetInfoOpen && (
                       <p className="text-[11px] text-red-500/70 leading-snug pl-3 border-l-2 border-red-300/60 dark:border-red-700/60">
@@ -577,11 +720,28 @@ export default function BudgetPage() {
                     )}
                   </div>
                 )}
-                <div className={cn(
-                  "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-2.5 mt-0.5"
-                )}>
-                  <span className={cn(unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>Unallocated</span>
-                  <span className={cn("amt tabular-nums", unallocated < 0 ? "text-red-500" : "text-blue-500 dark:text-blue-400")}>
+                <div
+                  className={cn(
+                    "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-2.5 mt-0.5",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      unallocated < 0
+                        ? "text-red-500"
+                        : "text-blue-500 dark:text-blue-400",
+                    )}
+                  >
+                    Unallocated
+                  </span>
+                  <span
+                    className={cn(
+                      "amt tabular-nums",
+                      unallocated < 0
+                        ? "text-red-500"
+                        : "text-blue-500 dark:text-blue-400",
+                    )}
+                  >
                     {fmt(unallocated)}
                   </span>
                 </div>
@@ -591,16 +751,27 @@ export default function BudgetPage() {
             {/* Actuals section */}
             <div className="rounded-xl border border-border/60 overflow-hidden">
               <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">Actuals</span>
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground/60">
+                  Actuals
+                </span>
               </div>
               <div className="px-3 py-2.5 space-y-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Spent so far</span>
-                  <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">{fmt(totalSpent)}</span>
+                  <span className="font-medium amt tabular-nums text-red-500 dark:text-red-400">
+                    {fmt(totalSpent)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold">
                   <span>Remaining</span>
-                  <span className={cn("amt tabular-nums", actualRemaining < 0 ? "text-red-500" : "text-green-500 dark:text-green-400")}>
+                  <span
+                    className={cn(
+                      "amt tabular-nums",
+                      actualRemaining < 0
+                        ? "text-red-500"
+                        : "text-green-500 dark:text-green-400",
+                    )}
+                  >
                     {fmt(actualRemaining)}
                   </span>
                 </div>
@@ -608,13 +779,29 @@ export default function BudgetPage() {
                   <div className="space-y-1.5">
                     <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                       <div
-                        className={cn("h-full rounded-full transition-all duration-500", actualRemaining < 0 ? "bg-red-500" : "bg-green-500 dark:bg-green-400")}
-                        style={{ width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%` }}
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          actualRemaining < 0
+                            ? "bg-red-500"
+                            : "bg-green-500 dark:bg-green-400",
+                        )}
+                        style={{
+                          width: `${Math.min((totalSpent / effectiveIncome) * 100, 100)}%`,
+                        }}
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-muted-foreground/60 tabular-nums">
-                      <span>{Math.round((totalSpent / effectiveIncome) * 100)}% spent</span>
-                      <span>{Math.max(0, Math.round((actualRemaining / effectiveIncome) * 100))}% left</span>
+                      <span>
+                        {Math.round((totalSpent / effectiveIncome) * 100)}%
+                        spent
+                      </span>
+                      <span>
+                        {Math.max(
+                          0,
+                          Math.round((actualRemaining / effectiveIncome) * 100),
+                        )}
+                        % left
+                      </span>
                     </div>
                   </div>
                 )}
@@ -643,7 +830,10 @@ export default function BudgetPage() {
             {!hasBudgets ? (
               <p className="text-sm text-muted-foreground">
                 No budgets set. Add budgets from the{" "}
-                <a href="/categories" className="underline text-foreground">Categories</a> page.
+                <a href="/categories" className="underline text-foreground">
+                  Categories
+                </a>{" "}
+                page.
               </p>
             ) : (
               l1Categories.map((l1) => {
@@ -652,14 +842,22 @@ export default function BudgetPage() {
                   .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
                 const l2sVisible = l2s.filter(
-                  (l2) => (l2BudgetMap[l2.id] ?? 0) > 0 || (l2SpendingMap[l2.id] ?? 0) > 0
+                  (l2) =>
+                    (l2BudgetMap[l2.id] ?? 0) > 0 ||
+                    (l2SpendingMap[l2.id] ?? 0) > 0,
                 );
                 if (l2sVisible.length === 0) return null;
 
                 const color = L1_COLORS[l1.type ?? ""] ?? "#94a3b8";
                 const isExpanded = effectiveExpanded.has(l1.id);
-                const l1spent = l2sVisible.reduce((s, l2) => s + (l2SpendingMap[l2.id] ?? 0), 0);
-                const l1budget = l2sVisible.reduce((s, l2) => s + (l2BudgetMap[l2.id] ?? 0), 0);
+                const l1spent = l2sVisible.reduce(
+                  (s, l2) => s + (l2SpendingMap[l2.id] ?? 0),
+                  0,
+                );
+                const l1budget = l2sVisible.reduce(
+                  (s, l2) => s + (l2BudgetMap[l2.id] ?? 0),
+                  0,
+                );
                 const l1over = l1budget > 0 && l1spent > l1budget;
                 return (
                   <div key={l1.id} className="space-y-3">
@@ -667,110 +865,229 @@ export default function BudgetPage() {
                     <button
                       type="button"
                       onClick={() => toggleL1(l1.id)}
-                      aria-label={isExpanded ? `Collapse ${l1.name}` : `Expand ${l1.name}`}
+                      aria-label={
+                        isExpanded ? `Collapse ${l1.name}` : `Expand ${l1.name}`
+                      }
                       className="flex w-full items-center justify-between gap-2 rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <ChevronDownIcon className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", !isExpanded && "-rotate-90")} />
-                        <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <ChevronDownIcon
+                          className={cn(
+                            "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                            !isExpanded && "-rotate-90",
+                          )}
+                        />
+                        <span
+                          className="size-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
                         <p className="text-sm font-bold">{l1.name}</p>
                       </div>
-                      <span className={cn("amt tabular-nums text-xs shrink-0", l1over ? "text-red-500" : "text-muted-foreground")}>
+                      <span
+                        className={cn(
+                          "amt tabular-nums text-xs shrink-0",
+                          l1over ? "text-red-500" : "text-muted-foreground",
+                        )}
+                      >
                         {fmt(l1spent)}
-                        {l1budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l1budget)}</span>}
+                        {l1budget > 0 && (
+                          <span className="amt text-muted-foreground/50">
+                            {" "}
+                            / {fmt(l1budget)}
+                          </span>
+                        )}
                       </span>
                     </button>
 
                     {/* L2 rows */}
                     {isExpanded && (
-                    <div className="space-y-3 pl-4 border-l-2" style={{ borderColor: color + "66" }}>
-                      {l2sVisible.map((l2) => {
-                        const l2budget = l2BudgetMap[l2.id] ?? 0;
-                        const l2spent = l2SpendingMap[l2.id] ?? 0;
+                      <div
+                        className="space-y-3 pl-4 border-l-2"
+                        style={{ borderColor: color + "66" }}
+                      >
+                        {l2sVisible.map((l2) => {
+                          const l2budget = l2BudgetMap[l2.id] ?? 0;
+                          const l2spent = l2SpendingMap[l2.id] ?? 0;
 
-                        const l3s = categories
-                          .filter((c) => c.level === 3 && c.parentId === l2.id)
-                          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+                          const l3s = categories
+                            .filter(
+                              (c) => c.level === 3 && c.parentId === l2.id,
+                            )
+                            .sort(
+                              (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+                            );
 
-                        const l2budgetedSpent = l3s.reduce((s, l3) => effectiveCatBudget(l3) > 0 ? s + (l3SpendingMap[l3.id] ?? 0) : s, 0);
-                        const l2remaining = l2budget - l2budgetedSpent;
-                        const l2pct = l2budget > 0 ? Math.min((l2budgetedSpent / l2budget) * 100, 100) : null;
-                        const l2over = l2budget > 0 && l2budgetedSpent > l2budget;
-                        const l3sVisible = l3s.filter(
-                          (l3) => effectiveCatBudget(l3) > 0 || (l3SpendingMap[l3.id] ?? 0) > 0
-                        );
+                          const l2budgetedSpent = l3s.reduce(
+                            (s, l3) =>
+                              effectiveCatBudget(l3) > 0
+                                ? s + (l3SpendingMap[l3.id] ?? 0)
+                                : s,
+                            0,
+                          );
+                          const l2remaining = l2budget - l2budgetedSpent;
+                          const l2pct =
+                            l2budget > 0
+                              ? Math.min(
+                                  (l2budgetedSpent / l2budget) * 100,
+                                  100,
+                                )
+                              : null;
+                          const l2over =
+                            l2budget > 0 && l2budgetedSpent > l2budget;
+                          const l3sVisible = l3s.filter(
+                            (l3) =>
+                              effectiveCatBudget(l3) > 0 ||
+                              (l3SpendingMap[l3.id] ?? 0) > 0,
+                          );
 
-                        return (
-                          <div key={l2.id} className="space-y-1.5">
-                            {/* L2 name + amounts */}
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`)}
-                              className="flex items-center justify-between gap-2 text-sm rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
-                            >
-                              <span className={cn("font-medium text-left", l2budget > 0 && !l2over && l2remaining === 0 && "line-through text-muted-foreground")}>
-                                {l2.name}
-                              </span>
-                              <span className={cn("amt tabular-nums shrink-0 text-xs", l2over ? "text-red-500" : "text-muted-foreground")}>
-                                {fmt(l2spent)}
-                                {l2budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l2budget)}</span>}
-                              </span>
-                            </button>
-                            {/* Progress bar + remaining inline */}
-                            {l2pct !== null && (
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{ width: `${l2pct}%`, backgroundColor: l2over ? "#ef4444" : color }}
-                                  />
-                                </div>
-                                {(l2over || l2remaining !== 0) && (
-                                  <span className={cn("text-[10px] tabular-nums amt shrink-0 w-20 text-right", l2over ? "text-red-500" : "text-muted-foreground/60")}>
-                                    {l2over ? `Over ${fmt(Math.abs(l2remaining))}` : `${fmt(l2remaining)} left`}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            {/* L3 rows */}
-                            {l3sVisible.length > 0 && (
-                              <div className="space-y-1 pt-0.5 pl-3 border-l border-border/40">
-                                {l3sVisible.map((l3) => {
-                                  const l3budget = effectiveCatBudget(l3);
-                                  const l3spent = l3SpendingMap[l3.id] ?? 0;
-                                  const l3remaining = l3budget - l3spent;
-                                  const l3over = l3budget > 0 && l3spent > l3budget;
-
-                                  return (
-                                    <button
-                                      key={l3.id}
-                                      type="button"
-                                      onClick={() => setSelectedL3(l3)}
-                                      className="flex items-center justify-between gap-2 text-xs rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                          return (
+                            <div key={l2.id} className="space-y-1.5">
+                              {/* L2 name + amounts */}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  router.push(
+                                    `/transactions?category=${l2.id}&from=${startStr}&to=${endStr}`,
+                                  )
+                                }
+                                className="flex items-center justify-between gap-2 text-sm rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                              >
+                                <span
+                                  className={cn(
+                                    "font-medium text-left",
+                                    l2budget > 0 &&
+                                      !l2over &&
+                                      l2remaining === 0 &&
+                                      "line-through text-muted-foreground",
+                                  )}
+                                >
+                                  {l2.name}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "amt tabular-nums shrink-0 text-xs",
+                                    l2over
+                                      ? "text-red-500"
+                                      : "text-muted-foreground",
+                                  )}
+                                >
+                                  {fmt(l2spent)}
+                                  {l2budget > 0 && (
+                                    <span className="amt text-muted-foreground/50">
+                                      {" "}
+                                      / {fmt(l2budget)}
+                                    </span>
+                                  )}
+                                </span>
+                              </button>
+                              {/* Progress bar + remaining inline */}
+                              {l2pct !== null && (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all"
+                                      style={{
+                                        width: `${l2pct}%`,
+                                        backgroundColor: l2over
+                                          ? "#ef4444"
+                                          : color,
+                                      }}
+                                    />
+                                  </div>
+                                  {(l2over || l2remaining !== 0) && (
+                                    <span
+                                      className={cn(
+                                        "text-[10px] tabular-nums amt shrink-0 w-20 text-right",
+                                        l2over
+                                          ? "text-red-500"
+                                          : "text-muted-foreground/60",
+                                      )}
                                     >
-                                      <span className={cn("text-left", l3over ? "text-red-500-80 hover:text-red-500" : l3budget === 0 ? "text-orange-500/80 hover:text-orange-500" : "text-muted-foreground/80 hover:text-muted-foreground", !l3over && l3remaining === 0 && "line-through")}>
-                                        {l3.name}
-                                      </span>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        <span className={cn("amt tabular-nums", l3over ? "text-red-500" : l3budget === 0 ? "text-orange-500" : "text-muted-foreground")}>
-                                          {fmt(l3spent)}
-                                          {l3budget > 0 && <span className="amt text-muted-foreground/50"> / {fmt(l3budget)}</span>}
+                                      {l2over
+                                        ? `Over ${fmt(Math.abs(l2remaining))}`
+                                        : `${fmt(l2remaining)} left`}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {/* L3 rows */}
+                              {l3sVisible.length > 0 && (
+                                <div className="space-y-1 pt-0.5 pl-3 border-l border-border/40">
+                                  {l3sVisible.map((l3) => {
+                                    const l3budget = effectiveCatBudget(l3);
+                                    const l3spent = l3SpendingMap[l3.id] ?? 0;
+                                    const l3remaining = l3budget - l3spent;
+                                    const l3over =
+                                      l3budget > 0 && l3spent > l3budget;
+
+                                    return (
+                                      <button
+                                        key={l3.id}
+                                        type="button"
+                                        onClick={() => setSelectedL3(l3)}
+                                        className="flex items-center justify-between gap-2 text-xs rounded-sm px-1 -mx-1 hover:bg-muted/50 transition-colors w-full"
+                                      >
+                                        <span
+                                          className={cn(
+                                            "text-left",
+                                            l3over
+                                              ? "text-red-500-80 hover:text-red-500"
+                                              : l3budget === 0
+                                                ? "text-orange-500/80 hover:text-orange-500"
+                                                : "text-muted-foreground/80 hover:text-muted-foreground",
+                                            !l3over &&
+                                              l3remaining === 0 &&
+                                              "line-through",
+                                          )}
+                                        >
+                                          {l3.name}
                                         </span>
-                                        {l3budget > 0 && (l3over || l3remaining !== 0) && (
-                                          <span className={cn("text-[10px] amt tabular-nums", l3over ? "text-red-400" : "text-muted-foreground/50")}>
-                                            ({l3over ? `-${fmt(Math.abs(l3remaining))}` : `${fmt(l3remaining)} left`})
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          <span
+                                            className={cn(
+                                              "amt tabular-nums",
+                                              l3over
+                                                ? "text-red-500"
+                                                : l3budget === 0
+                                                  ? "text-orange-500"
+                                                  : "text-muted-foreground",
+                                            )}
+                                          >
+                                            {fmt(l3spent)}
+                                            {l3budget > 0 && (
+                                              <span className="amt text-muted-foreground/50">
+                                                {" "}
+                                                / {fmt(l3budget)}
+                                              </span>
+                                            )}
                                           </span>
-                                        )}
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                                          {l3budget > 0 &&
+                                            (l3over || l3remaining !== 0) && (
+                                              <span
+                                                className={cn(
+                                                  "text-[10px] amt tabular-nums",
+                                                  l3over
+                                                    ? "text-red-400"
+                                                    : "text-muted-foreground/50",
+                                                )}
+                                              >
+                                                (
+                                                {l3over
+                                                  ? `-${fmt(Math.abs(l3remaining))}`
+                                                  : `${fmt(l3remaining)} left`}
+                                                )
+                                              </span>
+                                            )}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 );
@@ -793,52 +1110,118 @@ export default function BudgetPage() {
         });
         const color = L1_COLORS[l1?.type ?? ""] ?? "#94a3b8";
         return (
-          <Dialog open={!!selectedL3} onOpenChange={(open) => { if (!open) setSelectedL3(null); }}>
+          <Dialog
+            open={!!selectedL3}
+            onOpenChange={(open) => {
+              if (!open) setSelectedL3(null);
+            }}
+          >
             <DialogContent className="max-w-sm">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span
+                    className="size-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
                   {l3.name}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 {l3budget > 0 && (
                   <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Budget</p>
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+                      Budget
+                    </p>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">{fmt(l3budget)}</p>
-                      {l3.budgetType === "daily" && l3.budget !== undefined && l3.budgetDays && (
-                        <p className="text-xs text-muted-foreground">{fmt(l3.budget)}/day × {l3.budgetDays} days</p>
-                      )}
+                      <p className="text-lg font-bold text-foreground">
+                        {fmt(l3budget)}
+                      </p>
+                      {l3.budgetType === "daily" &&
+                        l3.budget !== undefined &&
+                        l3.budgetDays && (
+                          <p className="text-xs text-muted-foreground">
+                            {fmt(l3.budget)}/day × {l3.budgetDays} days
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}
                 {l3spent > 0 && (
-                  <div className={cn("rounded-xl px-4 py-3 flex items-center justify-between", l3over ? "bg-red-50 dark:bg-red-950/30" : "bg-green-50 dark:bg-green-950/30")}>
-                    <p className={cn("text-xs font-semibold tracking-widest uppercase", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>Spent</p>
-                    <p className={cn("text-lg font-bold", l3over ? "text-red-500" : "text-green-600 dark:text-green-400")}>{fmt(l3spent)}</p>
+                  <div
+                    className={cn(
+                      "rounded-xl px-4 py-3 flex items-center justify-between",
+                      l3over
+                        ? "bg-red-50 dark:bg-red-950/30"
+                        : "bg-green-50 dark:bg-green-950/30",
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-xs font-semibold tracking-widest uppercase",
+                        l3over
+                          ? "text-red-500"
+                          : "text-green-600 dark:text-green-400",
+                      )}
+                    >
+                      Spent
+                    </p>
+                    <p
+                      className={cn(
+                        "text-lg font-bold",
+                        l3over
+                          ? "text-red-500"
+                          : "text-green-600 dark:text-green-400",
+                      )}
+                    >
+                      {fmt(l3spent)}
+                    </p>
                   </div>
                 )}
                 {l3.note && (
                   <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Note</p>
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+                      Note
+                    </p>
                     <p className="text-sm whitespace-pre-wrap">{l3.note}</p>
                   </div>
                 )}
                 {l3.links && l3.links.length > 0 && (
                   <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1.5">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Links</p>
+                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+                      Links
+                    </p>
                     {l3.links.map((link, i) => (
-                      <a key={i} href={link} target="_blank" rel="noopener noreferrer" className="block text-sm text-primary underline truncate">{link}</a>
+                      <a
+                        key={i}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-sm text-primary underline truncate"
+                      >
+                        {link}
+                      </a>
                     ))}
                   </div>
                 )}
                 <div className="flex items-center gap-2 pt-1">
-                  <Button variant="outline" className="flex-1 gap-1.5" onClick={() => { setSelectedL3(null); router.push(`/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`); }}>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-1.5"
+                    onClick={() => {
+                      setSelectedL3(null);
+                      router.push(
+                        `/transactions?category=${l3.id}&from=${startStr}&to=${endStr}`,
+                      );
+                    }}
+                  >
                     <ListIcon className="size-3.5" /> Transactions
                   </Button>
                   {!isReadOnly && (
-                    <Button variant="outline" className="flex-1 gap-1.5" onClick={() => openL3Edit(l3)}>
+                    <Button
+                      variant="outline"
+                      className="flex-1 gap-1.5"
+                      onClick={() => openL3Edit(l3)}
+                    >
                       <PencilIcon className="size-3.5" /> Edit
                     </Button>
                   )}
@@ -862,7 +1245,9 @@ export default function BudgetPage() {
               <Input
                 id="l3-name"
                 value={l3EditForm.name}
-                onChange={(e) => setL3EditForm({ ...l3EditForm, name: e.target.value })}
+                onChange={(e) =>
+                  setL3EditForm({ ...l3EditForm, name: e.target.value })
+                }
                 required
               />
             </div>
@@ -874,10 +1259,14 @@ export default function BudgetPage() {
                     <button
                       key={t}
                       type="button"
-                      onClick={() => setL3EditForm({ ...l3EditForm, budgetType: t })}
+                      onClick={() =>
+                        setL3EditForm({ ...l3EditForm, budgetType: t })
+                      }
                       className={cn(
                         "flex-1 py-1.5 text-sm font-medium transition-colors",
-                        l3EditForm.budgetType === t ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                        l3EditForm.budgetType === t
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-muted-foreground hover:bg-muted",
                       )}
                     >
                       {t === "cycle" ? "Per Cycle" : "Per Day"}
@@ -895,7 +1284,9 @@ export default function BudgetPage() {
                     min="0"
                     placeholder="0.00"
                     value={l3EditForm.budget}
-                    onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
+                    onChange={(e) =>
+                      setL3EditForm({ ...l3EditForm, budget: e.target.value })
+                    }
                   />
                 </div>
               ) : (
@@ -909,7 +1300,9 @@ export default function BudgetPage() {
                       min="0"
                       placeholder="0.00"
                       value={l3EditForm.budget}
-                      onChange={(e) => setL3EditForm({ ...l3EditForm, budget: e.target.value })}
+                      onChange={(e) =>
+                        setL3EditForm({ ...l3EditForm, budget: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-1.5 mt-4">
@@ -919,7 +1312,12 @@ export default function BudgetPage() {
                         <button
                           type="button"
                           className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                          onClick={() => setL3EditForm({ ...l3EditForm, budgetSelectedDates: [] })}
+                          onClick={() =>
+                            setL3EditForm({
+                              ...l3EditForm,
+                              budgetSelectedDates: [],
+                            })
+                          }
                         >
                           Clear all
                         </button>
@@ -929,17 +1327,34 @@ export default function BudgetPage() {
                       <Calendar
                         mode="multiple"
                         selected={l3EditForm.budgetSelectedDates}
-                        onSelect={(dates: Date[] | undefined) => setL3EditForm({ ...l3EditForm, budgetSelectedDates: dates ?? [] })}
+                        onSelect={(dates: Date[] | undefined) =>
+                          setL3EditForm({
+                            ...l3EditForm,
+                            budgetSelectedDates: dates ?? [],
+                          })
+                        }
                         className="w-full"
                       />
                     </div>
                   </div>
-                  {l3EditForm.budget && parseFloat(l3EditForm.budget) > 0 && l3EditForm.budgetSelectedDates.length > 0 && (
-                    <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                      <span className="text-xs text-muted-foreground">{l3EditForm.budgetSelectedDates.length} days selected</span>
-                      <span className="text-sm font-semibold">RM {(parseFloat(l3EditForm.budget) * l3EditForm.budgetSelectedDates.length).toLocaleString("ms-MY", { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
+                  {l3EditForm.budget &&
+                    parseFloat(l3EditForm.budget) > 0 &&
+                    l3EditForm.budgetSelectedDates.length > 0 && (
+                      <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                        <span className="text-xs text-muted-foreground">
+                          {l3EditForm.budgetSelectedDates.length} days selected
+                        </span>
+                        <span className="text-sm font-semibold">
+                          RM{" "}
+                          {(
+                            parseFloat(l3EditForm.budget) *
+                            l3EditForm.budgetSelectedDates.length
+                          ).toLocaleString("ms-MY", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                    )}
                 </div>
               )}
             </div>
@@ -950,7 +1365,9 @@ export default function BudgetPage() {
                 placeholder="Add a note..."
                 rows={3}
                 value={l3EditForm.note}
-                onChange={(e) => setL3EditForm({ ...l3EditForm, note: e.target.value })}
+                onChange={(e) =>
+                  setL3EditForm({ ...l3EditForm, note: e.target.value })
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -968,24 +1385,53 @@ export default function BudgetPage() {
                         setL3EditForm({ ...l3EditForm, links: updated });
                       }}
                     />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => setL3EditForm({ ...l3EditForm, links: l3EditForm.links.filter((_, j) => j !== i) })}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setL3EditForm({
+                          ...l3EditForm,
+                          links: l3EditForm.links.filter((_, j) => j !== i),
+                        })
+                      }
+                    >
                       <Trash2Icon className="size-4 text-muted-foreground" />
                     </Button>
                   </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setL3EditForm({ ...l3EditForm, links: [...l3EditForm.links, ""] })}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() =>
+                    setL3EditForm({
+                      ...l3EditForm,
+                      links: [...l3EditForm.links, ""],
+                    })
+                  }
+                >
                   <PlusIcon className="size-4 mr-1.5" /> Add link
                 </Button>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setL3EditOpen(false)} disabled={l3EditSaving}>Cancel</Button>
-              <Button type="submit" disabled={l3EditSaving}>{l3EditSaving ? "Saving..." : "Save"}</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setL3EditOpen(false)}
+                disabled={l3EditSaving}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={l3EditSaving}>
+                {l3EditSaving ? "Saving..." : "Save"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

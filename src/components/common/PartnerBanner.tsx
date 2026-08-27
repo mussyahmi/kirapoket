@@ -78,19 +78,30 @@ export function PartnerBanner() {
         </div>
       </div>
 
-      <Dialog open={declineOpen} onOpenChange={(o) => !declining && setDeclineOpen(o)}>
+      <Dialog
+        open={declineOpen}
+        onOpenChange={(o) => !declining && setDeclineOpen(o)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Decline invite?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {inviterName}{" "}will be notified that you declined their invite.
+            {inviterName} will be notified that you declined their invite.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeclineOpen(false)} disabled={declining}>
+            <Button
+              variant="outline"
+              onClick={() => setDeclineOpen(false)}
+              disabled={declining}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDecline} disabled={declining}>
+            <Button
+              variant="destructive"
+              onClick={handleDecline}
+              disabled={declining}
+            >
               {declining ? "Declining…" : "Yes, decline"}
             </Button>
           </DialogFooter>

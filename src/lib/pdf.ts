@@ -38,7 +38,7 @@ type DeltaDirection = "expense" | "income";
 function formatDelta(
   current: number,
   prev: number | undefined,
-  direction: DeltaDirection
+  direction: DeltaDirection,
 ): { text: string; color: RGB } {
   if (prev === undefined) return { text: "", color: MUTED };
   if (prev === 0 && current > 0) return { text: "new", color: MUTED };
@@ -47,15 +47,19 @@ function formatDelta(
   const sign = diff > 0 ? "+" : "-";
   const text = `${sign}${rm(Math.abs(diff))}`;
   const up = diff > 0;
-  const color =
-    direction === "expense" ? (up ? RED : GREEN) : up ? GREEN : RED;
+  const color = direction === "expense" ? (up ? RED : GREEN) : up ? GREEN : RED;
   return { text, color };
 }
 
 function flattenTree(
-  nodes: CategoryReportNode[]
+  nodes: CategoryReportNode[],
 ): { name: string; amount: number; prevAmount?: number; level: number }[] {
-  const out: { name: string; amount: number; prevAmount?: number; level: number }[] = [];
+  const out: {
+    name: string;
+    amount: number;
+    prevAmount?: number;
+    level: number;
+  }[] = [];
   const walk = (node: CategoryReportNode) => {
     out.push({
       name: node.name,
@@ -120,9 +124,28 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
     color: RGB;
     signed?: boolean;
   }[] = [
-    { label: "INCOME", value: report.income, prev: report.prevIncome, direction: "income", color: GREEN },
-    { label: "EXPENSES", value: report.expenses, prev: report.prevExpenses, direction: "expense", color: RED },
-    { label: "REMAINING", value: report.net, prev: report.prevNet, direction: "income", color: (Math.round(report.net * 100) / 100 || 0) >= 0 ? BLUE : RED, signed: true },
+    {
+      label: "INCOME",
+      value: report.income,
+      prev: report.prevIncome,
+      direction: "income",
+      color: GREEN,
+    },
+    {
+      label: "EXPENSES",
+      value: report.expenses,
+      prev: report.prevExpenses,
+      direction: "expense",
+      color: RED,
+    },
+    {
+      label: "REMAINING",
+      value: report.net,
+      prev: report.prevNet,
+      direction: "income",
+      color: (Math.round(report.net * 100) / 100 || 0) >= 0 ? BLUE : RED,
+      signed: true,
+    },
   ];
   summary.forEach((box, i) => {
     const x = margin + i * (boxW + gap);
@@ -210,17 +233,22 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
     const levels = rows.map((r) => r.level);
     const hasPrev = report.hasPrev;
     const head = hasPrev
-      ? [[
-          "Category",
-          { content: "Amount", styles: { halign: "right" as const } },
-          { content: "vs last", styles: { halign: "right" as const } },
-        ]]
-      : [["Category", { content: "Amount", styles: { halign: "right" as const } }]];
+      ? [
+          [
+            "Category",
+            { content: "Amount", styles: { halign: "right" as const } },
+            { content: "vs last", styles: { halign: "right" as const } },
+          ],
+        ]
+      : [
+          [
+            "Category",
+            { content: "Amount", styles: { halign: "right" as const } },
+          ],
+        ];
     const body = rows.map((r) => {
-      const base: (string | { content: string; styles: { textColor: RGB } })[] = [
-        r.name,
-        rm(r.amount),
-      ];
+      const base: (string | { content: string; styles: { textColor: RGB } })[] =
+        [r.name, rm(r.amount)];
       if (!hasPrev) return base;
       const delta = formatDelta(r.amount, r.prevAmount, "expense");
       base.push({ content: delta.text, styles: { textColor: delta.color } });
@@ -267,7 +295,12 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
         }
 
         if (isL1Divider) {
-          data.cell.styles.lineWidth = { top: 0.5, right: 0, bottom: 0, left: 0 };
+          data.cell.styles.lineWidth = {
+            top: 0.5,
+            right: 0,
+            bottom: 0,
+            left: 0,
+          };
           data.cell.styles.lineColor = LINE;
         }
 
@@ -334,13 +367,7 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
           t.type === "transfer" && t.toAccountName
             ? `${t.accountName}\n${t.toAccountName}`
             : t.accountName;
-        return [
-          "",
-          dateCells[i],
-          details,
-          account,
-          signedRm(t.type, t.amount),
-        ];
+        return ["", dateCells[i], details, account, signedRm(t.type, t.amount)];
       }),
       headStyles: {
         fillColor: [241, 245, 249],
@@ -366,7 +393,8 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       didDrawCell: (data: CellHookData) => {
         if (data.section !== "body" || data.column.index !== 0) return;
         const type = types[data.row.index];
-        const color = type === "income" ? GREEN : type === "expense" ? RED : BLUE;
+        const color =
+          type === "income" ? GREEN : type === "expense" ? RED : BLUE;
         doc.setFillColor(color[0], color[1], color[2]);
         const cx = data.cell.x + data.cell.width / 2;
         const cy = data.cell.y + data.cell.height / 2;
@@ -389,7 +417,9 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...MUTED);
       doc.text(`· ${report.cycleLabel}`, margin + brandW + 6, margin + 4);
-      doc.text("Monthly Report", pageW - margin, margin + 4, { align: "right" });
+      doc.text("Monthly Report", pageW - margin, margin + 4, {
+        align: "right",
+      });
       doc.setDrawColor(...LINE);
       doc.setLineWidth(0.5);
       doc.line(margin, margin + 12, pageW - margin, margin + 12);

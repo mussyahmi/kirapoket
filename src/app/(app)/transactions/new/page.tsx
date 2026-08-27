@@ -23,7 +23,7 @@ function NewTransactionPage() {
         router.push(
           searchParams.get("from") === "onboarding"
             ? "/home?onboarding=done"
-            : "/transactions"
+            : "/transactions",
         )
       }
     />

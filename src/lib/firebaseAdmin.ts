@@ -1,9 +1,4 @@
-import {
-  getApps,
-  initializeApp,
-  cert,
-  type App,
-} from "firebase-admin/app";
+import { getApps, initializeApp, cert, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -36,7 +31,8 @@ function getAdminApp(): App {
   // local dev where ADC may be absent — token verification only needs the
   // project ID plus Google's public certs.
   const projectId =
-    process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.FIREBASE_PROJECT_ID ??
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   return initializeApp(projectId ? { projectId } : undefined);
 }
 

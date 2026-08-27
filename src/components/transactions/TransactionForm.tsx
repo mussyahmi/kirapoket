@@ -59,7 +59,7 @@ export function TransactionForm({
   const isEdit = !!editId;
   const editTx = useMemo(
     () => (editId ? transactions.find((t) => t.id === editId) : undefined),
-    [transactions, editId]
+    [transactions, editId],
   );
 
   const [txType, setTxType] = useState<TxType>("expense");
@@ -127,7 +127,11 @@ export function TransactionForm({
   const l1Categories = useMemo(() => {
     const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
     return categories
-      .filter((c) => c.level === 1 && categories.some((s) => s.level === 2 && s.parentId === c.id))
+      .filter(
+        (c) =>
+          c.level === 1 &&
+          categories.some((s) => s.level === 2 && s.parentId === c.id),
+      )
       .sort((a, b) => (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9));
   }, [categories]);
 
@@ -138,7 +142,7 @@ export function TransactionForm({
             .filter((c) => c.level === 2 && c.parentId === l1Id)
             .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
         : [],
-    [categories, l1Id]
+    [categories, l1Id],
   );
 
   const l3Categories = useMemo(
@@ -148,7 +152,7 @@ export function TransactionForm({
             .filter((c) => c.level === 3 && c.parentId === l2Id)
             .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
         : [],
-    [categories, l2Id]
+    [categories, l2Id],
   );
 
   const setupLoading = loadingProfile || loadingAccounts;
@@ -185,8 +189,13 @@ export function TransactionForm({
     const amt = parseFloat(amount);
     if (isNaN(amt)) return changes;
     const apply = (
-      t: { type: TxType; amount: number; accountId: string; toAccountId?: string },
-      factor: 1 | -1
+      t: {
+        type: TxType;
+        amount: number;
+        accountId: string;
+        toAccountId?: string;
+      },
+      factor: 1 | -1,
     ) => {
       if (t.type === "expense")
         changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
@@ -195,11 +204,28 @@ export function TransactionForm({
       if (t.type === "transfer") {
         changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
         if (t.toAccountId)
-          changes[t.toAccountId] = (changes[t.toAccountId] ?? 0) - factor * t.amount;
+          changes[t.toAccountId] =
+            (changes[t.toAccountId] ?? 0) - factor * t.amount;
       }
     };
-    apply({ type: editTx.type, amount: editTx.amount, accountId: editTx.accountId, toAccountId: editTx.toAccountId }, 1);
-    apply({ type: txType, amount: amt, accountId, toAccountId: txType === "transfer" ? toAccountId : undefined }, -1);
+    apply(
+      {
+        type: editTx.type,
+        amount: editTx.amount,
+        accountId: editTx.accountId,
+        toAccountId: editTx.toAccountId,
+      },
+      1,
+    );
+    apply(
+      {
+        type: txType,
+        amount: amt,
+        accountId,
+        toAccountId: txType === "transfer" ? toAccountId : undefined,
+      },
+      -1,
+    );
     return changes;
   }, [editTx, txType, amount, accountId, toAccountId]);
 
@@ -217,32 +243,47 @@ export function TransactionForm({
         <div
           className={cn(
             "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
-            short ? "border-destructive/40 bg-destructive/5" : "border-border bg-muted/40"
+            short
+              ? "border-destructive/40 bg-destructive/5"
+              : "border-border bg-muted/40",
           )}
         >
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{acc.name} balance</span>
-            <span className="font-medium tabular-nums">{formatMoney(acc.balance)}</span>
+            <span className="font-medium tabular-nums">
+              {formatMoney(acc.balance)}
+            </span>
           </div>
           {changed && (
             <div
               className={cn(
                 "mt-1.5 flex items-center justify-between border-t pt-1.5",
-                short ? "border-destructive/30" : "border-border/60"
+                short ? "border-destructive/30" : "border-border/60",
               )}
             >
-              <span className={cn("flex items-center gap-1", short ? "text-destructive" : "text-muted-foreground")}>
+              <span
+                className={cn(
+                  "flex items-center gap-1",
+                  short ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
                 {short && <TriangleAlertIcon className="size-3.5" />}
                 After saving
               </span>
-              <span className={cn("font-semibold tabular-nums", short && "text-destructive")}>
+              <span
+                className={cn(
+                  "font-semibold tabular-nums",
+                  short && "text-destructive",
+                )}
+              >
                 {formatMoney(projected)}
               </span>
             </div>
           )}
           {short && (
             <p className="mt-1 text-xs text-destructive">
-              Short by {formatMoney(Math.abs(projected))} — saving this change leaves this account negative.
+              Short by {formatMoney(Math.abs(projected))} — saving this change
+              leaves this account negative.
             </p>
           )}
         </div>
@@ -276,7 +317,7 @@ export function TransactionForm({
           "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
           short
             ? "border-destructive/40 bg-destructive/5"
-            : "border-border bg-muted/40"
+            : "border-border bg-muted/40",
         )}
       >
         <div className="flex items-center justify-between">
@@ -289,13 +330,13 @@ export function TransactionForm({
           <div
             className={cn(
               "mt-1.5 flex items-center justify-between border-t pt-1.5",
-              short ? "border-destructive/30" : "border-border/60"
+              short ? "border-destructive/30" : "border-border/60",
             )}
           >
             <span
               className={cn(
                 "flex items-center gap-1",
-                short ? "text-destructive" : "text-muted-foreground"
+                short ? "text-destructive" : "text-muted-foreground",
               )}
             >
               {short && <TriangleAlertIcon className="size-3.5" />}
@@ -304,7 +345,7 @@ export function TransactionForm({
             <span
               className={cn(
                 "font-semibold tabular-nums",
-                short && "text-destructive"
+                short && "text-destructive",
               )}
             >
               {formatMoney(projected)}
@@ -332,15 +373,18 @@ export function TransactionForm({
       return "Source and destination accounts must differ.";
     if (txType === "expense") {
       if (!l1Id) return "Please select a category.";
-      if (l2Categories.length > 0 && !l2Id) return "Please select a subcategory.";
-      if (l2Id && l3Categories.length === 0) return "This subcategory has no items. Please add items first.";
+      if (l2Categories.length > 0 && !l2Id)
+        return "Please select a subcategory.";
+      if (l2Id && l3Categories.length === 0)
+        return "This subcategory has no items. Please add items first.";
       if (l2Id && !l3Id) return "Please select an item.";
     }
     return null;
   };
 
   // Summary + per-account balance changes shown in the confirmation sheet
-  const accountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? "—";
+  const accountName = (id: string) =>
+    accounts.find((a) => a.id === id)?.name ?? "—";
 
   const confirmSummary = useMemo<TxConfirmSummary | null>(() => {
     const amt = parseFloat(amount);
@@ -352,7 +396,9 @@ export function TransactionForm({
     let timeLabel: string | undefined;
     try {
       if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return {
       type: txType,
       amount: amt,
@@ -363,8 +409,21 @@ export function TransactionForm({
       toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
       note: note.trim() || undefined,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, txType, selectedDate, time, accountId, toAccountId, note, l1Id, l2Id, l3Id, categories, accounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    amount,
+    txType,
+    selectedDate,
+    time,
+    accountId,
+    toAccountId,
+    note,
+    l1Id,
+    l2Id,
+    l3Id,
+    categories,
+    accounts,
+  ]);
 
   const confirmImpacts = useMemo<AccountImpact[]>(() => {
     // Edit mode: derive from the net revert-then-apply delta per account
@@ -373,7 +432,12 @@ export function TransactionForm({
         .map(([accId, delta]) => {
           const acc = accounts.find((a) => a.id === accId);
           if (!acc) return null;
-          return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+          return {
+            id: acc.id,
+            name: acc.name,
+            current: acc.balance,
+            projected: acc.balance + delta,
+          };
         })
         .filter((r): r is AccountImpact => r !== null);
     }
@@ -382,7 +446,12 @@ export function TransactionForm({
     const impact = (id: string, delta: number): AccountImpact | null => {
       const acc = accounts.find((a) => a.id === id);
       if (!acc) return null;
-      return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+      return {
+        id: acc.id,
+        name: acc.name,
+        current: acc.balance,
+        projected: acc.balance + delta,
+      };
     };
     const rows: (AccountImpact | null)[] = [];
     if (txType === "expense") rows.push(impact(accountId, -amt));
@@ -392,11 +461,20 @@ export function TransactionForm({
       rows.push(impact(toAccountId, amt));
     }
     return rows.filter((r): r is AccountImpact => r !== null);
-  }, [isEdit, editBalanceChanges, amount, txType, accountId, toAccountId, accounts]);
+  }, [
+    isEdit,
+    editBalanceChanges,
+    amount,
+    txType,
+    accountId,
+    toAccountId,
+    accounts,
+  ]);
 
   const confirmBudget = useMemo<BudgetImpact | null>(() => {
     const amt = parseFloat(amount);
-    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
+    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0)
+      return null;
     // Fall back to the default cycle when no salary day is set (matches the
     // budget page's ?? 25) so budget impact still shows before setup.
     const salaryDay = userProfile?.salaryDay ?? 25;
@@ -413,7 +491,16 @@ export function TransactionForm({
       // In edit mode, don't count the transaction being edited toward the spend
       excludeTransactionId: editId,
     });
-  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile, editId]);
+  }, [
+    amount,
+    txType,
+    selectedCategoryId,
+    selectedDate,
+    categories,
+    transactions,
+    userProfile,
+    editId,
+  ]);
 
   const doSave = async () => {
     setSubmitting(true);
@@ -444,7 +531,7 @@ export function TransactionForm({
           ? e.message
           : isEdit
             ? "Failed to update transaction."
-            : "Failed to add transaction. Please try again."
+            : "Failed to add transaction. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -493,7 +580,7 @@ export function TransactionForm({
                   "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                   l1Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background hover:bg-muted"
+                    : "border-border bg-background hover:bg-muted",
                 )}
               >
                 {cat.name}
@@ -522,7 +609,7 @@ export function TransactionForm({
                   "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                   l2Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background hover:bg-muted"
+                    : "border-border bg-background hover:bg-muted",
                 )}
               >
                 {cat.name}
@@ -546,7 +633,7 @@ export function TransactionForm({
                   "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                   l3Id === cat.id
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background hover:bg-muted"
+                    : "border-border bg-background hover:bg-muted",
                 )}
               >
                 {cat.name}
@@ -560,10 +647,18 @@ export function TransactionForm({
 
   if (!setupLoading && !setupComplete) {
     return (
-      <div className={cn("space-y-4", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}>
+      <div
+        className={cn("space-y-4", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}
+      >
         {!embedded && (
           <div className="flex items-center gap-2 mb-2">
-            <Button variant="ghost" size="sm" type="button" className="h-8 w-8 p-0" onClick={onCancel}>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              className="h-8 w-8 p-0"
+              onClick={onCancel}
+            >
               <ArrowLeftIcon className="size-4" />
             </Button>
             <h1 className="text-xl font-semibold">New Transaction</h1>
@@ -575,7 +670,10 @@ export function TransactionForm({
             <p className="text-sm text-muted-foreground">
               You need at least one account to track transactions against.
             </p>
-            <a href="/accounts" className="inline-block underline text-foreground text-sm">
+            <a
+              href="/accounts"
+              className="inline-block underline text-foreground text-sm"
+            >
               Add an account
             </a>
           </CardContent>
@@ -587,7 +685,9 @@ export function TransactionForm({
   // Edit mode: wait for the transaction to load, or report it missing
   if (isEdit && !editTx) {
     return (
-      <div className={cn("space-y-3", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}>
+      <div
+        className={cn("space-y-3", !embedded && "p-4 md:p-6 max-w-lg mx-auto")}
+      >
         {loadingTransactions ? (
           <>
             <Skeleton className="h-12 w-full" />
@@ -595,7 +695,9 @@ export function TransactionForm({
             <Skeleton className="h-64 w-full" />
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Transaction not found.</p>
+          <p className="text-sm text-muted-foreground">
+            Transaction not found.
+          </p>
         )}
       </div>
     );
@@ -637,7 +739,7 @@ export function TransactionForm({
                   "flex-1 py-2 text-sm font-medium capitalize transition-colors",
                   txType === type
                     ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:bg-muted"
+                    : "bg-background text-muted-foreground hover:bg-muted",
                 )}
               >
                 {type}
@@ -707,7 +809,7 @@ export function TransactionForm({
                     "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                     accountId === a.id
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-muted"
+                      : "border-border bg-background hover:bg-muted",
                   )}
                 >
                   {a.name}
@@ -734,7 +836,7 @@ export function TransactionForm({
                       "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                       toAccountId === a.id
                         ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background hover:bg-muted"
+                        : "border-border bg-background hover:bg-muted",
                     )}
                   >
                     {a.name}
@@ -763,11 +865,15 @@ export function TransactionForm({
         <div
           className={cn(
             embedded &&
-              "sticky bottom-0 -mx-4 border-t bg-popover px-4 pt-4 pb-4"
+              "sticky bottom-0 -mx-4 border-t bg-popover px-4 pt-4 pb-4",
           )}
         >
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Saving..." : isEdit ? "Save Changes" : "Add Transaction"}
+            {submitting
+              ? "Saving..."
+              : isEdit
+                ? "Save Changes"
+                : "Add Transaction"}
           </Button>
         </div>
       </form>

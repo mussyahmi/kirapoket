@@ -32,8 +32,18 @@ import pkg from "../../../package.json";
 // Bottom nav — 4 core daily-use pages
 const bottomNavItems = [
   { href: "/home", label: "Home", icon: HomeIcon, requiresSetup: false },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRightIcon, requiresSetup: true },
-  { href: "/budget", label: "Budget", icon: BarChart3Icon, requiresSetup: false },
+  {
+    href: "/transactions",
+    label: "Transactions",
+    icon: ArrowLeftRightIcon,
+    requiresSetup: true,
+  },
+  {
+    href: "/budget",
+    label: "Budget",
+    icon: BarChart3Icon,
+    requiresSetup: false,
+  },
   { href: "/debts", label: "Debts", icon: HandCoinsIcon, requiresSetup: false },
 ];
 
@@ -56,10 +66,26 @@ function haptic(ms = 8) {
   }
 }
 
-export function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
+export function AppShell({
+  children,
+  banner,
+}: {
+  children: React.ReactNode;
+  banner?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userProfile, accounts, debts, transactions, loadingProfile, loadingAccounts, isViewingPartner, isImpersonating, refreshAll } = useApp();
+  const {
+    userProfile,
+    accounts,
+    debts,
+    transactions,
+    loadingProfile,
+    loadingAccounts,
+    isViewingPartner,
+    isImpersonating,
+    refreshAll,
+  } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
   const { user } = useAuth();
   const { open: addOpen, openAdd } = useAddTransaction();
@@ -119,14 +145,16 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   }, [menuOpen]);
 
   // Close menu on route change
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   // Position the sliding lens over the active tab; it animates between tabs via CSS
   useEffect(() => {
     const nav = navRef.current;
     const measure = () => {
       const activeIdx = bottomNavItems.findIndex(
-        (it) => pathname === it.href || pathname.startsWith(it.href + "/")
+        (it) => pathname === it.href || pathname.startsWith(it.href + "/"),
       );
       // While a tap is in flight, slide the lens to the tapped tab before the URL changes
       const idx = pendingIdx ?? activeIdx;
@@ -144,10 +172,19 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
       if (prevIdx != null && prevIdx >= 0 && prevIdx !== idx) {
         setStretch({ active: true, toRight: idx > prevIdx });
         if (stretchTimer.current) clearTimeout(stretchTimer.current);
-        stretchTimer.current = setTimeout(() => setStretch((s) => ({ ...s, active: false })), 230);
+        stretchTimer.current = setTimeout(
+          () => setStretch((s) => ({ ...s, active: false })),
+          230,
+        );
       }
       prevIdxRef.current = idx;
-      setLens({ x, top: pr.top - nr.top, w: pr.width, h: pr.height, show: true });
+      setLens({
+        x,
+        top: pr.top - nr.top,
+        w: pr.width,
+        h: pr.height,
+        show: true,
+      });
       setLensReady(true);
     };
     const raf = requestAnimationFrame(measure);
@@ -163,23 +200,26 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
   // Once the URL catches up to the tapped tab, clear the pending target
   useEffect(() => {
     setPendingIdx(null);
-    return () => { if (navTimer.current) clearTimeout(navTimer.current); };
+    return () => {
+      if (navTimer.current) clearTimeout(navTimer.current);
+    };
   }, [pathname]);
 
   // Central quick-add button: shown unless read-only, and optimistically during
   // load so it doesn't flash out on refresh before profile/accounts arrive
-  const showAdd = !isReadOnly && (setupComplete || loadingProfile || loadingAccounts);
+  const showAdd =
+    !isReadOnly && (setupComplete || loadingProfile || loadingAccounts);
 
   // Icon-only bottom-nav item (labels removed); i must stay the bottomNavItems index
   const renderNavItem = (
     { href, label, icon: Icon, requiresSetup }: (typeof bottomNavItems)[number],
-    i: number
+    i: number,
   ) => {
     const disabled = requiresSetup && setupGated;
     const active = isActive(href);
     const pillCls = cn(
       "relative z-10 flex items-center justify-center rounded-full transition-all duration-300",
-      navVisible ? "w-12 h-9" : "w-9 h-7"
+      navVisible ? "w-12 h-9" : "w-9 h-7",
     );
     const iconSize = navVisible ? "size-6" : "size-5";
     return disabled ? (
@@ -188,8 +228,18 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         title={label}
         className="flex items-center justify-center flex-1 cursor-not-allowed select-none"
       >
-        <span ref={(el) => { pillRefs.current[i] = el; }} className={pillCls}>
-          <Icon className={cn("text-muted-foreground/30 transition-all duration-300", iconSize)} />
+        <span
+          ref={(el) => {
+            pillRefs.current[i] = el;
+          }}
+          className={pillCls}
+        >
+          <Icon
+            className={cn(
+              "text-muted-foreground/30 transition-all duration-300",
+              iconSize,
+            )}
+          />
         </span>
       </span>
     ) : (
@@ -208,8 +258,19 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         }}
         className="flex items-center justify-center flex-1"
       >
-        <span ref={(el) => { pillRefs.current[i] = el; }} className={pillCls}>
-          <Icon className={cn("transition-all duration-300", iconSize, active ? "text-primary" : "text-muted-foreground")} />
+        <span
+          ref={(el) => {
+            pillRefs.current[i] = el;
+          }}
+          className={pillCls}
+        >
+          <Icon
+            className={cn(
+              "transition-all duration-300",
+              iconSize,
+              active ? "text-primary" : "text-muted-foreground",
+            )}
+          />
           {href === "/debts" && unsettledCount > 0 && (
             <span className="absolute top-0.5 right-1.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-background" />
           )}
@@ -224,14 +285,20 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
       <aside className="hidden md:flex md:flex-col md:w-56 md:shrink-0 md:border-r md:border-border md:bg-card md:sticky md:top-0 md:h-screen md:overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">KP</span>
-            <span className="text-base font-bold tracking-tight text-foreground">KiraPoket</span>
+            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">
+              KP
+            </span>
+            <span className="text-base font-bold tracking-tight text-foreground">
+              KiraPoket
+            </span>
           </Link>
           <ThemeToggle />
         </div>
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {allNavItems.map(({ href, label, icon: Icon, ...rest }) => {
-            const disabled = ("requiresSetup" in rest ? rest.requiresSetup : false) && setupGated;
+            const disabled =
+              ("requiresSetup" in rest ? rest.requiresSetup : false) &&
+              setupGated;
             return disabled ? (
               <span
                 key={href}
@@ -249,7 +316,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive(href)
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <Icon className="size-4 shrink-0" />
@@ -269,7 +336,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive("/admin")
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
@@ -282,21 +349,29 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
           </div>
         </nav>
         <div className="px-4 py-3 border-t border-border">
-          <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
+          <span className="text-xs text-muted-foreground/50">
+            v{pkg.version}
+          </span>
         </div>
       </aside>
 
       {/* ── Main Content Area ── */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Mobile Header — solid, edge-pinned, always visible */}
-        <header className={cn(
-          "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60]",
-          // Matches the page background, with a hairline to separate from content
-          "bg-background border-b border-border"
-        )}>
+        <header
+          className={cn(
+            "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60]",
+            // Matches the page background, with a hairline to separate from content
+            "bg-background border-b border-border",
+          )}
+        >
           <Link href="/" className="flex items-center gap-2">
-            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">KP</span>
-            <span className="text-base font-bold tracking-tight text-foreground">KiraPoket</span>
+            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">
+              KP
+            </span>
+            <span className="text-base font-bold tracking-tight text-foreground">
+              KiraPoket
+            </span>
           </Link>
           <div className="flex items-center gap-1">
             <ThemeToggle />
@@ -307,21 +382,25 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                 onClick={() => setMenuOpen((v) => !v)}
                 className={cn(
                   "size-9 flex items-center justify-center rounded-lg transition-colors",
-                  menuOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+                  menuOpen
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted",
                 )}
                 aria-label="More options"
               >
                 <MenuIcon className="size-4" />
               </button>
               {menuOpen && (
-                <div className={cn(
-                  "absolute right-0 top-full mt-1.5 w-44 rounded-xl overflow-hidden z-[60]",
-                  // High opacity — menu sits over live content with no overlay, so readability wins
-                  "bg-popover/90",
-                  "border border-black/[0.06] dark:border-white/[0.08]",
-                  "backdrop-blur-xl backdrop-saturate-[2.2]",
-                  "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.5)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                )}>
+                <div
+                  className={cn(
+                    "absolute right-0 top-full mt-1.5 w-44 rounded-xl overflow-hidden z-[60]",
+                    // High opacity — menu sits over live content with no overlay, so readability wins
+                    "bg-popover/90",
+                    "border border-black/[0.06] dark:border-white/[0.08]",
+                    "backdrop-blur-xl backdrop-saturate-[2.2]",
+                    "shadow-[0_16px_40px_-12px_rgba(0,0,0,0.18),inset_0_1px_1px_rgba(255,255,255,0.5)] dark:shadow-[0_24px_50px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.1)]",
+                  )}
+                >
                   {menuItems.map(({ href, label, icon: Icon }) => (
                     <Link
                       key={href}
@@ -330,7 +409,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                         "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
                         isActive(href)
                           ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted"
+                          : "text-foreground hover:bg-muted",
                       )}
                     >
                       <Icon className="size-4 shrink-0 text-muted-foreground" />
@@ -344,7 +423,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                         "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
                         isActive("/admin")
                           ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted"
+                          : "text-foreground hover:bg-muted",
                       )}
                     >
                       <ShieldAlertIcon className="size-4 shrink-0 text-orange-500" />
@@ -353,21 +432,29 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
                   )}
                   <div className="border-t border-border py-1">
                     <button
-                      onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setFeedbackOpen(true);
+                      }}
                       className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors"
                     >
                       <MessageSquareIcon className="size-4 shrink-0" />
                       Give Feedback
                     </button>
                     <button
-                      onClick={() => { setMenuOpen(false); setSupportOpen(true); }}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setSupportOpen(true);
+                      }}
                       className="flex items-center gap-3 px-4 py-3 text-sm font-medium w-full text-foreground hover:bg-muted transition-colors"
                     >
                       <CoffeeIcon className="size-4 shrink-0" />
                       Buy Me a Coffee
                     </button>
                     <div className="px-4 py-2">
-                      <span className="text-xs text-muted-foreground/50">v{pkg.version}</span>
+                      <span className="text-xs text-muted-foreground/50">
+                        v{pkg.version}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -377,8 +464,16 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
         </header>
 
         {/* Dialogs rendered outside menu conditional so they survive menu close */}
-        <FeedbackButton dialogOnly open={feedbackOpen} onOpenChange={setFeedbackOpen} />
-        <SupportButton dialogOnly open={supportOpen} onOpenChange={setSupportOpen} />
+        <FeedbackButton
+          dialogOnly
+          open={feedbackOpen}
+          onOpenChange={setFeedbackOpen}
+        />
+        <SupportButton
+          dialogOnly
+          open={supportOpen}
+          onOpenChange={setSupportOpen}
+        />
 
         {/* Page Content */}
         {banner}
@@ -414,7 +509,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
           "backdrop-blur-sm backdrop-saturate-[2.2]",
           // Outer drop shadow + a soft lit top edge and gentle corner glints (no full ring)
           "shadow-[0_10px_30px_-10px_rgba(0,0,0,0.18),0_2px_6px_-2px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.5),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.5),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.5)]",
-          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.22),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.22)]"
+          "dark:shadow-[0_18px_40px_-14px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.12),inset_-8px_-6px_5px_-9px_rgba(255,255,255,0.22),inset_8px_-6px_5px_-9px_rgba(255,255,255,0.22)]",
         )}
       >
         {/* Top-down gloss — specular sheen across the glass surface */}
@@ -439,7 +534,7 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
             }}
             className={cn(
               "pointer-events-none absolute z-0 rounded-full",
-              "bg-primary/20 dark:bg-primary/25"
+              "bg-primary/20 dark:bg-primary/25",
             )}
           />
         )}
@@ -448,17 +543,26 @@ export function AppShell({ children, banner }: { children: React.ReactNode; bann
           <button
             type="button"
             aria-label="Add transaction"
-            onClick={() => { haptic(12); openAdd(); }}
+            onClick={() => {
+              haptic(12);
+              openAdd();
+            }}
             className="flex items-center justify-center flex-1"
           >
             <span
               className={cn(
                 "flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 active:scale-95",
                 "shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]",
-                navVisible ? "size-12" : "size-10"
+                navVisible ? "size-12" : "size-10",
               )}
             >
-              <PlusIcon className={cn("transition-all duration-300", navVisible ? "size-6" : "size-5")} strokeWidth={2.5} />
+              <PlusIcon
+                className={cn(
+                  "transition-all duration-300",
+                  navVisible ? "size-6" : "size-5",
+                )}
+                strokeWidth={2.5}
+              />
             </span>
           </button>
         )}

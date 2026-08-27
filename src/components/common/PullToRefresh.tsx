@@ -122,12 +122,21 @@ export default function PullToRefresh({
           style={{
             transform: `translateY(${pull / 2 - 18}px)`,
             opacity: pull > 4 ? 1 : 0,
-            transition: dragging ? "none" : "transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 200ms ease",
+            transition: dragging
+              ? "none"
+              : "transform 300ms cubic-bezier(0.34,1.4,0.5,1), opacity 200ms ease",
           }}
         >
           <Loader2Icon
             className={`size-5 text-primary ${refreshing ? "animate-spin" : ""}`}
-            style={refreshing ? undefined : { transform: `rotate(${progress * 270}deg)`, opacity: 0.4 + progress * 0.6 }}
+            style={
+              refreshing
+                ? undefined
+                : {
+                    transform: `rotate(${progress * 270}deg)`,
+                    opacity: 0.4 + progress * 0.6,
+                  }
+            }
           />
         </span>
       </div>
@@ -136,7 +145,9 @@ export default function PullToRefresh({
         className={className}
         style={{
           transform: `translateY(${pull}px)`,
-          transition: dragging ? "none" : "transform 300ms cubic-bezier(0.34,1.4,0.5,1)",
+          transition: dragging
+            ? "none"
+            : "transform 300ms cubic-bezier(0.34,1.4,0.5,1)",
         }}
       >
         {children}

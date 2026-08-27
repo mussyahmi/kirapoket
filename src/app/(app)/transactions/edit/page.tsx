@@ -28,7 +28,16 @@ function EditTransactionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") ?? "";
-  const { accounts, categories, transactions, loadingTransactions, editTransaction, userProfile, isViewingPartner, isImpersonating } = useApp();
+  const {
+    accounts,
+    categories,
+    transactions,
+    loadingTransactions,
+    editTransaction,
+    userProfile,
+    isViewingPartner,
+    isImpersonating,
+  } = useApp();
   const readOnly = isViewingPartner || isImpersonating;
 
   // Editing isn't allowed while viewing a partner / impersonating — bounce out
@@ -36,7 +45,10 @@ function EditTransactionForm() {
     if (readOnly) router.replace("/transactions");
   }, [readOnly, router]);
 
-  const tx = useMemo(() => transactions.find((t) => t.id === id), [transactions, id]);
+  const tx = useMemo(
+    () => transactions.find((t) => t.id === id),
+    [transactions, id],
+  );
 
   const [txType, setTxType] = useState<TxType>("expense");
   const [amount, setAmount] = useState("");
@@ -99,22 +111,32 @@ function EditTransactionForm() {
   const l1Categories = useMemo(() => {
     const order: Record<string, number> = { needs: 0, wants: 1, savings: 2 };
     return categories
-      .filter((c) => c.level === 1 && categories.some((s) => s.level === 2 && s.parentId === c.id))
+      .filter(
+        (c) =>
+          c.level === 1 &&
+          categories.some((s) => s.level === 2 && s.parentId === c.id),
+      )
       .sort((a, b) => (order[a.type ?? ""] ?? 9) - (order[b.type ?? ""] ?? 9));
   }, [categories]);
 
   const l2Categories = useMemo(
-    () => l1Id
-      ? categories.filter((c) => c.level === 2 && c.parentId === l1Id).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      : [],
-    [categories, l1Id]
+    () =>
+      l1Id
+        ? categories
+            .filter((c) => c.level === 2 && c.parentId === l1Id)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        : [],
+    [categories, l1Id],
   );
 
   const l3Categories = useMemo(
-    () => l2Id
-      ? categories.filter((c) => c.level === 3 && c.parentId === l2Id).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      : [],
-    [categories, l2Id]
+    () =>
+      l2Id
+        ? categories
+            .filter((c) => c.level === 3 && c.parentId === l2Id)
+            .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        : [],
+    [categories, l2Id],
   );
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
@@ -133,8 +155,13 @@ function EditTransactionForm() {
     if (!formValid) return changes;
 
     const apply = (
-      t: { type: TxType; amount: number; accountId: string; toAccountId?: string },
-      factor: 1 | -1
+      t: {
+        type: TxType;
+        amount: number;
+        accountId: string;
+        toAccountId?: string;
+      },
+      factor: 1 | -1,
     ) => {
       if (t.type === "expense")
         changes[t.accountId] = (changes[t.accountId] ?? 0) + factor * t.amount;
@@ -149,8 +176,13 @@ function EditTransactionForm() {
     };
 
     apply(
-      { type: tx.type, amount: tx.amount, accountId: tx.accountId, toAccountId: tx.toAccountId },
-      1
+      {
+        type: tx.type,
+        amount: tx.amount,
+        accountId: tx.accountId,
+        toAccountId: tx.toAccountId,
+      },
+      1,
     );
     apply(
       {
@@ -159,13 +191,20 @@ function EditTransactionForm() {
         accountId,
         toAccountId: txType === "transfer" ? toAccountId : undefined,
       },
-      -1
+      -1,
     );
     return changes;
   }, [tx, txType, amount, accountId, toAccountId]);
 
-  const handleSelectL1 = (id: string) => { setL1Id(id); setL2Id(null); setL3Id(null); };
-  const handleSelectL2 = (id: string) => { setL2Id(id); setL3Id(null); };
+  const handleSelectL1 = (id: string) => {
+    setL1Id(id);
+    setL2Id(null);
+    setL3Id(null);
+  };
+  const handleSelectL2 = (id: string) => {
+    setL2Id(id);
+    setL3Id(null);
+  };
 
   const date = format(selectedDate, "yyyy-MM-dd");
 
@@ -173,18 +212,23 @@ function EditTransactionForm() {
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0)
       return "Please enter a valid amount.";
     if (!accountId) return "Please select an account.";
-    if (txType === "transfer" && !toAccountId) return "Please select a destination account.";
-    if (txType === "transfer" && accountId === toAccountId) return "Source and destination accounts must differ.";
+    if (txType === "transfer" && !toAccountId)
+      return "Please select a destination account.";
+    if (txType === "transfer" && accountId === toAccountId)
+      return "Source and destination accounts must differ.";
     if (txType === "expense") {
       if (!l1Id) return "Please select a category.";
-      if (l2Categories.length > 0 && !l2Id) return "Please select a subcategory.";
-      if (l2Id && l3Categories.length === 0) return "This subcategory has no items. Please add items first.";
+      if (l2Categories.length > 0 && !l2Id)
+        return "Please select a subcategory.";
+      if (l2Id && l3Categories.length === 0)
+        return "This subcategory has no items. Please add items first.";
       if (l2Id && !l3Id) return "Please select an item.";
     }
     return null;
   };
 
-  const accountName = (accId: string) => accounts.find((a) => a.id === accId)?.name ?? "—";
+  const accountName = (accId: string) =>
+    accounts.find((a) => a.id === accId)?.name ?? "—";
 
   const confirmSummary = useMemo<TxConfirmSummary | null>(() => {
     const amt = parseFloat(amount);
@@ -196,7 +240,9 @@ function EditTransactionForm() {
     let timeLabel: string | undefined;
     try {
       if (time) timeLabel = format(parseISO(`2000-01-01T${time}`), "h:mm a");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return {
       type: txType,
       amount: amt,
@@ -207,8 +253,21 @@ function EditTransactionForm() {
       toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
       note: note.trim() || undefined,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, txType, selectedDate, time, accountId, toAccountId, note, l1Id, l2Id, l3Id, categories, accounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    amount,
+    txType,
+    selectedDate,
+    time,
+    accountId,
+    toAccountId,
+    note,
+    l1Id,
+    l2Id,
+    l3Id,
+    categories,
+    accounts,
+  ]);
 
   // Derived from editBalanceChanges (revert original, apply edit) per account
   const confirmImpacts = useMemo<AccountImpact[]>(() => {
@@ -216,14 +275,20 @@ function EditTransactionForm() {
       .map(([accId, delta]) => {
         const acc = accounts.find((a) => a.id === accId);
         if (!acc) return null;
-        return { id: acc.id, name: acc.name, current: acc.balance, projected: acc.balance + delta };
+        return {
+          id: acc.id,
+          name: acc.name,
+          current: acc.balance,
+          projected: acc.balance + delta,
+        };
       })
       .filter((r): r is AccountImpact => r !== null);
   }, [editBalanceChanges, accounts]);
 
   const confirmBudget = useMemo<BudgetImpact | null>(() => {
     const amt = parseFloat(amount);
-    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0) return null;
+    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0)
+      return null;
     const salaryDay = userProfile?.salaryDay ?? 25;
     const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
       cycleStarts: userProfile?.cycleStarts,
@@ -238,7 +303,16 @@ function EditTransactionForm() {
       // Don't count the transaction being edited toward the current spend
       excludeTransactionId: id,
     });
-  }, [amount, txType, selectedCategoryId, selectedDate, categories, transactions, userProfile, id]);
+  }, [
+    amount,
+    txType,
+    selectedCategoryId,
+    selectedDate,
+    categories,
+    transactions,
+    userProfile,
+    id,
+  ]);
 
   const doSave = async () => {
     setSubmitting(true);
@@ -250,14 +324,17 @@ function EditTransactionForm() {
         time,
         accountId,
         toAccountId: txType === "transfer" ? toAccountId : undefined,
-        categoryId: txType === "expense" ? (selectedCategoryId ?? undefined) : undefined,
+        categoryId:
+          txType === "expense" ? (selectedCategoryId ?? undefined) : undefined,
         note: note.trim() || undefined,
       });
       toast.success("Transaction updated.");
       setConfirmOpen(false);
       router.push("/transactions");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update transaction.");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to update transaction.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -266,7 +343,10 @@ function EditTransactionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validate();
-    if (err) { toast.error(err); return; }
+    if (err) {
+      toast.error(err);
+      return;
+    }
     if (confirmBeforeSaving) {
       setFrozenImpacts(confirmImpacts);
       setFrozenBudget(confirmBudget);
@@ -298,8 +378,11 @@ function EditTransactionForm() {
   }
 
   const pillClass = (active: boolean) =>
-    cn("px-3 py-1.5 rounded-lg text-sm border transition-colors",
-      active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-muted"
+    cn(
+      "px-3 py-1.5 rounded-lg text-sm border transition-colors",
+      active
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border bg-background hover:bg-muted",
     );
 
   const formatMoney = (n: number) => {
@@ -325,7 +408,7 @@ function EditTransactionForm() {
           "mt-2.5 rounded-lg border px-3 py-2.5 text-sm",
           short
             ? "border-destructive/40 bg-destructive/5"
-            : "border-border bg-muted/40"
+            : "border-border bg-muted/40",
         )}
       >
         <div className="flex items-center justify-between">
@@ -338,13 +421,13 @@ function EditTransactionForm() {
           <div
             className={cn(
               "mt-1.5 flex items-center justify-between border-t pt-1.5",
-              short ? "border-destructive/30" : "border-border/60"
+              short ? "border-destructive/30" : "border-border/60",
             )}
           >
             <span
               className={cn(
                 "flex items-center gap-1",
-                short ? "text-destructive" : "text-muted-foreground"
+                short ? "text-destructive" : "text-muted-foreground",
               )}
             >
               {short && <TriangleAlertIcon className="size-3.5" />}
@@ -353,7 +436,7 @@ function EditTransactionForm() {
             <span
               className={cn(
                 "font-semibold tabular-nums",
-                short && "text-destructive"
+                short && "text-destructive",
               )}
             >
               {formatMoney(projected)}
@@ -373,7 +456,13 @@ function EditTransactionForm() {
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" type="button" className="h-8 w-8 p-0" onClick={() => router.back()}>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          className="h-8 w-8 p-0"
+          onClick={() => router.back()}
+        >
           <ArrowLeftIcon className="size-4" />
         </Button>
         <h1 className="text-xl font-semibold">Edit Transaction</h1>
@@ -388,10 +477,17 @@ function EditTransactionForm() {
               <button
                 key={type}
                 type="button"
-                onClick={() => { setTxType(type); setL1Id(null); setL2Id(null); setL3Id(null); }}
+                onClick={() => {
+                  setTxType(type);
+                  setL1Id(null);
+                  setL2Id(null);
+                  setL3Id(null);
+                }}
                 className={cn(
                   "flex-1 py-2 text-sm font-medium capitalize transition-colors",
-                  txType === type ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"
+                  txType === type
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted",
                 )}
               >
                 {type}
@@ -450,7 +546,12 @@ function EditTransactionForm() {
           </Label>
           <div className="flex flex-wrap gap-2">
             {accounts.map((a) => (
-              <button key={a.id} type="button" onClick={() => setAccountId(a.id)} className={pillClass(accountId === a.id)}>
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAccountId(a.id)}
+                className={pillClass(accountId === a.id)}
+              >
                 {a.name}
               </button>
             ))}
@@ -463,11 +564,18 @@ function EditTransactionForm() {
           <div>
             <Label className="mb-1.5 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
-              {accounts.filter((a) => a.id !== accountId).map((a) => (
-                <button key={a.id} type="button" onClick={() => setToAccountId(a.id)} className={pillClass(toAccountId === a.id)}>
-                  {a.name}
-                </button>
-              ))}
+              {accounts
+                .filter((a) => a.id !== accountId)
+                .map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setToAccountId(a.id)}
+                    className={pillClass(toAccountId === a.id)}
+                  >
+                    {a.name}
+                  </button>
+                ))}
             </div>
             {toAccountId && renderBalanceHint(toAccountId)}
           </div>
@@ -480,7 +588,12 @@ function EditTransactionForm() {
               <Label className="mb-1.5 block">Category</Label>
               <div className="flex flex-wrap gap-2">
                 {l1Categories.map((cat) => (
-                  <button key={cat.id} type="button" onClick={() => handleSelectL1(cat.id)} className={pillClass(l1Id === cat.id)}>
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleSelectL1(cat.id)}
+                    className={pillClass(l1Id === cat.id)}
+                  >
                     {cat.name}
                   </button>
                 ))}
@@ -491,7 +604,12 @@ function EditTransactionForm() {
                 <Label className="mb-1.5 block">Subcategory</Label>
                 <div className="flex flex-wrap gap-2">
                   {l2Categories.map((cat) => (
-                    <button key={cat.id} type="button" onClick={() => handleSelectL2(cat.id)} className={pillClass(l2Id === cat.id)}>
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleSelectL2(cat.id)}
+                      className={pillClass(l2Id === cat.id)}
+                    >
                       {cat.name}
                     </button>
                   ))}
@@ -503,7 +621,12 @@ function EditTransactionForm() {
                 <Label className="mb-1.5 block">Item</Label>
                 <div className="flex flex-wrap gap-2">
                   {l3Categories.map((cat) => (
-                    <button key={cat.id} type="button" onClick={() => setL3Id(l3Id === cat.id ? null : cat.id)} className={pillClass(l3Id === cat.id)}>
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setL3Id(l3Id === cat.id ? null : cat.id)}
+                      className={pillClass(l3Id === cat.id)}
+                    >
                       {cat.name}
                     </button>
                   ))}
@@ -546,14 +669,16 @@ function EditTransactionForm() {
 
 export default function EditTransactionPage() {
   return (
-    <Suspense fallback={
-      <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4">
-        <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-        <div className="h-12 w-full bg-muted rounded animate-pulse" />
-        <div className="h-12 w-full bg-muted rounded animate-pulse" />
-        <div className="h-64 w-full bg-muted rounded animate-pulse" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4">
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+          <div className="h-12 w-full bg-muted rounded animate-pulse" />
+          <div className="h-12 w-full bg-muted rounded animate-pulse" />
+          <div className="h-64 w-full bg-muted rounded animate-pulse" />
+        </div>
+      }
+    >
       <EditTransactionForm />
     </Suspense>
   );

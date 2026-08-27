@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { CoffeeIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SupportButtonProps {
   className?: string;
@@ -25,7 +30,12 @@ const QR_ITEMS = [
     caption: (
       <span>
         Scan or click{" "}
-        <a href="https://buymeacoffee.com/mustafasyahmi" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+        <a
+          href="https://buymeacoffee.com/mustafasyahmi"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline"
+        >
           here
         </a>
       </span>
@@ -33,7 +43,12 @@ const QR_ITEMS = [
   },
 ];
 
-export default function SupportButton({ className, open: controlledOpen, onOpenChange, dialogOnly }: SupportButtonProps) {
+export default function SupportButton({
+  className,
+  open: controlledOpen,
+  onOpenChange,
+  dialogOnly,
+}: SupportButtonProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -66,8 +81,15 @@ export default function SupportButton({ className, open: controlledOpen, onOpenC
             <div className="w-full flex flex-col items-center gap-2 border rounded-xl p-3">
               <p className="text-xs font-semibold">{active.label}</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={active.src} alt={active.alt} className="w-full rounded-lg" draggable={false} />
-              <p className="text-[10px] text-muted-foreground text-center">{active.caption}</p>
+              <img
+                src={active.src}
+                alt={active.alt}
+                className="w-full rounded-lg"
+                draggable={false}
+              />
+              <p className="text-[10px] text-muted-foreground text-center">
+                {active.caption}
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -88,7 +110,9 @@ export default function SupportButton({ className, open: controlledOpen, onOpenC
                 ))}
               </div>
               <button
-                onClick={() => setActiveIndex((i) => Math.min(QR_ITEMS.length - 1, i + 1))}
+                onClick={() =>
+                  setActiveIndex((i) => Math.min(QR_ITEMS.length - 1, i + 1))
+                }
                 disabled={activeIndex === QR_ITEMS.length - 1}
                 className="p-1 rounded-full border disabled:opacity-30"
               >
@@ -100,11 +124,21 @@ export default function SupportButton({ className, open: controlledOpen, onOpenC
           {/* sm+: 2-col grid */}
           <div className="hidden sm:grid grid-cols-2 gap-3">
             {QR_ITEMS.map((item) => (
-              <div key={item.label} className="flex flex-col items-center gap-2 border rounded-xl p-3">
+              <div
+                key={item.label}
+                className="flex flex-col items-center gap-2 border rounded-xl p-3"
+              >
                 <p className="text-xs font-semibold">{item.label}</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.src} alt={item.alt} className="w-full rounded-lg" draggable={false} />
-                <p className="text-[10px] text-muted-foreground text-center">{item.caption}</p>
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  className="w-full rounded-lg"
+                  draggable={false}
+                />
+                <p className="text-[10px] text-muted-foreground text-center">
+                  {item.caption}
+                </p>
               </div>
             ))}
           </div>

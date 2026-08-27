@@ -4,8 +4,16 @@ import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import {
-  PlusIcon, TrashIcon, CheckIcon, RotateCcwIcon, PencilIcon,
-  ChevronDownIcon, BanknoteIcon, HandCoinsIcon, MoreHorizontalIcon, ReceiptIcon,
+  PlusIcon,
+  TrashIcon,
+  CheckIcon,
+  RotateCcwIcon,
+  PencilIcon,
+  ChevronDownIcon,
+  BanknoteIcon,
+  HandCoinsIcon,
+  MoreHorizontalIcon,
+  ReceiptIcon,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -52,7 +60,11 @@ const DEFAULT_FORM: DebtForm = {
 };
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat("ms-MY", { style: "currency", currency: "MYR", minimumFractionDigits: 2 }).format(n);
+  new Intl.NumberFormat("ms-MY", {
+    style: "currency",
+    currency: "MYR",
+    minimumFractionDigits: 2,
+  }).format(n);
 
 const today = format(new Date(), "yyyy-MM-dd");
 
@@ -68,38 +80,67 @@ interface DebtCardProps {
   onRecord?: (debt: Debt) => void;
 }
 
-function DebtCard({ debt, hidePersonName, flat, onSettle, onEdit, onDelete, onPay, onCollect, onRecord }: DebtCardProps) {
+function DebtCard({
+  debt,
+  hidePersonName,
+  flat,
+  onSettle,
+  onEdit,
+  onDelete,
+  onPay,
+  onCollect,
+  onRecord,
+}: DebtCardProps) {
   const isOverdue = !debt.settled && debt.dueDate && debt.dueDate < today;
-  const hasOriginal = debt.originalAmount != null && debt.originalAmount !== debt.amount;
+  const hasOriginal =
+    debt.originalAmount != null && debt.originalAmount !== debt.amount;
   return (
-    <div className={cn(
-      "flex items-start gap-3 p-3",
-      flat ? "" : "rounded-xl border",
-      debt.settled
-        ? flat ? "opacity-60" : "border-border bg-muted/30 opacity-60"
-        : flat ? "" : "border-border bg-card"
-    )}>
-      <div className={cn(
-        "shrink-0 mt-0.5 size-2.5 rounded-full",
-        debt.direction === "i_owe" ? "bg-red-400" : "bg-green-400"
-      )} />
+    <div
+      className={cn(
+        "flex items-start gap-3 p-3",
+        flat ? "" : "rounded-xl border",
+        debt.settled
+          ? flat
+            ? "opacity-60"
+            : "border-border bg-muted/30 opacity-60"
+          : flat
+            ? ""
+            : "border-border bg-card",
+      )}
+    >
+      <div
+        className={cn(
+          "shrink-0 mt-0.5 size-2.5 rounded-full",
+          debt.direction === "i_owe" ? "bg-red-400" : "bg-green-400",
+        )}
+      />
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
-          {!hidePersonName && <span className="text-sm font-semibold truncate">{debt.personName}</span>}
-          <span className={cn(
-            "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
-            debt.direction === "i_owe"
-              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-              : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-          )}>
+          {!hidePersonName && (
+            <span className="text-sm font-semibold truncate">
+              {debt.personName}
+            </span>
+          )}
+          <span
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+              debt.direction === "i_owe"
+                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                : "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
+            )}
+          >
             {debt.direction === "i_owe" ? "I owe" : "Owes me"}
           </span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <p className={cn(
-            "text-base font-bold tabular-nums",
-            debt.direction === "i_owe" ? "text-red-500" : "text-green-600 dark:text-green-400"
-          )}>
+          <p
+            className={cn(
+              "text-base font-bold tabular-nums",
+              debt.direction === "i_owe"
+                ? "text-red-500"
+                : "text-green-600 dark:text-green-400",
+            )}
+          >
             {fmt(debt.amount)}
           </p>
           {hasOriginal && (
@@ -108,16 +149,30 @@ function DebtCard({ debt, hidePersonName, flat, onSettle, onEdit, onDelete, onPa
             </span>
           )}
         </div>
-        {debt.note && <p className="text-xs text-muted-foreground">{debt.note}</p>}
+        {debt.note && (
+          <p className="text-xs text-muted-foreground">{debt.note}</p>
+        )}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] text-muted-foreground">{format(parseISO(debt.date), "d MMM yyyy")}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {format(parseISO(debt.date), "d MMM yyyy")}
+          </span>
           {debt.dueDate && (
-            <span className={cn("text-[10px]", isOverdue ? "text-red-500 font-medium" : "text-muted-foreground")}>
-              {isOverdue ? "⚠ Overdue · " : "Due · "}{format(parseISO(debt.dueDate), "d MMM yyyy")}
+            <span
+              className={cn(
+                "text-[10px]",
+                isOverdue
+                  ? "text-red-500 font-medium"
+                  : "text-muted-foreground",
+              )}
+            >
+              {isOverdue ? "⚠ Overdue · " : "Due · "}
+              {format(parseISO(debt.dueDate), "d MMM yyyy")}
             </span>
           )}
           {debt.settled && debt.settledDate && (
-            <span className="text-[10px] text-muted-foreground">Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}</span>
+            <span className="text-[10px] text-muted-foreground">
+              Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}
+            </span>
           )}
         </div>
       </div>
@@ -148,11 +203,17 @@ function DebtCard({ debt, hidePersonName, flat, onSettle, onEdit, onDelete, onPa
             onClick={() => onSettle(debt)}
             className={cn(
               "size-7 rounded-lg flex items-center justify-center transition-colors",
-              debt.settled ? "text-muted-foreground hover:bg-muted" : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+              debt.settled
+                ? "text-muted-foreground hover:bg-muted"
+                : "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20",
             )}
             title={debt.settled ? "Mark unsettled" : "Mark settled"}
           >
-            {debt.settled ? <RotateCcwIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
+            {debt.settled ? (
+              <RotateCcwIcon className="size-3.5" />
+            ) : (
+              <CheckIcon className="size-3.5" />
+            )}
           </button>
         )}
         {(onEdit || onDelete || onRecord) && (
@@ -202,28 +263,51 @@ interface DebtGroupCardProps {
   onRecord?: (debt: Debt) => void;
 }
 
-function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDelete, onPay, onCollect, onRecord }: DebtGroupCardProps) {
+function DebtGroupCard({
+  group,
+  expandedGroups,
+  onToggle,
+  onSettle,
+  onEdit,
+  onDelete,
+  onPay,
+  onCollect,
+  onRecord,
+}: DebtGroupCardProps) {
   const isExpanded = expandedGroups.has(group.key);
-  const sumAmount = (d: Debt) => (d.settled ? d.originalAmount ?? d.amount : d.amount);
-  const iOweTotal = group.debts.filter((d) => d.direction === "i_owe").reduce((s, d) => s + sumAmount(d), 0);
-  const theyOweTotal = group.debts.filter((d) => d.direction === "they_owe").reduce((s, d) => s + sumAmount(d), 0);
+  const sumAmount = (d: Debt) =>
+    d.settled ? (d.originalAmount ?? d.amount) : d.amount;
+  const iOweTotal = group.debts
+    .filter((d) => d.direction === "i_owe")
+    .reduce((s, d) => s + sumAmount(d), 0);
+  const theyOweTotal = group.debts
+    .filter((d) => d.direction === "they_owe")
+    .reduce((s, d) => s + sumAmount(d), 0);
   const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
   const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
   const allSettled = group.debts.every((d) => d.settled);
   return (
-    <div className={cn(
-      "rounded-xl border border-border bg-card overflow-hidden",
-      allSettled && "opacity-60"
-    )}>
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-card overflow-hidden",
+        allSettled && "opacity-60",
+      )}
+    >
       <button
         type="button"
         onClick={() => onToggle(group.key)}
         className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
       >
-        <div className={cn(
-          "shrink-0 mt-0.5 size-2.5 rounded-full",
-          allIOwe ? "bg-red-400" : allTheyOwe ? "bg-green-400" : "bg-yellow-400"
-        )} />
+        <div
+          className={cn(
+            "shrink-0 mt-0.5 size-2.5 rounded-full",
+            allIOwe
+              ? "bg-red-400"
+              : allTheyOwe
+                ? "bg-green-400"
+                : "bg-yellow-400",
+          )}
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{group.displayName}</span>
@@ -232,17 +316,40 @@ function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDe
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {theyOweTotal > 0 && <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">{fmt(theyOweTotal)}</span>}
-            {iOweTotal > 0 && <span className="text-sm font-bold text-red-500 tabular-nums">{fmt(iOweTotal)}</span>}
+            {theyOweTotal > 0 && (
+              <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">
+                {fmt(theyOweTotal)}
+              </span>
+            )}
+            {iOweTotal > 0 && (
+              <span className="text-sm font-bold text-red-500 tabular-nums">
+                {fmt(iOweTotal)}
+              </span>
+            )}
           </div>
         </div>
-        <ChevronDownIcon className={cn("size-4 text-muted-foreground shrink-0 transition-transform duration-200", isExpanded && "rotate-180")} />
+        <ChevronDownIcon
+          className={cn(
+            "size-4 text-muted-foreground shrink-0 transition-transform duration-200",
+            isExpanded && "rotate-180",
+          )}
+        />
       </button>
       {isExpanded && (
         <div className="border-t border-border divide-y divide-border">
           {group.debts.map((d) => (
             <div key={d.id}>
-              <DebtCard debt={d} hidePersonName flat onSettle={onSettle} onEdit={onEdit} onDelete={onDelete} onPay={onPay} onCollect={onCollect} onRecord={onRecord} />
+              <DebtCard
+                debt={d}
+                hidePersonName
+                flat
+                onSettle={onSettle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onPay={onPay}
+                onCollect={onCollect}
+                onRecord={onRecord}
+              />
             </div>
           ))}
         </div>
@@ -252,7 +359,19 @@ function DebtGroupCard({ group, expandedGroups, onToggle, onSettle, onEdit, onDe
 }
 
 export default function DebtsPage() {
-  const { debts, loadingDebts, createDebt, editDebt, removeDebt, accounts, createTransaction, categories, createCategory, isViewingPartner, isImpersonating } = useApp();
+  const {
+    debts,
+    loadingDebts,
+    createDebt,
+    editDebt,
+    removeDebt,
+    accounts,
+    createTransaction,
+    categories,
+    createCategory,
+    isViewingPartner,
+    isImpersonating,
+  } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -283,18 +402,27 @@ export default function DebtsPage() {
     const names: string[] = [];
     for (const d of debts) {
       const key = d.personName.trim().toLowerCase();
-      if (!seen.has(key)) { seen.add(key); names.push(d.personName.trim()); }
+      if (!seen.has(key)) {
+        seen.add(key);
+        names.push(d.personName.trim());
+      }
     }
     return names.sort((a, b) => a.localeCompare(b));
   }, [debts]);
 
   const unsettled = useMemo(
-    () => debts.filter((d) => !d.settled).sort((a, b) => b.date.localeCompare(a.date)),
-    [debts]
+    () =>
+      debts
+        .filter((d) => !d.settled)
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [debts],
   );
   const settled = useMemo(
-    () => debts.filter((d) => d.settled).sort((a, b) => b.date.localeCompare(a.date)),
-    [debts]
+    () =>
+      debts
+        .filter((d) => d.settled)
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [debts],
   );
 
   const unsettledGroups = useMemo(() => {
@@ -323,7 +451,9 @@ export default function DebtsPage() {
     }
     return Array.from(map.entries())
       .map(([key, groupDebts]) => {
-        const sortedByDate = groupDebts.sort((a, b) => b.date.localeCompare(a.date));
+        const sortedByDate = groupDebts.sort((a, b) =>
+          b.date.localeCompare(a.date),
+        );
         const latestSettledDate = groupDebts
           .map((d) => d.settledDate ?? d.date)
           .sort((a, b) => b.localeCompare(a))[0];
@@ -338,12 +468,18 @@ export default function DebtsPage() {
   }, [settled]);
 
   const totalIOwe = useMemo(
-    () => unsettled.filter((d) => d.direction === "i_owe").reduce((s, d) => s + d.amount, 0),
-    [unsettled]
+    () =>
+      unsettled
+        .filter((d) => d.direction === "i_owe")
+        .reduce((s, d) => s + d.amount, 0),
+    [unsettled],
   );
   const totalOwedToMe = useMemo(
-    () => unsettled.filter((d) => d.direction === "they_owe").reduce((s, d) => s + d.amount, 0),
-    [unsettled]
+    () =>
+      unsettled
+        .filter((d) => d.direction === "they_owe")
+        .reduce((s, d) => s + d.amount, 0),
+    [unsettled],
   );
 
   const openCreate = () => {
@@ -368,9 +504,15 @@ export default function DebtsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.personName.trim()) { toast.error("Person name is required."); return; }
+    if (!form.personName.trim()) {
+      toast.error("Person name is required.");
+      return;
+    }
     const amount = parseFloat(form.amount);
-    if (isNaN(amount) || amount < 0 || (!editTarget && amount <= 0)) { toast.error("Enter a valid amount."); return; }
+    if (isNaN(amount) || amount < 0 || (!editTarget && amount <= 0)) {
+      toast.error("Enter a valid amount.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -410,11 +552,14 @@ export default function DebtsPage() {
             // Auto-find or create person as L3 under "Money Lent" (Savings)
             let categoryId: string | undefined;
             const moneyLentL2 = categories.find(
-              (c) => c.level === 2 && c.name === "Money Lent"
+              (c) => c.level === 2 && c.name === "Money Lent",
             );
             if (moneyLentL2) {
               let personItem = categories.find(
-                (c) => c.level === 3 && c.parentId === moneyLentL2.id && c.name === personName
+                (c) =>
+                  c.level === 3 &&
+                  c.parentId === moneyLentL2.id &&
+                  c.name === personName,
               );
               if (!personItem) {
                 personItem = await createCategory({
@@ -455,7 +600,10 @@ export default function DebtsPage() {
         await editDebt(debt.id, { settled: false, settledDate: undefined });
         toast.success("Marked as unsettled.");
       } else {
-        await editDebt(debt.id, { settled: true, settledDate: format(new Date(), "yyyy-MM-dd") });
+        await editDebt(debt.id, {
+          settled: true,
+          settledDate: format(new Date(), "yyyy-MM-dd"),
+        });
         toast.success("Marked as settled!");
       }
     } catch {
@@ -480,7 +628,8 @@ export default function DebtsPage() {
   const handleToggleGroup = (key: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -495,9 +644,18 @@ export default function DebtsPage() {
     e.preventDefault();
     if (!payTarget) return;
     const amt = parseFloat(payAmount);
-    if (isNaN(amt) || amt <= 0) { toast.error("Enter a valid amount."); return; }
-    if (amt > payTarget.amount) { toast.error(`Cannot exceed remaining ${fmt(payTarget.amount)}.`); return; }
-    if (!payAccountId) { toast.error("Please select an account."); return; }
+    if (isNaN(amt) || amt <= 0) {
+      toast.error("Enter a valid amount.");
+      return;
+    }
+    if (amt > payTarget.amount) {
+      toast.error(`Cannot exceed remaining ${fmt(payTarget.amount)}.`);
+      return;
+    }
+    if (!payAccountId) {
+      toast.error("Please select an account.");
+      return;
+    }
 
     setPaying(true);
     try {
@@ -507,11 +665,14 @@ export default function DebtsPage() {
       let categoryId: string | undefined;
       if (isIOwe) {
         const debtRepaymentL2 = categories.find(
-          (c) => c.level === 2 && c.name === "Debt Repayment"
+          (c) => c.level === 2 && c.name === "Debt Repayment",
         );
         if (debtRepaymentL2) {
           let personItem = categories.find(
-            (c) => c.level === 3 && c.parentId === debtRepaymentL2.id && c.name === payTarget.personName
+            (c) =>
+              c.level === 3 &&
+              c.parentId === debtRepaymentL2.id &&
+              c.name === payTarget.personName,
           );
           if (!personItem) {
             personItem = await createCategory({
@@ -534,9 +695,11 @@ export default function DebtsPage() {
         time: format(new Date(), "HH:mm"),
         accountId: payAccountId,
         categoryId,
-        note: payTarget.note || (isIOwe
-          ? `Payment to ${payTarget.personName}`
-          : `Received from ${payTarget.personName}`),
+        note:
+          payTarget.note ||
+          (isIOwe
+            ? `Payment to ${payTarget.personName}`
+            : `Received from ${payTarget.personName}`),
       });
 
       // Reduce debt amount
@@ -547,13 +710,17 @@ export default function DebtsPage() {
           settled: true,
           settledDate: format(new Date(), "yyyy-MM-dd"),
         });
-        toast.success(isIOwe ? "Fully paid — debt settled!" : "Fully collected — debt settled!");
+        toast.success(
+          isIOwe
+            ? "Fully paid — debt settled!"
+            : "Fully collected — debt settled!",
+        );
       } else {
         await editDebt(payTarget.id, { amount: remaining });
         toast.success(
           isIOwe
             ? `Payment recorded. Remaining: ${fmt(remaining)}`
-            : `Receipt recorded. Remaining: ${fmt(remaining)}`
+            : `Receipt recorded. Remaining: ${fmt(remaining)}`,
         );
       }
       setPayTarget(null);
@@ -568,7 +735,10 @@ export default function DebtsPage() {
 
   const handleRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recordTarget || !recordAccountId) { toast.error("Please select an account."); return; }
+    if (!recordTarget || !recordAccountId) {
+      toast.error("Please select an account.");
+      return;
+    }
     setRecording(true);
     try {
       const isIOwe = recordTarget.direction === "i_owe";
@@ -577,13 +747,24 @@ export default function DebtsPage() {
 
       let categoryId: string | undefined;
       if (!isIOwe) {
-        const moneyLentL2 = categories.find((c) => c.level === 2 && c.name === "Money Lent");
+        const moneyLentL2 = categories.find(
+          (c) => c.level === 2 && c.name === "Money Lent",
+        );
         if (moneyLentL2) {
           let personItem = categories.find(
-            (c) => c.level === 3 && c.parentId === moneyLentL2.id && c.name === personName
+            (c) =>
+              c.level === 3 &&
+              c.parentId === moneyLentL2.id &&
+              c.name === personName,
           );
           if (!personItem) {
-            personItem = await createCategory({ name: personName, level: 3, parentId: moneyLentL2.id, type: "savings", sortOrder: 99 });
+            personItem = await createCategory({
+              name: personName,
+              level: 3,
+              parentId: moneyLentL2.id,
+              type: "savings",
+              sortOrder: 99,
+            });
           }
           categoryId = personItem.id;
         }
@@ -624,11 +805,15 @@ export default function DebtsPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-border bg-card p-3 space-y-0.5">
             <p className="text-xs text-muted-foreground">You owe</p>
-            <p className="text-lg font-bold text-red-500 tabular-nums">{fmt(totalIOwe)}</p>
+            <p className="text-lg font-bold text-red-500 tabular-nums">
+              {fmt(totalIOwe)}
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 space-y-0.5">
             <p className="text-xs text-muted-foreground">Owed to you</p>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">{fmt(totalOwedToMe)}</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">
+              {fmt(totalOwedToMe)}
+            </p>
           </div>
         </div>
       )}
@@ -636,7 +821,9 @@ export default function DebtsPage() {
       {/* Unsettled list */}
       {loadingDebts ? (
         <div className="space-y-2">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
         </div>
       ) : unsettled.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-2 text-muted-foreground">
@@ -646,9 +833,45 @@ export default function DebtsPage() {
       ) : (
         <div className="space-y-2">
           {unsettledGroups.map((g) =>
-            g.debts.length === 1
-              ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} onPay={isReadOnly ? undefined : openPay} onCollect={isReadOnly ? undefined : openPay} onRecord={isReadOnly ? undefined : (d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
-              : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} onPay={isReadOnly ? undefined : openPay} onCollect={isReadOnly ? undefined : openPay} onRecord={isReadOnly ? undefined : (d) => { setRecordTarget(d); setRecordAccountId(d.accountId ?? ""); }} />
+            g.debts.length === 1 ? (
+              <DebtCard
+                key={g.debts[0].id}
+                debt={g.debts[0]}
+                onSettle={isReadOnly ? undefined : handleSettle}
+                onEdit={isReadOnly ? undefined : openEdit}
+                onDelete={isReadOnly ? undefined : setDeleteTarget}
+                onPay={isReadOnly ? undefined : openPay}
+                onCollect={isReadOnly ? undefined : openPay}
+                onRecord={
+                  isReadOnly
+                    ? undefined
+                    : (d) => {
+                        setRecordTarget(d);
+                        setRecordAccountId(d.accountId ?? "");
+                      }
+                }
+              />
+            ) : (
+              <DebtGroupCard
+                key={g.key}
+                group={g}
+                expandedGroups={expandedGroups}
+                onToggle={handleToggleGroup}
+                onSettle={isReadOnly ? undefined : handleSettle}
+                onEdit={isReadOnly ? undefined : openEdit}
+                onDelete={isReadOnly ? undefined : setDeleteTarget}
+                onPay={isReadOnly ? undefined : openPay}
+                onCollect={isReadOnly ? undefined : openPay}
+                onRecord={
+                  isReadOnly
+                    ? undefined
+                    : (d) => {
+                        setRecordTarget(d);
+                        setRecordAccountId(d.accountId ?? "");
+                      }
+                }
+              />
+            ),
           )}
         </div>
       )}
@@ -658,25 +881,50 @@ export default function DebtsPage() {
         <div className="space-y-2">
           <button
             type="button"
-            onClick={() => { setShowSettled((v) => !v); setSettledVisible(SETTLED_PAGE); }}
+            onClick={() => {
+              setShowSettled((v) => !v);
+              setSettledVisible(SETTLED_PAGE);
+            }}
             className="text-xs text-muted-foreground underline underline-offset-2"
           >
             {showSettled ? "Hide" : "Show"} settled ({settled.length})
           </button>
           {showSettled && (
             <div className="space-y-2">
-              {settledGroups.slice(0, settledVisible).map((g) =>
-                g.debts.length === 1
-                  ? <DebtCard key={g.debts[0].id} debt={g.debts[0]} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />
-                  : <DebtGroupCard key={g.key} group={g} expandedGroups={expandedGroups} onToggle={handleToggleGroup} onSettle={isReadOnly ? undefined : handleSettle} onEdit={isReadOnly ? undefined : openEdit} onDelete={isReadOnly ? undefined : setDeleteTarget} />
-              )}
+              {settledGroups
+                .slice(0, settledVisible)
+                .map((g) =>
+                  g.debts.length === 1 ? (
+                    <DebtCard
+                      key={g.debts[0].id}
+                      debt={g.debts[0]}
+                      onSettle={isReadOnly ? undefined : handleSettle}
+                      onEdit={isReadOnly ? undefined : openEdit}
+                      onDelete={isReadOnly ? undefined : setDeleteTarget}
+                    />
+                  ) : (
+                    <DebtGroupCard
+                      key={g.key}
+                      group={g}
+                      expandedGroups={expandedGroups}
+                      onToggle={handleToggleGroup}
+                      onSettle={isReadOnly ? undefined : handleSettle}
+                      onEdit={isReadOnly ? undefined : openEdit}
+                      onDelete={isReadOnly ? undefined : setDeleteTarget}
+                    />
+                  ),
+                )}
               {settledVisible < settledGroups.length && (
                 <button
                   type="button"
                   onClick={() => setSettledVisible((v) => v + SETTLED_PAGE)}
                   className="text-xs text-muted-foreground underline underline-offset-2"
                 >
-                  Load more ({settledGroups.length - settledVisible} {settledGroups.length - settledVisible === 1 ? "person" : "people"} remaining)
+                  Load more ({settledGroups.length - settledVisible}{" "}
+                  {settledGroups.length - settledVisible === 1
+                    ? "person"
+                    : "people"}{" "}
+                  remaining)
                 </button>
               )}
             </div>
@@ -693,7 +941,12 @@ export default function DebtsPage() {
           <form onSubmit={handleSave} className="space-y-4">
             {/* Direction toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
-              {([["i_owe", "I Owe"], ["they_owe", "They Owe Me"]] as [Direction, string][]).map(([val, label]) => (
+              {(
+                [
+                  ["i_owe", "I Owe"],
+                  ["they_owe", "They Owe Me"],
+                ] as [Direction, string][]
+              ).map(([val, label]) => (
                 <button
                   key={val}
                   type="button"
@@ -704,7 +957,7 @@ export default function DebtsPage() {
                       ? val === "i_owe"
                         ? "bg-red-500 text-white"
                         : "bg-green-600 text-white"
-                      : "bg-background text-muted-foreground hover:bg-muted"
+                      : "bg-background text-muted-foreground hover:bg-muted",
                   )}
                 >
                   {label}
@@ -718,7 +971,9 @@ export default function DebtsPage() {
                 id="debt-person"
                 placeholder="e.g. Ahmad, Mak Long"
                 value={form.personName}
-                onChange={(e) => setForm((f) => ({ ...f, personName: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, personName: e.target.value }))
+                }
                 required
               />
               {knownPersons.length > 0 && (
@@ -727,12 +982,14 @@ export default function DebtsPage() {
                     <button
                       key={name}
                       type="button"
-                      onClick={() => setForm((f) => ({ ...f, personName: name }))}
+                      onClick={() =>
+                        setForm((f) => ({ ...f, personName: name }))
+                      }
                       className={cn(
                         "px-2.5 py-1 rounded-full text-xs border transition-colors",
                         form.personName === name
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-muted text-muted-foreground hover:bg-accent"
+                          : "border-border bg-muted text-muted-foreground hover:bg-accent",
                       )}
                     >
                       {name}
@@ -752,14 +1009,19 @@ export default function DebtsPage() {
                 min={editTarget ? "0" : "0.01"}
                 placeholder="0.00"
                 value={form.amount}
-                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, amount: e.target.value }))
+                }
                 required
               />
-              {editTarget && editTarget.originalAmount != null && editTarget.originalAmount !== editTarget.amount && (
-                <p className="text-[11px] text-muted-foreground">
-                  Editing the remaining balance. Original amount was {fmt(editTarget.originalAmount)}.
-                </p>
-              )}
+              {editTarget &&
+                editTarget.originalAmount != null &&
+                editTarget.originalAmount !== editTarget.amount && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Editing the remaining balance. Original amount was{" "}
+                    {fmt(editTarget.originalAmount)}.
+                  </p>
+                )}
             </div>
 
             <div className="flex flex-col gap-3">
@@ -769,7 +1031,9 @@ export default function DebtsPage() {
                   id="debt-date"
                   type="date"
                   value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, date: e.target.value }))
+                  }
                   required
                 />
               </div>
@@ -780,7 +1044,9 @@ export default function DebtsPage() {
                     id="debt-due"
                     type="date"
                     value={form.dueDate}
-                    onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, dueDate: e.target.value }))
+                    }
                     className={!form.dueDate ? "text-transparent" : ""}
                   />
                   {!form.dueDate && (
@@ -810,12 +1076,17 @@ export default function DebtsPage() {
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => setForm((f) => ({ ...f, accountId: f.accountId === a.id ? "" : a.id }))}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          accountId: f.accountId === a.id ? "" : a.id,
+                        }))
+                      }
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                         form.accountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:bg-muted"
+                          : "border-border bg-background hover:bg-muted",
                       )}
                     >
                       {a.name}
@@ -831,12 +1102,19 @@ export default function DebtsPage() {
                 id="debt-note"
                 placeholder="e.g. Dinner at Nando's"
                 value={form.note}
-                onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, note: e.target.value }))
+                }
               />
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={saving}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={saving}>
@@ -848,28 +1126,39 @@ export default function DebtsPage() {
       </Dialog>
 
       {/* Pay / Collect Dialog */}
-      <Dialog open={!!payTarget} onOpenChange={(open) => !open && setPayTarget(null)}>
+      <Dialog
+        open={!!payTarget}
+        onOpenChange={(open) => !open && setPayTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isIOweDialog ? `Pay ${payTarget?.personName}` : `Collect from ${payTarget?.personName}`}
+              {isIOweDialog
+                ? `Pay ${payTarget?.personName}`
+                : `Collect from ${payTarget?.personName}`}
             </DialogTitle>
           </DialogHeader>
           {payTarget && (
             <form onSubmit={handlePayOrCollect} className="space-y-4">
               <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm flex justify-between">
                 <span className="text-muted-foreground">Remaining balance</span>
-                <span className={cn(
-                  "font-bold tabular-nums",
-                  isIOweDialog ? "text-red-500" : "text-green-600 dark:text-green-400"
-                )}>
+                <span
+                  className={cn(
+                    "font-bold tabular-nums",
+                    isIOweDialog
+                      ? "text-red-500"
+                      : "text-green-600 dark:text-green-400",
+                  )}
+                >
                   {fmt(payTarget.amount)}
                 </span>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="pay-amount">
-                  {isIOweDialog ? "Amount to pay (MYR)" : "Amount received (MYR)"}
+                  {isIOweDialog
+                    ? "Amount to pay (MYR)"
+                    : "Amount received (MYR)"}
                 </Label>
                 <Input
                   id="pay-amount"
@@ -899,7 +1188,7 @@ export default function DebtsPage() {
                         "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                         payAccountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:bg-muted"
+                          : "border-border bg-background hover:bg-muted",
                       )}
                     >
                       {a.name}
@@ -909,11 +1198,20 @@ export default function DebtsPage() {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setPayTarget(null)} disabled={paying}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPayTarget(null)}
+                  disabled={paying}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={paying}>
-                  {paying ? "Saving..." : isIOweDialog ? "Record Payment" : "Record Receipt"}
+                  {paying
+                    ? "Saving..."
+                    : isIOweDialog
+                      ? "Record Payment"
+                      : "Record Receipt"}
                 </Button>
               </DialogFooter>
             </form>
@@ -922,7 +1220,10 @@ export default function DebtsPage() {
       </Dialog>
 
       {/* Record Transaction Dialog */}
-      <Dialog open={!!recordTarget} onOpenChange={(open) => !open && setRecordTarget(null)}>
+      <Dialog
+        open={!!recordTarget}
+        onOpenChange={(open) => !open && setRecordTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Record Transaction</DialogTitle>
@@ -936,13 +1237,24 @@ export default function DebtsPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className={cn("font-bold tabular-nums", recordTarget.direction === "i_owe" ? "text-green-600 dark:text-green-400" : "text-red-500")}>
+                  <span
+                    className={cn(
+                      "font-bold tabular-nums",
+                      recordTarget.direction === "i_owe"
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-500",
+                    )}
+                  >
                     {fmt(recordTarget.originalAmount ?? recordTarget.amount)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Type</span>
-                  <span>{recordTarget.direction === "i_owe" ? "Income (borrowed)" : "Expense (lent)"}</span>
+                  <span>
+                    {recordTarget.direction === "i_owe"
+                      ? "Income (borrowed)"
+                      : "Expense (lent)"}
+                  </span>
                 </div>
               </div>
 
@@ -958,7 +1270,7 @@ export default function DebtsPage() {
                         "px-3 py-1.5 rounded-lg text-sm border transition-colors",
                         recordAccountId === a.id
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:bg-muted"
+                          : "border-border bg-background hover:bg-muted",
                       )}
                     >
                       {a.name}
@@ -968,7 +1280,12 @@ export default function DebtsPage() {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setRecordTarget(null)} disabled={recording}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRecordTarget(null)}
+                  disabled={recording}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={recording}>
@@ -981,20 +1298,43 @@ export default function DebtsPage() {
       </Dialog>
 
       {/* Delete confirm */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Debt</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Delete debt with <strong>{deleteTarget?.personName}</strong> for <strong>{deleteTarget ? fmt(deleteTarget.originalAmount ?? deleteTarget.amount) : ""}</strong>?
-            {deleteTarget && deleteTarget.originalAmount != null && deleteTarget.originalAmount !== deleteTarget.amount && (
-              <span className="block text-xs mt-1">{fmt(deleteTarget.amount)} remaining</span>
-            )}
+            Delete debt with <strong>{deleteTarget?.personName}</strong> for{" "}
+            <strong>
+              {deleteTarget
+                ? fmt(deleteTarget.originalAmount ?? deleteTarget.amount)
+                : ""}
+            </strong>
+            ?
+            {deleteTarget &&
+              deleteTarget.originalAmount != null &&
+              deleteTarget.originalAmount !== deleteTarget.amount && (
+                <span className="block text-xs mt-1">
+                  {fmt(deleteTarget.amount)} remaining
+                </span>
+              )}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

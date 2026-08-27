@@ -19,34 +19,40 @@ export function PwaRegister() {
 
     navigator.serviceWorker.addEventListener("controllerchange", hardNav);
 
-    navigator.serviceWorker.register("/sw.js").then((reg) => {
-      const checkUpdate = () => reg.update().catch(() => {});
-      window.addEventListener("focus", checkUpdate);
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        const checkUpdate = () => reg.update().catch(() => {});
+        window.addEventListener("focus", checkUpdate);
 
-      reg.addEventListener("updatefound", () => {
-        const newSW = reg.installing;
-        if (!newSW) return;
+        reg.addEventListener("updatefound", () => {
+          const newSW = reg.installing;
+          if (!newSW) return;
 
-        newSW.addEventListener("statechange", () => {
-          if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-            toast("New version available", {
-              description: "Refresh to get the latest update.",
-              duration: Infinity,
-              action: {
-                label: "Refresh",
-                onClick: () => {
-                  newSW.postMessage({ type: "SKIP_WAITING" });
-                  // Fallback: iOS may not fire controllerchange reliably
-                  setTimeout(hardNav, 1500);
+          newSW.addEventListener("statechange", () => {
+            if (
+              newSW.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
+              toast("New version available", {
+                description: "Refresh to get the latest update.",
+                duration: Infinity,
+                action: {
+                  label: "Refresh",
+                  onClick: () => {
+                    newSW.postMessage({ type: "SKIP_WAITING" });
+                    // Fallback: iOS may not fire controllerchange reliably
+                    setTimeout(hardNav, 1500);
+                  },
                 },
-              },
-            });
-          }
+              });
+            }
+          });
         });
-      });
 
-      return () => window.removeEventListener("focus", checkUpdate);
-    }).catch(() => {});
+        return () => window.removeEventListener("focus", checkUpdate);
+      })
+      .catch(() => {});
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", hardNav);

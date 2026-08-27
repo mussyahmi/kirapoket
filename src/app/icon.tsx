@@ -5,31 +5,29 @@ export const contentType = "image/png";
 
 export default function Icon() {
   return new ImageResponse(
-    (
-      <div
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#4F46E5",
+        borderRadius: "24%",
+      }}
+    >
+      <span
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#4F46E5",
-          borderRadius: "24%",
+          color: "white",
+          fontSize: 220,
+          fontWeight: 900,
+          letterSpacing: "-8px",
+          fontFamily: "sans-serif",
         }}
       >
-        <span
-          style={{
-            color: "white",
-            fontSize: 220,
-            fontWeight: 900,
-            letterSpacing: "-8px",
-            fontFamily: "sans-serif",
-          }}
-        >
-          KP
-        </span>
-      </div>
-    ),
-    size
+        KP
+      </span>
+    </div>,
+    size,
   );
 }

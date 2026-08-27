@@ -13,7 +13,11 @@ const MAU_MS = 30 * 24 * 60 * 60 * 1000;
 
 function lastLoginMs(lastLogin: Timestamp | null | undefined): number {
   if (!lastLogin) return 0;
-  try { return lastLogin.toDate().getTime(); } catch { return 0; }
+  try {
+    return lastLogin.toDate().getTime();
+  } catch {
+    return 0;
+  }
 }
 
 const MILESTONE_DEFS = [
@@ -28,14 +32,16 @@ const MILESTONE_DEFS = [
     step: "02",
     phase: "Early Adopter Pricing",
     mau: "100+ MAU",
-    action: "Open 50 early adopter slots at RM 29/year — price locked forever as long as they keep renewing. No feature restrictions yet, free tier stays unlimited. People pay to support + secure the deal. RM 59/year exists but nobody has a reason to pay it here — don't push it. After 50 slots fill, new subscribers pay RM 59/year or RM 6.90/month.",
+    action:
+      "Open 50 early adopter slots at RM 29/year — price locked forever as long as they keep renewing. No feature restrictions yet, free tier stays unlimited. People pay to support + secure the deal. RM 59/year exists but nobody has a reason to pay it here — don't push it. After 50 slots fill, new subscribers pay RM 59/year or RM 6.90/month.",
     threshold: 100,
   },
   {
     step: "03",
     phase: "Full Monetize",
     mau: "500+ MAU",
-    action: "Flip on the freemium paywall — free tier now has real limits (3 accounts max, AI insights rate-limited, etc). This is when RM 59/year or RM 6.90/month actually has value. Existing free users grandfathered: fully functional but can't create more than 3 accounts. Early adopters keep renewing at RM 29/year — if they cancel and return, they lose the price lock.",
+    action:
+      "Flip on the freemium paywall — free tier now has real limits (3 accounts max, AI insights rate-limited, etc). This is when RM 59/year or RM 6.90/month actually has value. Existing free users grandfathered: fully functional but can't create more than 3 accounts. Early adopters keep renewing at RM 29/year — if they cancel and return, they lose the price lock.",
     threshold: 500,
   },
 ];
@@ -57,10 +63,36 @@ const PRO_FEATURES = [
 
 const REVENUE_ROWS = [
   { mau: "500", paying: "25", monthly: "RM 123", annual: "RM 1,475", pct: 5 },
-  { mau: "1,000", paying: "50", monthly: "RM 245", annual: "RM 2,950", pct: 10 },
-  { mau: "3,000", paying: "150", monthly: "RM 736", annual: "RM 8,850", pct: 30, highlight: true },
-  { mau: "5,000", paying: "250", monthly: "RM 1,227", annual: "RM 14,700", pct: 50, highlight: true },
-  { mau: "10,000", paying: "500", monthly: "RM 2,455", annual: "RM 29,450", pct: 100 },
+  {
+    mau: "1,000",
+    paying: "50",
+    monthly: "RM 245",
+    annual: "RM 2,950",
+    pct: 10,
+  },
+  {
+    mau: "3,000",
+    paying: "150",
+    monthly: "RM 736",
+    annual: "RM 8,850",
+    pct: 30,
+    highlight: true,
+  },
+  {
+    mau: "5,000",
+    paying: "250",
+    monthly: "RM 1,227",
+    annual: "RM 14,700",
+    pct: 50,
+    highlight: true,
+  },
+  {
+    mau: "10,000",
+    paying: "500",
+    monthly: "RM 2,455",
+    annual: "RM 29,450",
+    pct: 100,
+  },
 ];
 
 const MOATS = [
@@ -94,30 +126,42 @@ export default function ProjectionPage() {
   useEffect(() => {
     getAllUsers().then((users) => {
       const count = users.filter(
-        (u) => Date.now() - lastLoginMs(u.lastLogin) < MAU_MS
+        (u) => Date.now() - lastLoginMs(u.lastLogin) < MAU_MS,
       ).length;
       setMau(count);
     });
   }, []);
 
   if (authLoading) return null;
-  if (user?.uid !== ADMIN_UID) { router.replace("/home"); return null; }
+  if (user?.uid !== ADMIN_UID) {
+    router.replace("/home");
+    return null;
+  }
 
   // Determine current milestone index based on live MAU
   const activeMilestoneIdx =
-    mau === null ? 0 : MILESTONE_DEFS.length - 1 - [...MILESTONE_DEFS].reverse().findIndex((m) => (mau ?? 0) >= m.threshold);
+    mau === null
+      ? 0
+      : MILESTONE_DEFS.length -
+        1 -
+        [...MILESTONE_DEFS]
+          .reverse()
+          .findIndex((m) => (mau ?? 0) >= m.threshold);
 
   const milestones = MILESTONE_DEFS.map((m, i) => ({
     ...m,
     status:
-      i < activeMilestoneIdx ? "done" :
-      i === activeMilestoneIdx ? "current" :
-      i === activeMilestoneIdx + 1 ? "upcoming" : "future",
+      i < activeMilestoneIdx
+        ? "done"
+        : i === activeMilestoneIdx
+          ? "current"
+          : i === activeMilestoneIdx + 1
+            ? "upcoming"
+            : "future",
   }));
 
   return (
     <div className="p-4 md:p-8 max-w-lg mx-auto space-y-10 pb-16">
-
       {/* Header */}
       <div className="space-y-3">
         <Button
@@ -131,7 +175,8 @@ export default function ProjectionPage() {
 
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-3xl font-black tracking-tight leading-tight">
-            Growth &<br />Monetization
+            Growth &<br />
+            Monetization
           </h1>
           <span className="mt-1.5 shrink-0 rounded-full bg-orange-100 dark:bg-orange-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400">
             Internal
@@ -140,7 +185,8 @@ export default function ProjectionPage() {
 
         <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-primary/30 pl-3">
           KiraPoket · Malaysian personal finance market · All figures MYR ·
-          Based on 5% freemium conversion rate, consistent with niche personal finance apps.
+          Based on 5% freemium conversion rate, consistent with niche personal
+          finance apps.
         </p>
       </div>
 
@@ -160,16 +206,18 @@ export default function ProjectionPage() {
                     m.status === "done"
                       ? "bg-primary/20 text-primary"
                       : m.status === "current"
-                      ? "bg-primary text-primary-foreground"
-                      : m.status === "upcoming"
-                      ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-primary text-primary-foreground"
+                        : m.status === "upcoming"
+                          ? "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                          : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {m.status === "done" ? "✓" : m.step}
                 </div>
                 {i < milestones.length - 1 && (
-                  <div className={`w-px flex-1 my-1 ${m.status === "done" ? "bg-primary/30" : "bg-border"}`} />
+                  <div
+                    className={`w-px flex-1 my-1 ${m.status === "done" ? "bg-primary/30" : "bg-border"}`}
+                  />
                 )}
               </div>
 
@@ -181,17 +229,21 @@ export default function ProjectionPage() {
                       m.status === "done"
                         ? "text-primary/60 line-through"
                         : m.status === "current"
-                        ? "text-primary"
-                        : m.status === "upcoming"
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-muted-foreground"
+                          ? "text-primary"
+                          : m.status === "upcoming"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-muted-foreground"
                     }`}
                   >
                     {m.phase}
                   </p>
-                  <p className="text-[10px] font-mono text-muted-foreground/60">{m.mau}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground/60">
+                    {m.mau}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{m.action}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  {m.action}
+                </p>
               </div>
             </div>
           ))}
@@ -208,13 +260,20 @@ export default function ProjectionPage() {
           {/* Free */}
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Free</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Free
+              </p>
               <p className="text-xl font-black mt-0.5">RM 0</p>
             </div>
             <ul className="space-y-1.5">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="text-[11px] text-muted-foreground flex gap-2 items-start leading-snug">
-                  <span className="shrink-0 text-muted-foreground/50 mt-0.5">—</span>
+                <li
+                  key={f}
+                  className="text-[11px] text-muted-foreground flex gap-2 items-start leading-snug"
+                >
+                  <span className="shrink-0 text-muted-foreground/50 mt-0.5">
+                    —
+                  </span>
                   {f}
                 </li>
               ))}
@@ -227,14 +286,28 @@ export default function ProjectionPage() {
               Recommended
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Pro</p>
-              <p className="text-xl font-black mt-0.5">RM 59<span className="text-xs font-normal text-muted-foreground">/yr</span></p>
-              <p className="text-[10px] text-muted-foreground">≈ RM 4.90/mo · or RM 6.90/mo monthly</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+                Pro
+              </p>
+              <p className="text-xl font-black mt-0.5">
+                RM 59
+                <span className="text-xs font-normal text-muted-foreground">
+                  /yr
+                </span>
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                ≈ RM 4.90/mo · or RM 6.90/mo monthly
+              </p>
             </div>
             <ul className="space-y-1.5">
               {PRO_FEATURES.map((f) => (
-                <li key={f} className="text-[11px] text-foreground flex gap-2 items-start leading-snug">
-                  <span className="shrink-0 text-primary mt-0.5 font-bold">✓</span>
+                <li
+                  key={f}
+                  className="text-[11px] text-foreground flex gap-2 items-start leading-snug"
+                >
+                  <span className="shrink-0 text-primary mt-0.5 font-bold">
+                    ✓
+                  </span>
                   {f}
                 </li>
               ))}
@@ -242,10 +315,10 @@ export default function ProjectionPage() {
           </div>
         </div>
 
-
         <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">
-          Why RM 59/year — Malaysian users resist monthly subs but accept annual if value is clear.
-          Under the "feels expensive" threshold. Comparable local apps: RM 40–80/year.
+          Why RM 59/year — Malaysian users resist monthly subs but accept annual
+          if value is clear. Under the "feels expensive" threshold. Comparable
+          local apps: RM 40–80/year.
         </p>
       </section>
 
@@ -259,10 +332,18 @@ export default function ProjectionPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-muted/50 border-b border-border">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">MAU</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Paying</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Monthly</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Annual</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">
+                  MAU
+                </th>
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                  Paying
+                </th>
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                  Monthly
+                </th>
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">
+                  Annual
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -270,13 +351,13 @@ export default function ProjectionPage() {
                 <tr
                   key={r.mau}
                   className={`border-b border-border last:border-0 ${
-                    r.highlight
-                      ? "bg-primary/5 dark:bg-primary/10"
-                      : "bg-card"
+                    r.highlight ? "bg-primary/5 dark:bg-primary/10" : "bg-card"
                   }`}
                 >
                   <td className="px-4 py-3">
-                    <span className={`font-mono font-bold ${r.highlight ? "text-primary" : ""}`}>
+                    <span
+                      className={`font-mono font-bold ${r.highlight ? "text-primary" : ""}`}
+                    >
                       {r.mau}
                     </span>
                     {r.highlight && (
@@ -285,11 +366,19 @@ export default function ProjectionPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">{r.paying}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">{r.monthly}</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">
+                    {r.paying}
+                  </td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">
+                    {r.monthly}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-col items-end gap-1">
-                      <span className={`font-bold ${r.highlight ? "text-primary" : ""}`}>{r.annual}</span>
+                      <span
+                        className={`font-bold ${r.highlight ? "text-primary" : ""}`}
+                      >
+                        {r.annual}
+                      </span>
                       <div className="w-16 h-1 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary/60"
@@ -304,7 +393,8 @@ export default function ProjectionPage() {
           </table>
           <div className="px-4 py-2.5 bg-muted/30 border-t border-border">
             <p className="text-[10px] text-muted-foreground/60">
-              Sweet spot: RM 1,000–2,000/mo at 3k–5k MAU — Firebase costs stay low, product sustains itself.
+              Sweet spot: RM 1,000–2,000/mo at 3k–5k MAU — Firebase costs stay
+              low, product sustains itself.
             </p>
           </div>
         </div>
@@ -318,10 +408,17 @@ export default function ProjectionPage() {
 
         <div className="grid grid-cols-2 gap-3">
           {MOATS.map((m) => (
-            <div key={m.n} className="rounded-xl border border-border bg-card p-4 space-y-2">
-              <p className="text-2xl font-black text-primary/20 leading-none">{m.n}</p>
+            <div
+              key={m.n}
+              className="rounded-xl border border-border bg-card p-4 space-y-2"
+            >
+              <p className="text-2xl font-black text-primary/20 leading-none">
+                {m.n}
+              </p>
               <p className="text-xs font-bold">{m.title}</p>
-              <p className="text-[11px] text-muted-foreground leading-snug">{m.desc}</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {m.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -333,11 +430,10 @@ export default function ProjectionPage() {
           "The biggest lever isn&apos;t pricing — it&apos;s MAU growth."
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Organic is slow. Fastest paths: Malaysian personal finance Facebook groups,
-          Reddit&nbsp;r/MalaysianPF, TikTok budgeting content.
+          Organic is slow. Fastest paths: Malaysian personal finance Facebook
+          groups, Reddit&nbsp;r/MalaysianPF, TikTok budgeting content.
         </p>
       </section>
-
     </div>
   );
 }

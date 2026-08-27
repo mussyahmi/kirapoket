@@ -70,16 +70,22 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto px-5 py-10 space-y-10">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Privacy Policy</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Privacy Policy
+        </h1>
         <p className="text-sm text-muted-foreground">
           Effective date: 5 May 2026 &nbsp;·&nbsp; KiraPoket
         </p>
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed">
-        KiraPoket is built in Malaysia and is committed to protecting your personal data in accordance with the{" "}
-        <span className="font-medium text-foreground">Personal Data Protection Act 2010 (PDPA)</span>. This policy explains
-        what data we collect, how we use it, and your rights as a user.
+        KiraPoket is built in Malaysia and is committed to protecting your
+        personal data in accordance with the{" "}
+        <span className="font-medium text-foreground">
+          Personal Data Protection Act 2010 (PDPA)
+        </span>
+        . This policy explains what data we collect, how we use it, and your
+        rights as a user.
       </p>
 
       <div className="space-y-8">
@@ -88,7 +94,10 @@ export default function PrivacyPage() {
             <h2 className="text-sm font-semibold text-foreground">{title}</h2>
             <div className="space-y-3">
               {body.split("\n\n").map((para, i) => (
-                <p key={i} className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                <p
+                  key={i}
+                  className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line"
+                >
                   {para}
                 </p>
               ))}

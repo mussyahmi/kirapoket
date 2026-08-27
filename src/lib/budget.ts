@@ -6,7 +6,7 @@ import type { Category, Transaction } from "@/lib/types";
  * Returns 0 when the category has no budget set.
  */
 export function effectiveCatBudget(
-  c: Pick<Category, "budget" | "budgetType" | "budgetDays">
+  c: Pick<Category, "budget" | "budgetType" | "budgetDays">,
 ): number {
   if (c.budget === undefined) return 0;
   if (c.budgetType === "daily") return c.budget * (c.budgetDays ?? 30);
@@ -16,7 +16,7 @@ export function effectiveCatBudget(
 /** All category ids in the subtree rooted at `rootId`, including the root. */
 export function categorySubtreeIds(
   categories: Category[],
-  rootId: string
+  rootId: string,
 ): Set<string> {
   const ids = new Set<string>([rootId]);
   let frontier = [rootId];
@@ -84,7 +84,7 @@ export function computeBudgetImpact(params: {
         t.categoryId != null &&
         subtree.has(t.categoryId) &&
         t.date >= cycleStartStr &&
-        t.date <= cycleEndStr
+        t.date <= cycleEndStr,
     )
     .reduce((s, t) => s + t.amount, 0);
 

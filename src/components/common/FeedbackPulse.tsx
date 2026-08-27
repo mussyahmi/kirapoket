@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { differenceInDays } from "date-fns";
-import { ThumbsUpIcon, ThumbsDownIcon, XIcon, ArrowLeftIcon } from "lucide-react";
+import {
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  XIcon,
+  ArrowLeftIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,10 +19,10 @@ import type { FeedbackPromptState } from "@/lib/types";
 
 // Tuning — deliberately gentle. First ask waits for real usage; afterwards it's
 // time-gated, and a few explicit dismissals stop it for good.
-const FIRST_MILESTONE_TX = 20;   // don't ask until they've actually used the app
-const COOLDOWN_DAYS = 45;        // min gap between asks that weren't converted
+const FIRST_MILESTONE_TX = 20; // don't ask until they've actually used the app
+const COOLDOWN_DAYS = 45; // min gap between asks that weren't converted
 const GIVEN_COOLDOWN_DAYS = 120; // long quiet period after they do give feedback
-const MAX_DISMISSALS = 3;        // explicit "no" this many times → stop asking
+const MAX_DISMISSALS = 3; // explicit "no" this many times → stop asking
 
 type Sentiment = "up" | "down";
 
@@ -104,7 +109,11 @@ export default function FeedbackPulse() {
         message,
         appVersion: pkg.version,
       });
-      await persist({ lastGivenAt: nowIso(), lastShownAt: nowIso(), dismissals: 0 });
+      await persist({
+        lastGivenAt: nowIso(),
+        lastShownAt: nowIso(),
+        dismissals: 0,
+      });
       toast.success("Thank you — this genuinely helps. 🙏");
       setOpen(false);
     } catch {
@@ -117,7 +126,10 @@ export default function FeedbackPulse() {
   const dismiss = async () => {
     setOpen(false);
     const fp = userProfile?.feedbackPrompt ?? {};
-    void persist({ lastShownAt: nowIso(), dismissals: (fp.dismissals ?? 0) + 1 });
+    void persist({
+      lastShownAt: nowIso(),
+      dismissals: (fp.dismissals ?? 0) + 1,
+    });
   };
 
   return (
@@ -133,7 +145,9 @@ export default function FeedbackPulse() {
 
       {step === "ask" ? (
         <div className="pr-6">
-          <p className="text-sm font-medium">How&apos;s KiraPoket working for you?</p>
+          <p className="text-sm font-medium">
+            How&apos;s KiraPoket working for you?
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             A quick tap helps shape what comes next.
           </p>
@@ -145,7 +159,8 @@ export default function FeedbackPulse() {
               className="gap-1.5"
               onClick={() => pick("up")}
             >
-              <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" /> Good
+              <ThumbsUpIcon className="size-4 text-green-600 dark:text-green-400" />{" "}
+              Good
             </Button>
             <Button
               type="button"

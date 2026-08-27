@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { MessageSquareIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface FeedbackButtonProps {
@@ -12,7 +18,12 @@ interface FeedbackButtonProps {
   dialogOnly?: boolean;
 }
 
-export default function FeedbackButton({ className, open: controlledOpen, onOpenChange, dialogOnly }: FeedbackButtonProps) {
+export default function FeedbackButton({
+  className,
+  open: controlledOpen,
+  onOpenChange,
+  dialogOnly,
+}: FeedbackButtonProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
 
   const open = controlledOpen ?? uncontrolledOpen;
@@ -20,13 +31,19 @@ export default function FeedbackButton({ className, open: controlledOpen, onOpen
 
   function openFeedbackBoard() {
     setOpen(false);
-    setTimeout(() => { window.open("https://insigh.to/b/kirapoket", "_blank"); }, 150);
+    setTimeout(() => {
+      window.open("https://insigh.to/b/kirapoket", "_blank");
+    }, 150);
   }
 
   return (
     <>
       {!dialogOnly && (
-        <button onClick={() => setOpen(true)} title="Give Feedback" className={className}>
+        <button
+          onClick={() => setOpen(true)}
+          title="Give Feedback"
+          className={className}
+        >
           <MessageSquareIcon className="size-4 shrink-0" />
           Give Feedback
         </button>
@@ -38,7 +55,8 @@ export default function FeedbackButton({ className, open: controlledOpen, onOpen
             <DialogTitle>Give Feedback</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Help us improve KiraPoket! Share your thoughts, report issues, or suggest new features on our feedback board.
+            Help us improve KiraPoket! Share your thoughts, report issues, or
+            suggest new features on our feedback board.
           </p>
           <DialogFooter>
             <Button onClick={openFeedbackBoard} className="w-full sm:w-auto">

@@ -52,7 +52,15 @@ function ComingSoon() {
 }
 
 function AssistantChat() {
-  const { userProfile, accounts, categories, transactions, debts, isViewingPartner, isImpersonating } = useApp();
+  const {
+    userProfile,
+    accounts,
+    categories,
+    transactions,
+    debts,
+    isViewingPartner,
+    isImpersonating,
+  } = useApp();
   const { user } = useAuth();
   const readOnly = isViewingPartner || isImpersonating;
 
@@ -76,7 +84,13 @@ function AssistantChat() {
 
     try {
       const token = await user.getIdToken();
-      const context = buildAssistantContext({ userProfile, accounts, categories, transactions, debts });
+      const context = buildAssistantContext({
+        userProfile,
+        accounts,
+        categories,
+        transactions,
+        debts,
+      });
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -87,12 +101,27 @@ function AssistantChat() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessages((m) => [...m, { role: "assistant", text: data.error ?? "Something went wrong. Please try again." }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            text: data.error ?? "Something went wrong. Please try again.",
+          },
+        ]);
       } else {
-        setMessages((m) => [...m, { role: "assistant", text: data.reply ?? "" }]);
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", text: data.reply ?? "" },
+        ]);
       }
     } catch {
-      setMessages((m) => [...m, { role: "assistant", text: "Couldn't reach the assistant. Check your connection and try again." }]);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          text: "Couldn't reach the assistant. Check your connection and try again.",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -118,7 +147,9 @@ function AssistantChat() {
         </div>
         <div>
           <h1 className="text-xl font-semibold leading-tight">AI Assistant</h1>
-          <p className="text-xs text-muted-foreground">Ask about your spending this cycle</p>
+          <p className="text-xs text-muted-foreground">
+            Ask about your spending this cycle
+          </p>
         </div>
       </div>
 
@@ -127,8 +158,12 @@ function AssistantChat() {
         {messages.length === 0 && !loading && (
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-sm text-foreground/80">
-              Hi{userProfile?.displayName ? `, ${userProfile.displayName.split(" ")[0]}` : ""}! I can see your
-              accounts and this salary cycle&apos;s spending. Ask me anything, or try:
+              Hi
+              {userProfile?.displayName
+                ? `, ${userProfile.displayName.split(" ")[0]}`
+                : ""}
+              ! I can see your accounts and this salary cycle&apos;s spending.
+              Ask me anything, or try:
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
@@ -146,7 +181,13 @@ function AssistantChat() {
         )}
 
         {messages.map((m, i) => (
-          <div key={i} className={cn("flex gap-2.5", m.role === "user" ? "justify-end" : "justify-start")}>
+          <div
+            key={i}
+            className={cn(
+              "flex gap-2.5",
+              m.role === "user" ? "justify-end" : "justify-start",
+            )}
+          >
             {m.role === "assistant" && (
               <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <SparklesIcon className="size-4 text-primary" />
@@ -157,7 +198,7 @@ function AssistantChat() {
                 "max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap leading-relaxed",
                 m.role === "user"
                   ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted text-foreground rounded-bl-md"
+                  : "bg-muted text-foreground rounded-bl-md",
               )}
             >
               {m.text}
@@ -165,7 +206,12 @@ function AssistantChat() {
             {m.role === "user" && (
               <Avatar className="size-7 shrink-0 mt-0.5">
                 {(userProfile?.customPhotoURL ?? user?.photoURL) && (
-                  <AvatarImage src={userProfile?.customPhotoURL ?? user?.photoURL ?? undefined} alt={userProfile?.displayName ?? "You"} />
+                  <AvatarImage
+                    src={
+                      userProfile?.customPhotoURL ?? user?.photoURL ?? undefined
+                    }
+                    alt={userProfile?.displayName ?? "You"}
+                  />
                 )}
                 <AvatarFallback className="text-[10px] font-semibold">
                   {getInitials(userProfile?.displayName ?? user?.displayName)}
@@ -193,7 +239,10 @@ function AssistantChat() {
       {/* Input */}
       <div className="sticky bottom-24 md:bottom-4 z-20 pb-2 bg-background">
         <form
-          onSubmit={(e) => { e.preventDefault(); send(input); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
           className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm"
         >
           <textarea
@@ -209,7 +258,12 @@ function AssistantChat() {
             rows={1}
             className="flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none max-h-32"
           />
-          <Button type="submit" size="icon" className="shrink-0 rounded-xl" disabled={loading || !input.trim()}>
+          <Button
+            type="submit"
+            size="icon"
+            className="shrink-0 rounded-xl"
+            disabled={loading || !input.trim()}
+          >
             <SendIcon className="size-4" />
           </Button>
         </form>

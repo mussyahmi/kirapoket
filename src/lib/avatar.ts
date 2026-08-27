@@ -1,4 +1,9 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import { storage } from "./firebase";
 
 // One fixed object per user — uploading overwrites it, so storage never grows
@@ -29,7 +34,7 @@ async function toSquareBlob(file: File): Promise<Blob> {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Encode failed"))),
       "image/jpeg",
-      0.85
+      0.85,
     );
   });
 }

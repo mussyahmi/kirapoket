@@ -60,9 +60,9 @@ export interface UserProfile {
 }
 
 export interface FeedbackPromptState {
-  lastShownAt?: string;   // ISO — when the pulse card was last shown
-  lastGivenAt?: string;   // ISO — when the user last submitted feedback
-  dismissals?: number;    // times explicitly dismissed; enough of these = stop asking
+  lastShownAt?: string; // ISO — when the pulse card was last shown
+  lastGivenAt?: string; // ISO — when the user last submitted feedback
+  dismissals?: number; // times explicitly dismissed; enough of these = stop asking
 }
 
 export interface Feedback {

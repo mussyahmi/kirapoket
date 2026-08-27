@@ -6,11 +6,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
-  LogOutIcon, SunIcon, MoonIcon, TrashIcon,
-  HeartHandshakeIcon, SendIcon, XCircleIcon,
-  StopCircleIcon, CheckCircle2Icon,
-  ClockIcon, PencilIcon, ClipboardCheckIcon,
-  CameraIcon, Loader2Icon,
+  LogOutIcon,
+  SunIcon,
+  MoonIcon,
+  TrashIcon,
+  HeartHandshakeIcon,
+  SendIcon,
+  XCircleIcon,
+  StopCircleIcon,
+  CheckCircle2Icon,
+  ClockIcon,
+  PencilIcon,
+  ClipboardCheckIcon,
+  CameraIcon,
+  Loader2Icon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
@@ -21,10 +30,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { uploadAvatar, removeAvatar } from "@/lib/avatar";
@@ -33,7 +49,11 @@ import { OnboardingNextModal } from "@/components/common/OnboardingNextModal";
 
 type ThemeOption = "light" | "dark";
 
-const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ElementType }[] = [
+const THEME_OPTIONS: {
+  value: ThemeOption;
+  label: string;
+  icon: React.ElementType;
+}[] = [
   { value: "light", label: "Light", icon: SunIcon },
   { value: "dark", label: "Dark", icon: MoonIcon },
 ];
@@ -43,8 +63,18 @@ function SettingsPage() {
   const searchParams = useSearchParams();
   const { user, signOut, deleteUserAccount } = useAuth();
   const {
-    userProfile, ownProfile, saveUserProfile, loadingProfile, partnership, isViewingPartner, isImpersonating,
-    invitePartner, cancelInvite, pausePartnerView, resumePartnerView, terminatePartnership,
+    userProfile,
+    ownProfile,
+    saveUserProfile,
+    loadingProfile,
+    partnership,
+    isViewingPartner,
+    isImpersonating,
+    invitePartner,
+    cancelInvite,
+    pausePartnerView,
+    resumePartnerView,
+    terminatePartnership,
   } = useApp();
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -66,7 +96,9 @@ function SettingsPage() {
   const [removePartnerDialogOpen, setRemovePartnerDialogOpen] = useState(false);
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (userProfile) {
@@ -104,7 +136,10 @@ function SettingsPage() {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file later
     if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file."); return; }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
     setUploadingAvatar(true);
     try {
       const url = await uploadAvatar(user.uid, file);
@@ -139,7 +174,10 @@ function SettingsPage() {
 
   const handleSaveName = async () => {
     const trimmed = nameInput.trim();
-    if (!trimmed) { toast.error("Name can't be empty."); return; }
+    if (!trimmed) {
+      toast.error("Name can't be empty.");
+      return;
+    }
     setSavingName(true);
     try {
       await saveUserProfile({ displayName: trimmed });
@@ -156,13 +194,21 @@ function SettingsPage() {
     const email = inviteEmail.trim();
     if (!email) return;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) { toast.error("Please enter a valid email address."); return; }
-    if (email.toLowerCase() === user?.email?.toLowerCase()) { toast.error("You can't invite yourself."); return; }
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    if (email.toLowerCase() === user?.email?.toLowerCase()) {
+      toast.error("You can't invite yourself.");
+      return;
+    }
     setInviting(true);
     try {
       await invitePartner(email);
       setInviteEmail("");
-      toast.success("Invite sent! They'll see it when they next open KiraPoket.");
+      toast.success(
+        "Invite sent! They'll see it when they next open KiraPoket.",
+      );
     } catch {
       toast.error("Failed to send invite.");
     } finally {
@@ -184,7 +230,9 @@ function SettingsPage() {
     try {
       await deleteUserAccount();
     } catch {
-      toast.error("Failed to delete account. Please sign out and sign in again before retrying.");
+      toast.error(
+        "Failed to delete account. Please sign out and sign in again before retrying.",
+      );
       setDeleting(false);
       setDeleteDialogOpen(false);
     }
@@ -192,18 +240,22 @@ function SettingsPage() {
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "?";
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const partnerName = partnership
-    ? (partnership.inviterUid === user?.uid
+    ? partnership.inviterUid === user?.uid
       ? partnership.inviteeEmail
-      : partnership.inviterName ?? partnership.inviterEmail)
+      : (partnership.inviterName ?? partnership.inviterEmail)
     : null;
 
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto space-y-4 pb-10">
-
       {/* Profile */}
       <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
         <CardContent className="flex items-center gap-4 py-5">
@@ -219,9 +271,14 @@ function SettingsPage() {
             >
               <Avatar className="size-full shadow-sm">
                 {avatarSrc ? (
-                  <AvatarImage src={avatarSrc} alt={ownProfile?.displayName ?? user?.displayName ?? "User"} />
+                  <AvatarImage
+                    src={avatarSrc}
+                    alt={ownProfile?.displayName ?? user?.displayName ?? "User"}
+                  />
                 ) : null}
-                <AvatarFallback className="text-lg font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+                <AvatarFallback className="text-lg font-semibold">
+                  {getInitials(ownProfile?.displayName ?? user?.displayName)}
+                </AvatarFallback>
               </Avatar>
             </button>
           )}
@@ -233,8 +290,12 @@ function SettingsPage() {
               </div>
             ) : (
               <>
-                <p className="font-semibold truncate leading-tight">{ownProfile?.displayName ?? user?.displayName ?? "User"}</p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="font-semibold truncate leading-tight">
+                  {ownProfile?.displayName ?? user?.displayName ?? "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email}
+                </p>
                 {!isReadOnly && (
                   <button
                     type="button"
@@ -285,7 +346,7 @@ function SettingsPage() {
                     ? "bg-primary text-primary-foreground shadow-sm scale-105"
                     : isReadOnly
                       ? "bg-muted text-muted-foreground cursor-not-allowed"
-                      : "bg-muted text-foreground hover:bg-muted/70"
+                      : "bg-muted text-foreground hover:bg-muted/70",
                 )}
               >
                 {day}
@@ -293,9 +354,14 @@ function SettingsPage() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            {salaryDay
-              ? <>Cycle resets on day <strong>{salaryDay}</strong> each month. Days 29–31 fall back to the last day of shorter months.</>
-              : "Pick your salary day to start tracking cycles."}
+            {salaryDay ? (
+              <>
+                Cycle resets on day <strong>{salaryDay}</strong> each month.
+                Days 29–31 fall back to the last day of shorter months.
+              </>
+            ) : (
+              "Pick your salary day to start tracking cycles."
+            )}
           </p>
         </CardContent>
       </Card>
@@ -317,23 +383,29 @@ function SettingsPage() {
                     "relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all",
                     resolvedTheme === value
                       ? "border-primary"
-                      : "border-border hover:border-border/80 hover:bg-muted/40"
+                      : "border-border hover:border-border/80 hover:bg-muted/40",
                   )}
                 >
-                  <div className={cn(
-                    "mb-2 h-10 rounded-md border",
-                    value === "light"
-                      ? "bg-white border-zinc-200"
-                      : "bg-zinc-900 border-zinc-700"
-                  )}>
-                    <div className={cn(
-                      "m-1.5 h-2 w-1/2 rounded-full",
-                      value === "light" ? "bg-zinc-200" : "bg-zinc-700"
-                    )} />
-                    <div className={cn(
-                      "mx-1.5 h-1.5 w-3/4 rounded-full",
-                      value === "light" ? "bg-zinc-100" : "bg-zinc-800"
-                    )} />
+                  <div
+                    className={cn(
+                      "mb-2 h-10 rounded-md border",
+                      value === "light"
+                        ? "bg-white border-zinc-200"
+                        : "bg-zinc-900 border-zinc-700",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "m-1.5 h-2 w-1/2 rounded-full",
+                        value === "light" ? "bg-zinc-200" : "bg-zinc-700",
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        "mx-1.5 h-1.5 w-3/4 rounded-full",
+                        value === "light" ? "bg-zinc-100" : "bg-zinc-800",
+                      )}
+                    />
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Icon className="size-3.5 text-muted-foreground" />
@@ -348,7 +420,10 @@ function SettingsPage() {
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {THEME_OPTIONS.map(({ label }) => (
-                <div key={label} className="h-20 rounded-xl border-2 border-border bg-muted animate-pulse" />
+                <div
+                  key={label}
+                  className="h-20 rounded-xl border-2 border-border bg-muted animate-pulse"
+                />
               ))}
             </div>
           )}
@@ -370,7 +445,14 @@ function SettingsPage() {
             className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
-              <ClipboardCheckIcon className={cn("size-4 shrink-0", confirmBeforeSaving ? "text-primary" : "text-muted-foreground")} />
+              <ClipboardCheckIcon
+                className={cn(
+                  "size-4 shrink-0",
+                  confirmBeforeSaving
+                    ? "text-primary"
+                    : "text-muted-foreground",
+                )}
+              />
               <div>
                 <p className="text-sm font-medium">Confirm before saving</p>
                 <p className="text-xs text-muted-foreground">
@@ -380,14 +462,18 @@ function SettingsPage() {
                 </p>
               </div>
             </div>
-            <div className={cn(
-              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0",
-              confirmBeforeSaving ? "bg-primary" : "bg-muted"
-            )}>
-              <span className={cn(
-                "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
-                confirmBeforeSaving ? "translate-x-6" : "translate-x-1"
-              )} />
+            <div
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0",
+                confirmBeforeSaving ? "bg-primary" : "bg-muted",
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block size-4 rounded-full bg-white shadow-sm transition-transform",
+                  confirmBeforeSaving ? "translate-x-6" : "translate-x-1",
+                )}
+              />
             </div>
           </button>
         </CardContent>
@@ -402,7 +488,8 @@ function SettingsPage() {
           {!partnership && (
             <>
               <p className="text-xs text-muted-foreground">
-                Invite your partner to view each other&apos;s finances in read-only mode.
+                Invite your partner to view each other&apos;s finances in
+                read-only mode.
               </p>
               <div className="flex gap-2">
                 <Input
@@ -414,7 +501,11 @@ function SettingsPage() {
                   disabled={inviting || isImpersonating}
                   className="flex-1"
                 />
-                <Button size="sm" onClick={handleInvitePartner} disabled={inviting || !inviteEmail.trim() || isImpersonating}>
+                <Button
+                  size="sm"
+                  onClick={handleInvitePartner}
+                  disabled={inviting || !inviteEmail.trim() || isImpersonating}
+                >
                   <SendIcon className="size-3.5 mr-1.5" />
                   {inviting ? "Sending…" : "Invite"}
                 </Button>
@@ -430,8 +521,12 @@ function SettingsPage() {
               <div className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-4 py-3">
                 <span className="size-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">Waiting for acceptance</p>
-                  <p className="text-xs text-amber-700/70 dark:text-amber-400/70 truncate">{partnership.inviteeEmail}</p>
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                    Waiting for acceptance
+                  </p>
+                  <p className="text-xs text-amber-700/70 dark:text-amber-400/70 truncate">
+                    {partnership.inviteeEmail}
+                  </p>
                 </div>
               </div>
               <Button
@@ -439,7 +534,10 @@ function SettingsPage() {
                 variant="ghost"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full border border-destructive/30"
                 disabled={isImpersonating}
-                onClick={async () => { await cancelInvite(); toast.success("Invite cancelled."); }}
+                onClick={async () => {
+                  await cancelInvite();
+                  toast.success("Invite cancelled.");
+                }}
               >
                 <XCircleIcon className="size-3.5 mr-1.5" />
                 Cancel Invite
@@ -452,8 +550,12 @@ function SettingsPage() {
               <div className="flex items-center gap-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/40 px-4 py-3">
                 <CheckCircle2Icon className="size-4 text-green-600 dark:text-green-400 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-green-800 dark:text-green-300">Connected</p>
-                  <p className="text-xs text-green-700/70 dark:text-green-400/70 truncate">{partnerName}</p>
+                  <p className="text-xs font-medium text-green-800 dark:text-green-300">
+                    Connected
+                  </p>
+                  <p className="text-xs text-green-700/70 dark:text-green-400/70 truncate">
+                    {partnerName}
+                  </p>
                 </div>
               </div>
               {isViewingPartner ? (
@@ -462,7 +564,10 @@ function SettingsPage() {
                   variant="outline"
                   className="w-full"
                   disabled={isImpersonating}
-                  onClick={() => { pausePartnerView(); toast.success("Switched back to your data."); }}
+                  onClick={() => {
+                    pausePartnerView();
+                    toast.success("Switched back to your data.");
+                  }}
                 >
                   <StopCircleIcon className="size-3.5 mr-1.5" />
                   Stop Viewing
@@ -473,7 +578,10 @@ function SettingsPage() {
                   variant="outline"
                   className="w-full"
                   disabled={isImpersonating}
-                  onClick={() => { resumePartnerView(); toast.success("Viewing partner's finances."); }}
+                  onClick={() => {
+                    resumePartnerView();
+                    toast.success("Viewing partner's finances.");
+                  }}
                 >
                   <HeartHandshakeIcon className="size-3.5 mr-1.5" />
                   View Partner&apos;s Finances
@@ -499,38 +607,49 @@ function SettingsPage() {
       {/* Install App */}
       <InstallAppCard />
 
-      {!isReadOnly && <>
-        <Separator />
+      {!isReadOnly && (
+        <>
+          <Separator />
 
-        <Card className="border-destructive/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-destructive text-sm">Danger Zone</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Permanently deletes your account, all transactions, accounts, and categories. Cannot be undone.
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full gap-2 border border-destructive/40 text-destructive hover:bg-destructive hover:text-white hover:border-destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <TrashIcon className="size-3.5" />
-              Delete Account
-            </Button>
-          </CardContent>
-        </Card>
-      </>}
+          <Card className="border-destructive/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-destructive text-sm">
+                Danger Zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Permanently deletes your account, all transactions, accounts,
+                and categories. Cannot be undone.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full gap-2 border border-destructive/40 text-destructive hover:bg-destructive hover:text-white hover:border-destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <TrashIcon className="size-3.5" />
+                Delete Account
+              </Button>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       <p className="text-center text-xs text-muted-foreground/40 pb-2 space-x-2">
         <span>KiraPoket &copy; {new Date().getFullYear()}</span>
         <span>·</span>
-        <Link href="/changelog" className="hover:text-muted-foreground transition-colors">
+        <Link
+          href="/changelog"
+          className="hover:text-muted-foreground transition-colors"
+        >
           v{process.env.NEXT_PUBLIC_APP_VERSION}
         </Link>
         <span>·</span>
-        <Link href="/privacy" className="hover:text-muted-foreground transition-colors">
+        <Link
+          href="/privacy"
+          className="hover:text-muted-foreground transition-colors"
+        >
           Privacy Policy
         </Link>
       </p>
@@ -538,13 +657,25 @@ function SettingsPage() {
       <Dialog open={avatarLightbox} onOpenChange={setAvatarLightbox}>
         <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-xs">
           {avatarSrc && (
-            <img src={avatarSrc} alt="" className="w-full rounded-2xl object-cover" />
+            <img
+              src={avatarSrc}
+              alt=""
+              className="w-full rounded-2xl object-cover"
+            />
           )}
         </DialogContent>
       </Dialog>
 
-      <Sheet open={editProfileOpen} onOpenChange={(o) => !savingName && !uploadingAvatar && setEditProfileOpen(o)}>
-        <SheetContent side="bottom" className="rounded-t-2xl p-0 sm:mx-auto sm:max-w-md">
+      <Sheet
+        open={editProfileOpen}
+        onOpenChange={(o) =>
+          !savingName && !uploadingAvatar && setEditProfileOpen(o)
+        }
+      >
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl p-0 sm:mx-auto sm:max-w-md"
+        >
           <SheetHeader className="border-b shrink-0">
             <SheetTitle>Edit Profile</SheetTitle>
           </SheetHeader>
@@ -560,9 +691,16 @@ function SettingsPage() {
               >
                 <Avatar className="size-full shadow-sm">
                   {avatarSrc ? (
-                    <AvatarImage src={avatarSrc} alt={ownProfile?.displayName ?? user?.displayName ?? "User"} />
+                    <AvatarImage
+                      src={avatarSrc}
+                      alt={
+                        ownProfile?.displayName ?? user?.displayName ?? "User"
+                      }
+                    />
                   ) : null}
-                  <AvatarFallback className="text-2xl font-semibold">{getInitials(ownProfile?.displayName ?? user?.displayName)}</AvatarFallback>
+                  <AvatarFallback className="text-2xl font-semibold">
+                    {getInitials(ownProfile?.displayName ?? user?.displayName)}
+                  </AvatarFallback>
                 </Avatar>
               </button>
               <input
@@ -573,8 +711,18 @@ function SettingsPage() {
                 onChange={handleAvatarChange}
               />
               <div className="flex flex-col items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
-                  {uploadingAvatar ? <Loader2Icon className="size-3.5 animate-spin" /> : <CameraIcon className="size-3.5" />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                >
+                  {uploadingAvatar ? (
+                    <Loader2Icon className="size-3.5 animate-spin" />
+                  ) : (
+                    <CameraIcon className="size-3.5" />
+                  )}
                   Change photo
                 </Button>
                 {ownProfile?.customPhotoURL && (
@@ -597,29 +745,44 @@ function SettingsPage() {
                 id="displayName"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveName();
+                }}
                 disabled={savingName}
                 placeholder="Your name"
               />
             </div>
 
-            <Button className="w-full" onClick={handleSaveName} disabled={savingName || !nameInput.trim()}>
+            <Button
+              className="w-full"
+              onClick={handleSaveName}
+              disabled={savingName || !nameInput.trim()}
+            >
               {savingName ? "Saving…" : "Save"}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      <Dialog open={removePartnerDialogOpen} onOpenChange={setRemovePartnerDialogOpen}>
+      <Dialog
+        open={removePartnerDialogOpen}
+        onOpenChange={setRemovePartnerDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove partner access?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            You and your partner will no longer be able to view each other&apos;s finances. This cannot be undone.
+            You and your partner will no longer be able to view each
+            other&apos;s finances. This cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemovePartnerDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setRemovePartnerDialogOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               onClick={async () => {
@@ -643,25 +806,42 @@ function SettingsPage() {
             You&apos;ll need to sign in again to access your data.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSignOutDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setSignOutDialogOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleSignOut}>Sign out</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={(o) => !deleting && setDeleteDialogOpen(o)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(o) => !deleting && setDeleteDialogOpen(o)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete account?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            All your data will be permanently deleted. This action <strong>cannot be undone</strong>.
+            All your data will be permanently deleted. This action{" "}
+            <strong>cannot be undone</strong>.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deleting}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+            >
               {deleting ? "Deleting..." : "Yes, delete everything"}
             </Button>
           </DialogFooter>
@@ -682,5 +862,9 @@ function SettingsPage() {
 }
 
 export default function SettingsPageWrapper() {
-  return <Suspense><SettingsPage /></Suspense>;
+  return (
+    <Suspense>
+      <SettingsPage />
+    </Suspense>
+  );
 }

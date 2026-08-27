@@ -10,16 +10,23 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { HeartHandshakeIcon } from "lucide-react";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const { isImpersonating, stopImpersonating, isViewingPartner, partnership, pausePartnerView, partnerDeclinedAlert, clearPartnerDeclinedAlert, userProfile } = useApp();
+  const {
+    isImpersonating,
+    stopImpersonating,
+    isViewingPartner,
+    partnership,
+    pausePartnerView,
+    partnerDeclinedAlert,
+    clearPartnerDeclinedAlert,
+    userProfile,
+  } = useApp();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -29,7 +36,9 @@ export default function AppLayout({
 
   useEffect(() => {
     if (partnerDeclinedAlert) {
-      toast.info("Your partner invite was declined.", { id: "partner-declined" });
+      toast.info("Your partner invite was declined.", {
+        id: "partner-declined",
+      });
       clearPartnerDeclinedAlert();
     }
   }, [partnerDeclinedAlert, clearPartnerDeclinedAlert]);
@@ -42,11 +51,15 @@ export default function AppLayout({
         <div className="flex items-center justify-between gap-2 bg-primary px-4 py-1.5 text-primary-foreground text-xs font-medium">
           <span className="flex items-center gap-1.5">
             <HeartHandshakeIcon className="size-3.5" />
-            Viewing {userProfile?.displayName ?? userProfile?.email ?? "user"}&apos;s finances — read only
+            Viewing {userProfile?.displayName ?? userProfile?.email ?? "user"}
+            &apos;s finances — read only
           </span>
           <button
             type="button"
-            onClick={() => { stopImpersonating(); router.push("/admin"); }}
+            onClick={() => {
+              stopImpersonating();
+              router.push("/admin");
+            }}
             className="underline shrink-0"
           >
             Stop
@@ -65,7 +78,10 @@ export default function AppLayout({
           </span>
           <button
             type="button"
-            onClick={() => { pausePartnerView(); toast.success("Switched back to your data."); }}
+            onClick={() => {
+              pausePartnerView();
+              toast.success("Switched back to your data.");
+            }}
             className="underline shrink-0"
           >
             Stop
@@ -78,9 +94,7 @@ export default function AppLayout({
 
   return (
     <AddTransactionProvider>
-      <AppShell banner={banner}>
-        {children}
-      </AppShell>
+      <AppShell banner={banner}>{children}</AppShell>
     </AddTransactionProvider>
   );
 }

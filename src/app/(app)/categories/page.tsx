@@ -63,7 +63,8 @@ const AUTO_ITEM_L2_NAMES = ["Money Lent"];
 
 const L1_COLORS: Record<L1Type, string> = {
   needs: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  wants: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  wants:
+    "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
   savings: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
 };
 
@@ -113,14 +114,22 @@ function fmtItemBudget(c: Category): string | null {
   if (c.budget === undefined) return null;
   if (c.budgetType === "daily") {
     const days = c.budgetDays ?? 30;
-    const total = (c.budget * days).toLocaleString("ms-MY", { minimumFractionDigits: 2 });
+    const total = (c.budget * days).toLocaleString("ms-MY", {
+      minimumFractionDigits: 2,
+    });
     return `· RM ${total}`;
   }
   const amt = c.budget.toLocaleString("ms-MY", { minimumFractionDigits: 2 });
   return `· RM ${amt}`;
 }
 
-function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemProps) {
+function L3Item({
+  item,
+  l1Type,
+  openEdit,
+  setDeleteTarget,
+  readOnly,
+}: L3ItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const {
     attributes,
@@ -131,7 +140,10 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
     isDragging,
   } = useSortable({ id: item.id });
 
-  const hasDetails = item.budget !== undefined || item.note || (item.links && item.links.length > 0);
+  const hasDetails =
+    item.budget !== undefined ||
+    item.note ||
+    (item.links && item.links.length > 0);
 
   return (
     <>
@@ -193,19 +205,27 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className={cn("size-2.5 rounded-full shrink-0", L1_DOT[l1Type])} />
+              <span
+                className={cn("size-2.5 rounded-full shrink-0", L1_DOT[l1Type])}
+              />
               {item.name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {!hasDetails && (
-              <p className="text-sm text-muted-foreground">No details added yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No details added yet.
+              </p>
             )}
             {item.budget !== undefined && (
               <div className="flex items-center justify-between rounded-lg px-4 py-3 bg-muted/50">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Budget</span>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Budget
+                </span>
                 <div className="text-right">
-                  <p className="text-lg font-bold tabular-nums">{fmtItemBudget(item)?.replace("· ", "")}</p>
+                  <p className="text-lg font-bold tabular-nums">
+                    {fmtItemBudget(item)?.replace("· ", "")}
+                  </p>
                   {item.budgetType === "daily" && item.budgetDays && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
@@ -216,13 +236,17 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
             )}
             {item.note && (
               <div className="rounded-lg bg-muted/50 px-4 py-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Note</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                  Note
+                </p>
                 <p className="text-sm whitespace-pre-wrap">{item.note}</p>
               </div>
             )}
             {item.links && item.links.length > 0 && (
               <div className="rounded-lg bg-muted/50 px-4 py-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Links</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                  Links
+                </p>
                 <div className="space-y-1">
                   {item.links.map((link, i) => (
                     <a
@@ -239,7 +263,11 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <Link href={`/transactions?category=${item.id}`} className="flex-1" onClick={() => setPreviewOpen(false)}>
+              <Link
+                href={`/transactions?category=${item.id}`}
+                className="flex-1"
+                onClick={() => setPreviewOpen(false)}
+              >
                 <Button variant="outline" className="w-full gap-2">
                   <ListIcon className="size-4" /> Transactions
                 </Button>
@@ -249,7 +277,10 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
                   <Button
                     variant="outline"
                     className="flex-1 gap-2"
-                    onClick={() => { setPreviewOpen(false); openEdit(item); }}
+                    onClick={() => {
+                      setPreviewOpen(false);
+                      openEdit(item);
+                    }}
                   >
                     <PencilIcon className="size-4" /> Edit
                   </Button>
@@ -257,7 +288,10 @@ function L3Item({ item, l1Type, openEdit, setDeleteTarget, readOnly }: L3ItemPro
                     variant="ghost"
                     size="icon"
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    onClick={() => { setPreviewOpen(false); setDeleteTarget(item); }}
+                    onClick={() => {
+                      setPreviewOpen(false);
+                      setDeleteTarget(item);
+                    }}
                   >
                     <TrashIcon className="size-4" />
                   </Button>
@@ -283,7 +317,11 @@ interface L2RowProps {
   fmtBudget: (n: number) => string;
   toggleExpand: (id: string) => void;
   onDragEnd: (e: DragEndEvent, siblings: { id: string }[]) => void;
-  openCreate: (level: 1 | 2 | 3, parentId: string | null, type?: L1Type) => void;
+  openCreate: (
+    level: 1 | 2 | 3,
+    parentId: string | null,
+    type?: L1Type,
+  ) => void;
   openEdit: (cat: Category) => void;
   setDeleteTarget: (cat: Category) => void;
   readOnly?: boolean;
@@ -318,7 +356,9 @@ function L2Row({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   );
 
   return (
@@ -348,7 +388,9 @@ function L2Row({
           onClick={() => toggleExpand(cat.id)}
           className="flex items-center gap-1.5 flex-1 text-left min-w-0"
         >
-          <span className={cn("size-1.5 rounded-full shrink-0", L1_DOT[l1Type])} />
+          <span
+            className={cn("size-1.5 rounded-full shrink-0", L1_DOT[l1Type])}
+          />
           {l3.length > 0 ? (
             isOpen ? (
               <ChevronDownIcon className="size-3.5 text-muted-foreground shrink-0" />
@@ -445,7 +487,9 @@ export default function CategoriesPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   );
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -497,7 +541,7 @@ export default function CategoriesPage() {
 
   const handleDragEnd = async (
     event: DragEndEvent,
-    siblings: { id: string }[]
+    siblings: { id: string }[],
   ) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -514,7 +558,7 @@ export default function CategoriesPage() {
   const openCreate = (
     level: 1 | 2 | 3,
     parentId: string | null,
-    type?: L1Type
+    type?: L1Type,
   ) => {
     if (isReadOnly) return;
     setEditTarget(null);
@@ -536,7 +580,10 @@ export default function CategoriesPage() {
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
       budgetSelectedDates: cat.budgetSelectedDates
-        ? cat.budgetSelectedDates.map(s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); })
+        ? cat.budgetSelectedDates.map((s) => {
+            const [y, m, d] = s.split("-").map(Number);
+            return new Date(y, m - 1, d);
+          })
         : [],
       note: cat.note ?? "",
       links: cat.links ?? [],
@@ -564,11 +611,20 @@ export default function CategoriesPage() {
       return;
     }
 
-    const effectiveBudgetType = form.budget.trim() ? form.budgetType : undefined;
-    const effectiveBudgetDays = effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
-      ? form.budgetSelectedDates.length : undefined;
-    const effectiveSelectedDates = effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
-      ? form.budgetSelectedDates.map(d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`) : undefined;
+    const effectiveBudgetType = form.budget.trim()
+      ? form.budgetType
+      : undefined;
+    const effectiveBudgetDays =
+      effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
+        ? form.budgetSelectedDates.length
+        : undefined;
+    const effectiveSelectedDates =
+      effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
+        ? form.budgetSelectedDates.map(
+            (d) =>
+              `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+          )
+        : undefined;
 
     setSaving(true);
     try {
@@ -582,12 +638,18 @@ export default function CategoriesPage() {
         budgetDays: effectiveBudgetDays,
         budgetSelectedDates: effectiveSelectedDates,
         note: form.note.trim() || undefined,
-        links: form.links.filter(l => l.trim()).length > 0 ? form.links.filter(l => l.trim()) : undefined,
+        links:
+          form.links.filter((l) => l.trim()).length > 0
+            ? form.links.filter((l) => l.trim())
+            : undefined,
         color: form.color.trim() || undefined,
       };
 
       if (editTarget) {
-        if (editTarget.level === 2 && PROTECTED_L2_NAMES.includes(editTarget.name)) {
+        if (
+          editTarget.level === 2 &&
+          PROTECTED_L2_NAMES.includes(editTarget.name)
+        ) {
           toast.error("This category cannot be renamed.");
           setSaving(false);
           return;
@@ -617,18 +679,21 @@ export default function CategoriesPage() {
 
   const deleteBlockReason = useMemo(() => {
     if (!deleteTarget) return null;
-    if (deleteTarget.level === 2 && PROTECTED_L2_NAMES.includes(deleteTarget.name))
+    if (
+      deleteTarget.level === 2 &&
+      PROTECTED_L2_NAMES.includes(deleteTarget.name)
+    )
       return "This is a system category and cannot be deleted.";
     if (deleteTarget.level === 2) {
       const childCount = categories.filter(
-        (c) => c.level === 3 && c.parentId === deleteTarget.id
+        (c) => c.level === 3 && c.parentId === deleteTarget.id,
       ).length;
       if (childCount > 0)
         return `This subcategory has ${childCount} item${childCount > 1 ? "s" : ""} inside it. Delete all items first.`;
     }
     if (deleteTarget.level === 3) {
       const txCount = transactions.filter(
-        (t) => t.categoryId === deleteTarget.id
+        (t) => t.categoryId === deleteTarget.id,
       ).length;
       if (txCount > 0)
         return `${txCount} transaction${txCount > 1 ? "s are" : " is"} linked to this item. Reassign or delete them first.`;
@@ -691,7 +756,7 @@ export default function CategoriesPage() {
                   <div
                     className={cn(
                       "flex items-center gap-3 px-4 py-3",
-                      isOpen && "border-b border-border"
+                      isOpen && "border-b border-border",
                     )}
                   >
                     <button
@@ -707,7 +772,7 @@ export default function CategoriesPage() {
                       <span
                         className={cn(
                           "text-xs font-semibold uppercase px-2 py-0.5 rounded-full",
-                          L1_COLORS[l1Type] ?? "bg-muted text-muted-foreground"
+                          L1_COLORS[l1Type] ?? "bg-muted text-muted-foreground",
                         )}
                       >
                         {l1.name}
@@ -752,7 +817,9 @@ export default function CategoriesPage() {
                               l3={childrenOf(cat.id, 3)}
                               isOpen={!!expanded[cat.id]}
                               subtotal={l2Subtotal(cat.id)}
-                              isProtected={PROTECTED_L2_NAMES.includes(cat.name)}
+                              isProtected={PROTECTED_L2_NAMES.includes(
+                                cat.name,
+                              )}
                               fmtBudget={fmtBudget}
                               toggleExpand={toggleExpand}
                               onDragEnd={handleDragEnd}
@@ -818,14 +885,14 @@ export default function CategoriesPage() {
                       type="button"
                       onClick={() =>
                         setDialogContext((prev) =>
-                          prev ? { ...prev, type: t } : prev
+                          prev ? { ...prev, type: t } : prev,
                         )
                       }
                       className={cn(
                         "flex-1 py-2 text-sm font-medium capitalize rounded-lg border transition-colors",
                         dialogContext?.type === t
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:bg-muted"
+                          : "border-border bg-background hover:bg-muted",
                       )}
                     >
                       {t}
@@ -850,7 +917,7 @@ export default function CategoriesPage() {
                           "flex-1 py-1.5 text-sm font-medium transition-colors",
                           form.budgetType === t
                             ? "bg-primary text-primary-foreground"
-                            : "bg-background text-muted-foreground hover:bg-muted"
+                            : "bg-background text-muted-foreground hover:bg-muted",
                         )}
                       >
                         {t === "cycle" ? "Per Cycle" : "Per Day"}
@@ -870,13 +937,17 @@ export default function CategoriesPage() {
                       min="0"
                       placeholder="0.00"
                       value={form.budget}
-                      onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, budget: e.target.value })
+                      }
                     />
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="space-y-1.5">
-                      <Label htmlFor="cat-budget-daily">Amount / day (MYR)</Label>
+                      <Label htmlFor="cat-budget-daily">
+                        Amount / day (MYR)
+                      </Label>
                       <Input
                         id="cat-budget-daily"
                         type="number"
@@ -885,7 +956,9 @@ export default function CategoriesPage() {
                         min="0"
                         placeholder="0.00"
                         value={form.budget}
-                        onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                        onChange={(e) =>
+                          setForm({ ...form, budget: e.target.value })
+                        }
                       />
                     </div>
                     <div className="space-y-1.5 mt-4">
@@ -895,7 +968,9 @@ export default function CategoriesPage() {
                           <button
                             type="button"
                             className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                            onClick={() => setForm({ ...form, budgetSelectedDates: [] })}
+                            onClick={() =>
+                              setForm({ ...form, budgetSelectedDates: [] })
+                            }
                           >
                             Clear all
                           </button>
@@ -905,21 +980,34 @@ export default function CategoriesPage() {
                         <Calendar
                           mode="multiple"
                           selected={form.budgetSelectedDates}
-                          onSelect={(dates: Date[] | undefined) => setForm({ ...form, budgetSelectedDates: dates ?? [] })}
+                          onSelect={(dates: Date[] | undefined) =>
+                            setForm({
+                              ...form,
+                              budgetSelectedDates: dates ?? [],
+                            })
+                          }
                           className="w-full"
                         />
                       </div>
                     </div>
-                    {form.budget && parseFloat(form.budget) > 0 && form.budgetSelectedDates.length > 0 && (
-                      <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                        <span className="text-xs text-muted-foreground">
-                          {form.budgetSelectedDates.length} days selected
-                        </span>
-                        <span className="text-sm font-semibold">
-                          RM {(parseFloat(form.budget) * form.budgetSelectedDates.length).toLocaleString("ms-MY", { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    )}
+                    {form.budget &&
+                      parseFloat(form.budget) > 0 &&
+                      form.budgetSelectedDates.length > 0 && (
+                        <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+                          <span className="text-xs text-muted-foreground">
+                            {form.budgetSelectedDates.length} days selected
+                          </span>
+                          <span className="text-sm font-semibold">
+                            RM{" "}
+                            {(
+                              parseFloat(form.budget) *
+                              form.budgetSelectedDates.length
+                            ).toLocaleString("ms-MY", {
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
@@ -955,7 +1043,12 @@ export default function CategoriesPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          onClick={() => setForm({ ...form, links: form.links.filter((_, j) => j !== i) })}
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              links: form.links.filter((_, j) => j !== i),
+                            })
+                          }
                         >
                           <TrashIcon className="size-4 text-muted-foreground" />
                         </Button>
@@ -966,7 +1059,9 @@ export default function CategoriesPage() {
                       variant="outline"
                       size="sm"
                       className="w-full"
-                      onClick={() => setForm({ ...form, links: [...form.links, ""] })}
+                      onClick={() =>
+                        setForm({ ...form, links: [...form.links, ""] })
+                      }
                     >
                       <PlusIcon className="size-4 mr-1.5" />
                       Add link
@@ -999,7 +1094,9 @@ export default function CategoriesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {deleteTarget?.level === 3 ? "Item" : "Subcategory"}</DialogTitle>
+            <DialogTitle>
+              Delete {deleteTarget?.level === 3 ? "Item" : "Subcategory"}
+            </DialogTitle>
           </DialogHeader>
           {deleteBlockReason ? (
             <div className="space-y-3">
@@ -1016,7 +1113,8 @@ export default function CategoriesPage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget?.name}</strong>? This cannot be undone.
             </p>
           )}
           <DialogFooter>

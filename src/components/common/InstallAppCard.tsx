@@ -11,7 +11,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function InstallAppCard() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -27,7 +28,8 @@ export function InstallAppCard() {
     const ua = navigator.userAgent;
     const ios = /iphone|ipad|ipod/i.test(ua);
     // navigator.standalone is an Apple extension; undefined on non-iOS
-    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone;
+    const standalone = (navigator as Navigator & { standalone?: boolean })
+      .standalone;
     if (ios && !standalone) {
       setIsIos(true);
     }
@@ -62,9 +64,14 @@ export function InstallAppCard() {
         {deferredPrompt ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Install KiraPoket on your device for quick access — no browser bar, works offline.
+              Install KiraPoket on your device for quick access — no browser
+              bar, works offline.
             </p>
-            <Button className="w-full gap-2" onClick={handleInstall} disabled={installing}>
+            <Button
+              className="w-full gap-2"
+              onClick={handleInstall}
+              disabled={installing}
+            >
               <DownloadIcon className="size-4" />
               {installing ? "Installing…" : "Add to Home Screen"}
             </Button>
@@ -72,20 +79,37 @@ export function InstallAppCard() {
         ) : isIos ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Install KiraPoket on your iPhone for quick access — no browser bar, works offline.
+              Install KiraPoket on your iPhone for quick access — no browser
+              bar, works offline.
             </p>
             <ol className="space-y-2 text-sm">
               <li className="flex items-center gap-3">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">1</span>
-                <span>Tap the <ShareIcon className="inline size-3.5 align-text-bottom" /> <strong>Share</strong> button in Safari&apos;s toolbar</span>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                  1
+                </span>
+                <span>
+                  Tap the{" "}
+                  <ShareIcon className="inline size-3.5 align-text-bottom" />{" "}
+                  <strong>Share</strong> button in Safari&apos;s toolbar
+                </span>
               </li>
               <li className="flex items-center gap-3">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">2</span>
-                <span>Scroll and tap <PlusSquareIcon className="inline size-3.5 align-text-bottom" /> <strong>&ldquo;Add to Home Screen&rdquo;</strong></span>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                  2
+                </span>
+                <span>
+                  Scroll and tap{" "}
+                  <PlusSquareIcon className="inline size-3.5 align-text-bottom" />{" "}
+                  <strong>&ldquo;Add to Home Screen&rdquo;</strong>
+                </span>
               </li>
               <li className="flex items-center gap-3">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">3</span>
-                <span>Tap <strong>&ldquo;Add&rdquo;</strong> to confirm</span>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                  3
+                </span>
+                <span>
+                  Tap <strong>&ldquo;Add&rdquo;</strong> to confirm
+                </span>
               </li>
             </ol>
           </>
