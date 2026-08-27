@@ -32,9 +32,11 @@ export default function AssistantPage() {
   return <AssistantChat />;
 }
 
+// Centred rather than top-aligned: a short standalone message pinned to the
+// top of a tall viewport leaves a large void beneath it.
 function ComingSoon() {
   return (
-    <div className="max-w-content mx-auto px-4 py-16 flex flex-col items-center text-center">
+    <div className="max-w-content mx-auto flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
       <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
         <SparklesIcon className="size-8 text-primary" />
       </div>
