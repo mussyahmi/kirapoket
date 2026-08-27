@@ -329,6 +329,12 @@
      rounded-3xl   reserved for the floating bottom nav
    Bars: every proportion bar is h-2.
    Touch: interactive controls get a 44px floor via pointer-coarse:.
+   Opacity: 5 10 20 30 50 70 90. The codebase still contains older values
+     (8/12/15/25/35/40/60/75/80) that sit within 25% of each other, which is
+     the one system from the book's list that was never retrofitted — the
+     sweep is ~240 near-invisible edits with real regression risk on the
+     hand-tuned glass surfaces, so it is a forward convention rather than a
+     migration. Use the scale above for anything new.
    ────────────────────────────────────────────────────────────────────────── */
 
 /* #29 — respect a reduced-motion preference globally. Everything decorative
