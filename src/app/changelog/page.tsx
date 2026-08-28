@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "27 August 2026";
+const LAST_UPDATED = "28 August 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -43,6 +43,10 @@ const releases: Release[] = [
       {
         type: "feat",
         text: "A visual refresh across every screen — consistent sizing, spacing and colour, a warmer palette, and a dark mode that's been checked properly for readability",
+      },
+      {
+        type: "feat",
+        text: "Pick a whole salary cycle on the Transactions page in one tap — this cycle, last cycle, the ones before it, or all time — instead of setting two dates by hand",
       },
       {
         type: "fix",

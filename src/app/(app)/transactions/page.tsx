@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { format, parseISO, isToday, isYesterday } from "date-fns";
+import { format, parseISO, isToday, isYesterday, subDays } from "date-fns";
 import {
   PlusIcon,
   ArrowUpRightIcon,
@@ -126,6 +126,33 @@ function TransactionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
 
+  // The last few salary cycles, so picking "last cycle" is one tap instead of
+  // two date pickers. Walking backwards from the day before each cycle's start
+  // keeps manual cycleStarts overrides applied to every cycle, not just this one.
+  const CYCLE_CHOICES = 6;
+  const cyclePresets = useMemo(() => {
+    const salaryDay = userProfile?.salaryDay ?? 25;
+    const opts = { cycleStarts: userProfile?.cycleStarts };
+    const out: { key: string; label: string; from: string; to: string }[] = [];
+    let ref = new Date();
+    for (let i = 0; i < CYCLE_CHOICES; i++) {
+      const { start, end } = getSalaryCycleRange(salaryDay, ref, opts);
+      out.push({
+        key: `cycle-${i}`,
+        label:
+          i === 0
+            ? "This cycle"
+            : i === 1
+              ? "Last cycle"
+              : `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`,
+        from: format(start, "yyyy-MM-dd"),
+        to: format(end, "yyyy-MM-dd"),
+      });
+      ref = subDays(start, 1);
+    }
+    return out;
+  }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
+
   // Default the date range to the current salary cycle once the profile loads,
   // unless filters came from the URL or were restored after an edit.
   const didDefaultDates = useRef(false);
@@ -175,6 +202,39 @@ function TransactionsPage() {
     } catch {
       /* ignore */
     }
+  };
+
+  // The period select is derived from the dates rather than held in its own
+  // state, so editing From/To by hand correctly falls back to "Custom range".
+  const periodValue = useMemo(() => {
+    if (!dateInitDone) return "cycle-0";
+    if (!dateFrom && !dateTo) return "all";
+    const hit = cyclePresets.find(
+      (p) => p.from === dateFrom && p.to === dateTo,
+    );
+    return hit ? hit.key : "custom";
+  }, [dateInitDone, dateFrom, dateTo, cyclePresets]);
+
+  const periodLabel =
+    periodValue === "all"
+      ? "All time"
+      : periodValue === "custom"
+        ? "Custom range"
+        : (cyclePresets.find((p) => p.key === periodValue)?.label ?? "Period");
+
+  const applyPeriod = (v: string | null) => {
+    const val = v ?? "cycle-0";
+    if (val === "custom") return; // already showing the user's own dates
+    if (val === "all") {
+      setDateFrom("");
+      setDateTo("");
+    } else {
+      const p = cyclePresets.find((x) => x.key === val);
+      if (!p) return;
+      setDateFrom(p.from);
+      setDateTo(p.to);
+    }
+    resetVisible();
   };
 
   const categoryMap = useMemo(
@@ -446,6 +506,28 @@ function TransactionsPage() {
               </Select>
             );
           })()}
+
+          {/* Period presets — the common cases (this cycle, last cycle) are one
+              tap; From/To below stay for anything else. */}
+          <Select value={periodValue} onValueChange={applyPeriod}>
+            <SelectTrigger className="w-full col-span-2">
+              <SelectValue>{periodLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {cyclePresets.map((p) => (
+                <SelectItem key={p.key} value={p.key}>
+                  {p.label}
+                </SelectItem>
+              ))}
+              <SelectSeparator />
+              <SelectItem value="all">All time</SelectItem>
+              {/* Only reachable by editing the dates by hand, but the trigger
+                  needs a matching item to render against. */}
+              {periodValue === "custom" && (
+                <SelectItem value="custom">Custom range</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
 
           <label className="flex h-8 pointer-coarse:h-11 items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
             <span className="text-xs text-muted-foreground shrink-0">From</span>
