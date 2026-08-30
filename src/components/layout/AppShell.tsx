@@ -304,30 +304,26 @@ export function AppShell({
           {/* Active is carried by weight as well as colour — the lens tint is
               only primary/20 over glass, so hue alone would leave the two
               states near-identical in sunlight or for a colourblind user. */}
-          <Icon
-            strokeWidth={active ? 2.5 : 2}
-            className={cn(
-              "transition-all duration-300",
-              iconSize,
-              active ? "text-primary" : "text-muted-foreground",
-            )}
-          />
-          {href === "/debts" && unsettledCount > 0 && (
-            // Anchored to the icon box rather than the pill, which shrinks on
-            // scroll and used to drag the dot away from its icon. The old
-            // ring-white halo assumed an opaque surface — this bar is glass, so
-            // a darker rim of the dot's own hue separates it from the icon
-            // without painting a colour the background does not have.
-            <span
-              aria-hidden
+          <span className="relative flex items-center justify-center">
+            <Icon
+              strokeWidth={active ? 2.5 : 2}
               className={cn(
-                "absolute rounded-full bg-danger ring-1 ring-danger/40 transition-all duration-300",
-                navVisible
-                  ? "size-2.5 top-1 right-1.5"
-                  : "size-2 top-0.5 right-0.5",
+                "transition-all duration-300",
+                iconSize,
+                active ? "text-primary" : "text-muted-foreground",
               )}
             />
-          )}
+            {href === "/debts" && unsettledCount > 0 && (
+              // Hung off the icon rather than the pill corner. On the pill it
+              // landed on the lens's edge and read as a blob attached to the
+              // lozenge; on the icon it reads as a marker on Debts, and it
+              // tracks the icon automatically when the bar shrinks.
+              <span
+                aria-hidden
+                className="absolute -top-0.5 -right-1 size-2 rounded-full bg-danger ring-1 ring-danger/40"
+              />
+            )}
+          </span>
         </span>
       </Link>
     );
@@ -560,8 +556,11 @@ export function AppShell({
           "border border-black/[0.06] dark:border-white/[0.06]",
           // Light lens-blur + strong saturation so content colour bleeds through vividly
           "backdrop-blur-sm backdrop-saturate-[2.2]",
-          // e4 drop + lit top edge, plus two corner glints unique to this surface
-          "shadow-[var(--shadow-e4),var(--shadow-lit),inset_-8px_-6px_5px_-9px_rgb(255_255_255/0.5),inset_8px_-6px_5px_-9px_rgb(255_255_255/0.5)]",
+          // e4 drop + lit top edge. The two bottom-corner glints that used to
+          // sit here were hardcoded white at 0.5 with no dark-mode variant, so
+          // they blew out into smudges on a dark background — and being at the
+          // bottom they contradicted the light-from-above the lit edge sets up.
+          "shadow-[var(--shadow-e4),var(--shadow-lit)]",
         )}
       >
         {/* Top-down gloss — specular sheen across the glass surface */}

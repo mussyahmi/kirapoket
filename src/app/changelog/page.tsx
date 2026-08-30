@@ -70,7 +70,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "The bottom bar switches tabs instantly instead of pausing first, responds the moment you touch it, and no longer drifts about while you scroll",
+        text: "The bottom bar switches tabs instantly instead of pausing first, responds the moment you touch it, no longer drifts about while you scroll, and looks cleaner in dark mode",
       },
     ],
   },
