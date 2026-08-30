@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "28 August 2026";
+const LAST_UPDATED = "30 August 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -50,7 +50,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Much easier to use on a phone — every button, field and dropdown now meets the recommended touch size, and pinch-to-zoom works again",
+        text: "Much easier to use on a phone — every button, field and dropdown now meets the recommended touch size, tapping a field no longer zooms the page in on iPhone, and pinch-to-zoom still works when you want it",
       },
       {
         type: "fix",
@@ -63,6 +63,14 @@ const releases: Release[] = [
       {
         type: "fix",
         text: "The monthly PDF report matches the app — a clearer summary at the top, warmer colours and more legible type",
+      },
+      {
+        type: "fix",
+        text: "No more getting stuck on a loading screen — if your data can't be reached, KiraPoket now tells you and offers a retry instead of spinning, and it refreshes itself when you come back to the app",
+      },
+      {
+        type: "fix",
+        text: "The bottom bar switches tabs instantly instead of pausing first, responds the moment you touch it, and no longer drifts about while you scroll",
       },
     ],
   },

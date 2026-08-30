@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   HomeIcon,
@@ -61,10 +61,6 @@ const menuItems = [
 // Desktop sidebar — all pages
 const allNavItems = [...bottomNavItems, ...menuItems];
 
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
 // Light haptic tap on supported devices (Android/Chrome; a no-op on iOS Safari)
 function haptic(ms = 8) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -80,7 +76,6 @@ export function AppShell({
   banner?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     userProfile,
     accounts,
@@ -109,11 +104,15 @@ export function AppShell({
   const [lensReady, setLensReady] = useState(false);
   // Transient"liquid" squash applied while the lens is in transit
   const [stretch, setStretch] = useState({ active: false, toRight: true });
+  // Whether the lens should animate itself. Only a real tab change earns the
+  // springy slide; a scroll reflow must not, or the lens visibly wobbles as it
+  // chases the bar's own 350ms resize.
+  const [lensAnimating, setLensAnimating] = useState(false);
+  // The lens slide and squash are decorative, so they are dropped entirely when
+  // the user asks for reduced motion — not just the deferred navigation.
+  const [reducedMotion, setReducedMotion] = useState(false);
   const prevIdxRef = useRef<number | null>(null);
   const stretchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Tab the lens is sliding toward; navigation is deferred until the slide ends
-  const [pendingIdx, setPendingIdx] = useState<number | null>(null);
-  const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Setup-gated tabs unlock once setup is done — but never re-lock once transactions exist
   // Logging only needs an account now — salary day is optional (defaults to a
@@ -129,7 +128,15 @@ export function AppShell({
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentY = window.scrollY;
+      // iOS rubber-band overscroll reports positions outside the document —
+      // negative at the top, past the end at the bottom — and bouncing back
+      // flips the delta sign repeatedly. Unclamped, that toggles the bar over
+      // and over at both ends of a long list.
+      const maxY = Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const currentY = Math.min(Math.max(window.scrollY, 0), maxY);
       const delta = currentY - lastScrollY.current;
       if (Math.abs(delta) < 4) return;
       setNavVisible(delta < 0 || currentY < 50);
@@ -137,6 +144,15 @@ export function AppShell({
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   // Close menu on outside click
@@ -162,8 +178,7 @@ export function AppShell({
       const activeIdx = bottomNavItems.findIndex(
         (it) => pathname === it.href || pathname.startsWith(it.href + "/"),
       );
-      // While a tap is in flight, slide the lens to the tapped tab before the URL changes
-      const idx = pendingIdx ?? activeIdx;
+      const idx = activeIdx;
       const pill = pillRefs.current[idx];
       if (!nav || !pill) {
         setLens((l) => ({ ...l, show: false }));
@@ -175,7 +190,12 @@ export function AppShell({
       // Squash toward the direction of travel, but only on a real tab change
       // (not on first paint, resize, or the scroll shrink/grow reflow)
       const prevIdx = prevIdxRef.current;
-      if (prevIdx != null && prevIdx >= 0 && prevIdx !== idx) {
+      const tabChanged = prevIdx != null && prevIdx >= 0 && prevIdx !== idx;
+      // The bar resizes continuously while scrolling, so this remeasures every
+      // frame — with no transition the lens stays glued to its pill instead of
+      // easing toward a target that has already moved again.
+      setLensAnimating(tabChanged && !reducedMotion);
+      if (tabChanged && !reducedMotion) {
         setStretch({ active: true, toRight: idx > prevIdx });
         if (stretchTimer.current) clearTimeout(stretchTimer.current);
         stretchTimer.current = setTimeout(
@@ -201,15 +221,7 @@ export function AppShell({
       ro.disconnect();
       if (stretchTimer.current) clearTimeout(stretchTimer.current);
     };
-  }, [pathname, pendingIdx, setupGated, unsettledCount]);
-
-  // Once the URL catches up to the tapped tab, clear the pending target
-  useEffect(() => {
-    setPendingIdx(null);
-    return () => {
-      if (navTimer.current) clearTimeout(navTimer.current);
-    };
-  }, [pathname]);
+  }, [pathname, setupGated, unsettledCount, reducedMotion]);
 
   // Central quick-add button: shown unless read-only, and optimistically during
   // load so it doesn't flash out on refresh before profile/accounts arrive
@@ -224,7 +236,10 @@ export function AppShell({
     const disabled = requiresSetup && setupGated;
     const active = isActive(href);
     const pillCls = cn(
-      "relative z-10 flex items-center justify-center rounded-full transition-all duration-300",
+      // active:scale-95 matches the centre Add button. It is the only tap
+      // acknowledgement on iOS, where navigator.vibrate does not exist, so the
+      // haptic above is silently a no-op.
+      "relative z-10 flex items-center justify-center rounded-full transition-all duration-300 active:scale-95",
       navVisible ? "w-12 h-9" : "w-9 h-7",
     );
     const iconSize = navVisible ? "size-6" : "size-5";
@@ -264,17 +279,19 @@ export function AppShell({
       <Link
         key={href}
         href={href}
-        aria-label={label}
-        onClick={(e) => {
-          if (active || pendingIdx !== null) return;
-          // Let the lens slide to this tab first; navigate once it lands
+        // The tab is icon-only and the lens is aria-hidden, so without this the
+        // active tab is conveyed by nothing but colour and stroke weight.
+        aria-current={active ? "page" : undefined}
+        aria-label={
+          href === "/debts" && unsettledCount > 0
+            ? `${label}, ${unsettledCount} unsettled`
+            : label
+        }
+        onClick={() => {
+          if (active) return;
+          // Navigate straight away — the lens slides to the new tab off
+          // `pathname` while the page changes, so there is nothing to wait for.
           haptic();
-          // No lens to wait for when motion is reduced — go straight there
-          if (prefersReducedMotion()) return;
-          e.preventDefault();
-          setPendingIdx(i);
-          if (navTimer.current) clearTimeout(navTimer.current);
-          navTimer.current = setTimeout(() => router.push(href), 420);
         }}
         className="flex items-center justify-center flex-1"
       >
@@ -284,7 +301,11 @@ export function AppShell({
           }}
           className={pillCls}
         >
+          {/* Active is carried by weight as well as colour — the lens tint is
+              only primary/20 over glass, so hue alone would leave the two
+              states near-identical in sunlight or for a colourblind user. */}
           <Icon
+            strokeWidth={active ? 2.5 : 2}
             className={cn(
               "transition-all duration-300",
               iconSize,
@@ -292,7 +313,20 @@ export function AppShell({
             )}
           />
           {href === "/debts" && unsettledCount > 0 && (
-            <span className="absolute top-0.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-white dark:ring-background" />
+            // Anchored to the icon box rather than the pill, which shrinks on
+            // scroll and used to drag the dot away from its icon. The old
+            // ring-white halo assumed an opaque surface — this bar is glass, so
+            // a darker rim of the dot's own hue separates it from the icon
+            // without painting a colour the background does not have.
+            <span
+              aria-hidden
+              className={cn(
+                "absolute rounded-full bg-danger ring-1 ring-danger/40 transition-all duration-300",
+                navVisible
+                  ? "size-2.5 top-1 right-1.5"
+                  : "size-2 top-0.5 right-0.5",
+              )}
+            />
           )}
         </span>
       </Link>
@@ -503,6 +537,7 @@ export function AppShell({
       {/* ── Mobile Bottom Nav — Liquid Glass; shrinks & drops labels on scroll ── */}
       <nav
         ref={navRef}
+        aria-label="Main"
         style={{
           // Lift the bottom by half the height drop so the bar shrinks toward its centre
           bottom: navVisible
@@ -545,13 +580,16 @@ export function AppShell({
               height: lens.h,
               transformOrigin: stretch.toRight ? "left center" : "right center",
               transform: `scaleX(${stretch.active ? 1.28 : 1})`,
-              transition: lensReady
-                ? "left 450ms cubic-bezier(0.34,1.4,0.5,1), top 450ms cubic-bezier(0.34,1.4,0.5,1), width 450ms cubic-bezier(0.34,1.4,0.5,1), height 450ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.5,0,0.2,1)"
-                : undefined,
+              transition:
+                lensReady && lensAnimating
+                  ? "left 450ms cubic-bezier(0.34,1.4,0.5,1), top 450ms cubic-bezier(0.34,1.4,0.5,1), width 450ms cubic-bezier(0.34,1.4,0.5,1), height 450ms cubic-bezier(0.34,1.4,0.5,1), transform 300ms cubic-bezier(0.5,0,0.2,1)"
+                  : undefined,
             }}
             className={cn(
               "pointer-events-none absolute z-0 rounded-full",
               "bg-primary/20 dark:bg-primary/25",
+              // A defined edge so the lens reads as a shape, not just a tint
+              "ring-1 ring-primary/30 dark:ring-primary/25",
             )}
           />
         )}

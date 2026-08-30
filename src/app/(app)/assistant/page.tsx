@@ -258,7 +258,7 @@ function AssistantChat() {
             }}
             placeholder="Ask about your money..."
             rows={1}
-            className="flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none max-h-32"
+            className="flex-1 resize-none bg-transparent px-2 py-2 text-sm pointer-coarse:text-base outline-none max-h-32"
           />
           <Button
             type="submit"

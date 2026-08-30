@@ -127,8 +127,13 @@ function TransactionsPage() {
   }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
 
   // The last few salary cycles, so picking "last cycle" is one tap instead of
-  // two date pickers. Walking backwards from the day before each cycle's start
-  // keeps manual cycleStarts overrides applied to every cycle, not just this one.
+  // two date pickers.
+  //
+  // Stepping back one day from a cycle's start is not enough to leave that
+  // cycle: a manual cycleStarts override can push the start up to a week PAST
+  // the auto salary-day boundary, so start-1 still resolves to the same cycle
+  // and the walk stalls, repeating one range forever. Keep stepping back until
+  // the range actually changes.
   const CYCLE_CHOICES = 6;
   const cyclePresets = useMemo(() => {
     const salaryDay = userProfile?.salaryDay ?? 25;
@@ -137,6 +142,7 @@ function TransactionsPage() {
     let ref = new Date();
     for (let i = 0; i < CYCLE_CHOICES; i++) {
       const { start, end } = getSalaryCycleRange(salaryDay, ref, opts);
+      const from = format(start, "yyyy-MM-dd");
       out.push({
         key: `cycle-${i}`,
         label:
@@ -145,10 +151,23 @@ function TransactionsPage() {
             : i === 1
               ? "Last cycle"
               : `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`,
-        from: format(start, "yyyy-MM-dd"),
+        from,
         to: format(end, "yyyy-MM-dd"),
       });
-      ref = subDays(start, 1);
+      // No cycle is longer than ~5 weeks, so 45 days is a safe upper bound.
+      let prev = subDays(start, 1);
+      let guard = 0;
+      while (
+        guard < 45 &&
+        format(getSalaryCycleRange(salaryDay, prev, opts).start, "yyyy-MM-dd") ===
+          from
+      ) {
+        prev = subDays(prev, 1);
+        guard++;
+      }
+      // Couldn't reach an earlier cycle — stop rather than list a duplicate.
+      if (guard >= 45) break;
+      ref = prev;
     }
     return out;
   }, [userProfile?.salaryDay, userProfile?.cycleStarts]);
@@ -538,7 +557,7 @@ function TransactionsPage() {
                 setDateFrom(e.target.value);
                 resetVisible();
               }}
-              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="text-sm pointer-coarse:text-base bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </label>
           <label className="flex h-8 pointer-coarse:h-11 items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
@@ -550,7 +569,7 @@ function TransactionsPage() {
                 setDateTo(e.target.value);
                 resetVisible();
               }}
-              className="text-sm bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="text-sm pointer-coarse:text-base bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </label>
         </div>

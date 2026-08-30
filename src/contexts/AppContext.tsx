@@ -84,6 +84,7 @@ interface AppContextValue {
     categories: boolean;
     transactions: boolean;
     debts: boolean;
+    profile: boolean;
   };
   isImpersonating: boolean;
   impersonate: (uid: string) => void;
@@ -159,6 +160,33 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
+// Firestore does not fail fast: with a dead connection getDocs retries
+// indefinitely rather than rejecting, so a stalled read never reached the catch
+// blocks below — loading stayed true forever and the user sat on skeletons with
+// no error and no retry. iOS makes this routine, because Safari kills the
+// connection of a suspended PWA. A deadline turns the hang into a normal
+// failure, which the existing LoadError + retry UI already handles.
+const READ_TIMEOUT_MS = 12_000;
+
+function withDeadline<T>(work: Promise<T>, what: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`Timed out loading ${what}`)),
+      READ_TIMEOUT_MS,
+    );
+    work.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -178,6 +206,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     categories: false,
     transactions: false,
     debts: false,
+    profile: false,
   });
   const [partnerDeclinedAlert, setPartnerDeclinedAlert] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -346,7 +375,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     setLoadingProfile(true);
     try {
-      const profile = await getUserProfile(uid);
+      const profile = await withDeadline(getUserProfile(uid), "your profile");
       if (profile) {
         setUserProfile(profile);
         if (!impersonatedUid && !viewingPartnerUid) setOwnProfile(profile);
@@ -412,6 +441,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const seeded = await getCategories(uid);
         setCategories(seeded);
       }
+      setLoadError((e) => ({ ...e, profile: false }));
+    } catch (err) {
+      console.error("Failed to load profile", err);
+      setLoadError((e) => ({ ...e, profile: true }));
     } finally {
       setLoadingProfile(false);
     }
@@ -429,7 +462,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     setLoadingAccounts(true);
     try {
-      const data = await getAccounts(uid);
+      const data = await withDeadline(getAccounts(uid), "accounts");
       setAccounts(sortAccounts(data));
       setLoadError((e) => ({ ...e, accounts: false }));
     } catch (err) {
@@ -444,7 +477,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     setLoadingCategories(true);
     try {
-      const data = await getCategories(uid);
+      const data = await withDeadline(getCategories(uid), "categories");
       setCategories(data);
       setLoadError((e) => ({ ...e, categories: false }));
     } catch (err) {
@@ -459,7 +492,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     setLoadingTransactions(true);
     try {
-      const data = await getTransactions(uid);
+      const data = await withDeadline(getTransactions(uid), "transactions");
       setTransactions(sortTransactions(data));
       setLoadError((e) => ({ ...e, transactions: false }));
     } catch (err) {
@@ -474,7 +507,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!uid) return;
     setLoadingDebts(true);
     try {
-      const data = await getDebts(uid);
+      const data = await withDeadline(getDebts(uid), "debts");
       setDebts(data);
       setLoadError((e) => ({ ...e, debts: false }));
     } catch (err) {
@@ -502,6 +535,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     refreshTransactions,
     refreshDebts,
   ]);
+
+  // iOS suspends a backgrounded PWA and drops the Firestore connection without
+  // telling the client, so the first read after returning would hang until the
+  // deadline. Refetching on resume gets ahead of that — and recovers the case
+  // where data changed on another device while this one was asleep.
+  const hiddenSince = useRef<number | null>(null);
+  useEffect(() => {
+    if (!uid) return;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenSince.current = Date.now();
+        return;
+      }
+      // Every refresh is five Firestore reads, so a two-second app switch must
+      // not trigger one. Only a background long enough for iOS to have actually
+      // suspended the page is worth refetching for.
+      const away = hiddenSince.current
+        ? Date.now() - hiddenSince.current
+        : Infinity;
+      hiddenSince.current = null;
+      if (away > 30_000) refreshAll();
+    };
+    // Reconnecting is always worth a refetch — that is the case where the
+    // in-flight reads were the ones that stalled.
+    const onOnline = () => refreshAll();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [uid, refreshAll]);
 
   useEffect(() => {
     if (uid) {

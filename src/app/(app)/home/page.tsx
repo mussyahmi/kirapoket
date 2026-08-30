@@ -638,7 +638,7 @@ function DashboardPage() {
                 type="date"
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
-                className="w-32 text-sm font-medium text-foreground bg-transparent outline-none border-b border-primary/40 focus:border-primary transition-colors [color-scheme:light] dark:[color-scheme:dark]"
+                className="w-32 text-sm pointer-coarse:text-base font-medium text-foreground bg-transparent outline-none border-b border-primary/40 focus:border-primary transition-colors [color-scheme:light] dark:[color-scheme:dark]"
               />
               <div className="flex-1" />
               <button

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import PullToRefresh from "@/components/common/PullToRefresh";
 import { isInAppBrowser } from "@/lib/utils";
-import { L1_COLOR, ACCOUNT_COLOR, tint } from "@/lib/palette";
+import { L1_COLOR, tint } from "@/lib/palette";
 import { CycleSummaryCard } from "@/components/dashboard/CycleSummaryCard";
 import {
   Wallet,
@@ -71,10 +71,13 @@ const MOCK_PIE = [
 ];
 const MOCK_PIE_TOTAL = MOCK_PIE.reduce((s, d) => s + d.value, 0);
 
+// No colour here: the real Accounts card is a plain balance list. The dot
+// encoded account *type*, which told the user nothing when their accounts were
+// mostly one type — see the note on the home card.
 const MOCK_ACCOUNTS = [
-  { name: "Maybank", balance: "RM 2,840.00", color: ACCOUNT_COLOR.bank },
-  { name: "Touch 'n Go", balance: "RM 150.00", color: ACCOUNT_COLOR.ewallet },
-  { name: "Tabung ASB", balance: "RM 4,200.00", color: ACCOUNT_COLOR.savings },
+  { name: "Maybank", balance: "RM 2,840.00" },
+  { name: "Touch 'n Go", balance: "RM 150.00" },
+  { name: "Tabung ASB", balance: "RM 4,200.00" },
 ];
 
 type MockDelta = { direction: "up" | "down"; amount: string; color: string };
@@ -222,21 +225,26 @@ function MockCard({
   children,
   title,
   subtitle,
+  action,
 }: {
   children: React.ReactNode;
   title?: string;
   subtitle?: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10">
       {title && (
-        <div className="px-4 pb-3">
-          <p className="font-heading text-base leading-snug font-medium">
-            {title}
-          </p>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
-          )}
+        <div className="flex items-start justify-between gap-2 px-4 pb-3">
+          <div className="min-w-0">
+            <p className="font-heading text-base leading-snug font-medium">
+              {title}
+            </p>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
+          {action}
         </div>
       )}
       <div className="px-4">{children}</div>
@@ -293,22 +301,19 @@ function MockDashboard() {
           />
 
           {/* accounts */}
-          <MockCard title="Accounts">
+          <MockCard
+            title="Accounts"
+            action={<Wallet className="size-4 shrink-0 text-muted-foreground" />}
+          >
             <div className="space-y-3">
-              {MOCK_ACCOUNTS.map(({ name, balance, color }) => (
+              {MOCK_ACCOUNTS.map(({ name, balance }) => (
                 <div
                   key={name}
                   className="flex items-center justify-between gap-2"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="truncate text-sm text-foreground">
-                      {name}
-                    </span>
-                  </div>
+                  <span className="min-w-0 truncate text-sm text-foreground">
+                    {name}
+                  </span>
                   <span className="shrink-0 text-sm font-medium tabular-nums">
                     {balance}
                   </span>
