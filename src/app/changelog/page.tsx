@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "30 August 2026";
+const LAST_UPDATED = "1 September 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -70,7 +70,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "The bottom bar switches tabs instantly instead of pausing first, responds the moment you touch it, no longer drifts about while you scroll, and looks cleaner in dark mode",
+        text: "The bars top and bottom behave — the bottom bar switches tabs instantly, responds the moment you touch it and no longer drifts about while you scroll, and on iPhone the status bar at the top now follows your light or dark theme instead of staying black",
       },
     ],
   },
