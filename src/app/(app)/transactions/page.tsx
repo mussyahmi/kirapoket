@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
+import { flushSync } from "react-dom";
 import { useSearchParams } from "next/navigation";
 
 import { format, parseISO, isToday, isYesterday, subDays } from "date-fns";
@@ -65,7 +66,7 @@ function TransactionsPage() {
     refreshTransactions,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
-  const { openAdd, openEdit } = useAddTransaction();
+  const { openAdd, openEdit, subscribeAdded } = useAddTransaction();
 
   const searchParams = useSearchParams();
 
@@ -313,6 +314,54 @@ function TransactionsPage() {
     }
     return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
   }, [filtered]);
+
+  // After a quick-add, bring the new row into view. The sheet closes over the
+  // list without navigating, so the page keeps whatever scroll position it had
+  // — the new row usually lands above the fold (or, when backdated, somewhere
+  // mid-list or past "Load more"). Scroll to the row itself rather than the top.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const highlightTimer = useRef<number | undefined>(undefined);
+  const onAddedRef = useRef<(id: string) => void>(() => {});
+  useEffect(() => {
+    onAddedRef.current = (id) => {
+      const groupIndex = grouped.findIndex(([, txs]) =>
+        txs.some((t) => t.id === id),
+      );
+      if (groupIndex === -1) {
+        // Saved, but outside the current filters (e.g. a past cycle is picked)
+        toast.info("The new transaction is hidden by your current filters.");
+        return;
+      }
+      if (groupIndex >= visibleGroups) {
+        // Render its day group before looking the row up
+        flushSync(() =>
+          setVisibleGroups(
+            Math.ceil((groupIndex + 1) / GROUPS_PAGE) * GROUPS_PAGE,
+          ),
+        );
+      }
+      const row = document.querySelector(`[data-tx-id="${CSS.escape(id)}"]`);
+      if (!row) return;
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      row.scrollIntoView({
+        block: "center",
+        behavior: reduceMotion ? "auto" : "smooth",
+      });
+      setHighlightId(id);
+      window.clearTimeout(highlightTimer.current);
+      highlightTimer.current = window.setTimeout(
+        () => setHighlightId(null),
+        1500,
+      );
+    };
+  });
+  useEffect(
+    () => subscribeAdded((id) => onAddedRef.current(id)),
+    [subscribeAdded],
+  );
+  useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -680,7 +729,11 @@ function TransactionsPage() {
                     return (
                       <div
                         key={tx.id}
-                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                        data-tx-id={tx.id}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors duration-500",
+                          highlightId === tx.id && "bg-primary/10",
+                        )}
                         onClick={() => setSelectedTx(tx)}
                       >
                         <div

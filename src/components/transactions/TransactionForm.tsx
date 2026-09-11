@@ -38,7 +38,9 @@ export function TransactionForm({
 }: {
   embedded?: boolean;
   editId?: string;
-  onDone: () => void;
+  // Receives the new transaction's id after an add (undefined after an edit),
+  // so a host can scroll the list to it.
+  onDone: (addedId?: string) => void;
   onCancel: () => void;
   // Lets a sheet host recede/lock its chrome while the confirm dialog is open
   onConfirmOpenChange?: (open: boolean) => void;
@@ -521,15 +523,16 @@ export function TransactionForm({
           txType !== "transfer" ? (selectedCategoryId ?? undefined) : undefined,
         note: note.trim() || undefined,
       };
+      let addedId: string | undefined;
       if (isEdit && editId) {
         await editTransaction(editId, payload);
         toast.success("Transaction updated.");
       } else {
-        await createTransaction(payload);
+        addedId = (await createTransaction(payload)).id;
         toast.success("Transaction added.");
       }
       setConfirmOpen(false);
-      onDone();
+      onDone(addedId);
     } catch (e) {
       toast.error(
         e instanceof Error

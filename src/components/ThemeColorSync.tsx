@@ -16,8 +16,8 @@ export function ThemeColorSync() {
     // re-samples theme-color when a meta[name=theme-color] is inserted or
     // removed, but frequently ignores an in-place content mutation — which is
     // why iOS kept the old status bar tint while the page itself repainted.
-    // Removing every match also collapses any duplicates Next may have left
-    // behind, so querySelector can never latch onto a stale one.
+    // Safe only because no theme-color meta is React-owned: ThemeColorInit
+    // creates it, and the root viewport export deliberately omits themeColor.
     document
       .querySelectorAll('meta[name="theme-color"]')
       .forEach((m) => m.remove());

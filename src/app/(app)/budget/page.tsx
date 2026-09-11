@@ -14,6 +14,7 @@ import {
   InfoIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CircleHelpIcon,
 } from "lucide-react";
 import {
   DndContext,
@@ -33,15 +34,20 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
-import { getSalaryCycleRange } from "@/lib/firestore";
-import { effectiveCatBudget } from "@/lib/budget";
+import {
+  effectiveCatBudget,
+  dailyBudgetDays,
+  countWeekdays,
+  initialWeekdays,
+} from "@/lib/budget";
+import { useCurrentCycle } from "@/hooks/useCurrentCycle";
+import { WeekdayPicker } from "@/components/budget/WeekdayPicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +64,7 @@ interface L3EditForm {
   name: string;
   budgetType: "cycle" | "daily";
   budget: string;
-  budgetSelectedDates: Date[];
+  budgetWeekdays: number[];
   note: string;
   links: string[];
 }
@@ -109,6 +115,65 @@ function SortableForecastItem({
   );
 }
 
+/**
+ * A summary line whose label can be tapped to reveal a one-sentence
+ * explanation underneath. Every figure in the summary gets one: these are the
+ * numbers a new user can't work out on their own.
+ */
+function ExplainRow({
+  label,
+  amount,
+  info,
+  open,
+  onToggle,
+  labelClassName,
+  amountClassName,
+  infoClassName,
+  className,
+}: {
+  label: string;
+  amount: React.ReactNode;
+  info: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  labelClassName?: string;
+  amountClassName?: string;
+  infoClassName?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <div className="flex justify-between gap-2 text-sm">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className={cn(
+            "flex items-center gap-1 text-left transition-colors",
+            labelClassName,
+          )}
+        >
+          {label}
+          <InfoIcon className="size-3 shrink-0" />
+        </button>
+        <span className={cn("amt tabular-nums shrink-0", amountClassName)}>
+          {amount}
+        </span>
+      </div>
+      {open && (
+        <p
+          className={cn(
+            "text-xs leading-relaxed pl-3 border-l-2",
+            infoClassName,
+          )}
+        >
+          {info}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function BudgetPage() {
   const router = useRouter();
   const {
@@ -124,7 +189,26 @@ export default function BudgetPage() {
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
 
-  const [mode, setMode] = useState<"actual" | "forecast">("actual");
+  // The last Received/Expected pick, remembered per device. null = never
+  // chosen, in which case the mode is derived below once income is known.
+  const MODE_KEY = "budget:incomeMode";
+  const [modeChoice, setModeChoice] = useState<"actual" | "forecast" | null>(
+    () => {
+      if (typeof window === "undefined") return null;
+      try {
+        const v = localStorage.getItem(MODE_KEY);
+        return v === "actual" || v === "forecast" ? v : null;
+      } catch {
+        return null;
+      }
+    },
+  );
+  const setMode = (m: "actual" | "forecast") => {
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {}
+    setModeChoice(m);
+  };
 
   // Forecast income items (local draft, saved on change)
   const savedItems: ForecastIncomeItem[] =
@@ -138,8 +222,11 @@ export default function BudgetPage() {
   const [editAmount, setEditAmount] = useState("");
 
   const [selectedL3, setSelectedL3] = useState<Category | null>(null);
-  const [unbudgetedInfoOpen, setUnbudgetedInfoOpen] = useState(false);
-  const [overBudgetInfoOpen, setOverBudgetInfoOpen] = useState(false);
+  // Which summary row's explanation is showing (one at a time)
+  const [openInfo, setOpenInfo] = useState<string | null>(null);
+  const toggleInfo = (key: string) =>
+    setOpenInfo((cur) => (cur === key ? null : key));
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const [l3EditOpen, setL3EditOpen] = useState(false);
   const [l3EditTarget, setL3EditTarget] = useState<Category | null>(null);
@@ -147,7 +234,7 @@ export default function BudgetPage() {
     name: "",
     budgetType: "cycle",
     budget: "",
-    budgetSelectedDates: [],
+    budgetWeekdays: [],
     note: "",
     links: [],
   });
@@ -170,12 +257,7 @@ export default function BudgetPage() {
       name: cat.name,
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
-      budgetSelectedDates: cat.budgetSelectedDates
-        ? cat.budgetSelectedDates.map((s) => {
-            const [y, m, d] = s.split("-").map(Number);
-            return new Date(y, m - 1, d);
-          })
-        : [],
+      budgetWeekdays: initialWeekdays(cat),
       note: cat.note ?? "",
       links: cat.links ?? [],
     });
@@ -195,17 +277,17 @@ export default function BudgetPage() {
     const budgetType = l3EditForm.budget.trim()
       ? l3EditForm.budgetType
       : undefined;
-    const budgetDays =
-      budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
-        ? l3EditForm.budgetSelectedDates.length
-        : undefined;
-    const budgetSelectedDates =
-      budgetType === "daily" && l3EditForm.budgetSelectedDates.length > 0
-        ? l3EditForm.budgetSelectedDates.map(
-            (d) =>
-              `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-          )
-        : undefined;
+    if (budgetType === "daily" && l3EditForm.budgetWeekdays.length === 0) {
+      toast.error("Pick at least one day for this budget.");
+      return;
+    }
+    const budgetWeekdays =
+      budgetType === "daily" ? [...l3EditForm.budgetWeekdays].sort() : undefined;
+    // Still written so older app versions (which only read a day count) show
+    // this cycle's total; current code recounts from budgetWeekdays.
+    const budgetDays = budgetWeekdays
+      ? countWeekdays(budgetWeekdays, cycle)
+      : undefined;
     setL3EditSaving(true);
     try {
       await editCategory(l3EditTarget.id, {
@@ -213,7 +295,9 @@ export default function BudgetPage() {
         budget,
         budgetType,
         budgetDays,
-        budgetSelectedDates,
+        budgetWeekdays,
+        // Legacy picked dates are superseded by weekdays; clear them on save
+        budgetSelectedDates: undefined,
         note: l3EditForm.note.trim() || undefined,
         links:
           l3EditForm.links.filter((l) => l.trim()).length > 0
@@ -286,15 +370,8 @@ export default function BudgetPage() {
     await saveUserProfile({ forecastIncomeItems: reordered });
   };
 
-  const salaryDay = userProfile?.salaryDay ?? 25;
-  const cycleStarts = userProfile?.cycleStarts;
-  const cycleOptions = { cycleStarts };
-
-  const { start, end } = getSalaryCycleRange(
-    salaryDay,
-    new Date(),
-    cycleOptions,
-  );
+  const cycle = useCurrentCycle();
+  const { start, end } = cycle;
   const cycleLabel = `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;
 
   const startStr = format(start, "yyyy-MM-dd");
@@ -317,11 +394,11 @@ export default function BudgetPage() {
       if (c.level === 2) {
         result[c.id] = categories
           .filter((ch) => ch.level === 3 && ch.parentId === c.id)
-          .reduce((s, ch) => s + effectiveCatBudget(ch), 0);
+          .reduce((s, ch) => s + effectiveCatBudget(ch, cycle), 0);
       }
     }
     return result;
-  }, [categories]);
+  }, [categories, cycle]);
 
   const l3SpendingMap = useMemo(() => {
     const result: Record<string, number> = {};
@@ -358,6 +435,11 @@ export default function BudgetPage() {
     [savedItems],
   );
 
+  // First visit: someone who listed expected income but hasn't been paid yet
+  // this cycle would otherwise land on RM 0 income and a page of negatives.
+  const mode =
+    modeChoice ??
+    (actualIncome === 0 && savedItems.length > 0 ? "forecast" : "actual");
   const effectiveIncome = mode === "forecast" ? forecastIncome : actualIncome;
 
   const totalSpent = useMemo(
@@ -380,23 +462,23 @@ export default function BudgetPage() {
         const cat = categoryMap[t.categoryId!];
         if (!cat) return s + t.amount;
         if (cat.level === 3)
-          return effectiveCatBudget(cat) === 0 ? s + t.amount : s;
+          return effectiveCatBudget(cat, cycle) === 0 ? s + t.amount : s;
         if (cat.level === 2)
           return (l2BudgetMap[cat.id] ?? 0) === 0 ? s + t.amount : s;
         return s;
       }, 0);
-  }, [cycleTransactions, categoryMap, l2BudgetMap]);
+  }, [cycleTransactions, categoryMap, l2BudgetMap, cycle]);
 
   const totalExceedAmount = useMemo(() => {
     return categories
       .filter((c) => c.level === 3)
       .reduce((s, c) => {
-        const budget = effectiveCatBudget(c);
+        const budget = effectiveCatBudget(c, cycle);
         if (budget <= 0) return s;
         const spent = l3SpendingMap[c.id] ?? 0;
         return spent > budget ? s + (spent - budget) : s;
       }, 0);
-  }, [categories, l3SpendingMap]);
+  }, [categories, l3SpendingMap, cycle]);
 
   const unallocated =
     effectiveIncome - totalBudgeted - unbudgetedSpending - totalExceedAmount;
@@ -466,9 +548,26 @@ export default function BudgetPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-content mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Budget</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold">Budget</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
+          {/* Only until the first budget exists — after that it's noise */}
+          {!hasBudgets && (
+            <p className="text-sm text-muted-foreground mt-2 max-w-prose">
+              Decide how much of this cycle&apos;s income goes to each
+              category, then see how your spending keeps up.
+            </p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 text-muted-foreground"
+          onClick={() => setHelpOpen(true)}
+        >
+          <CircleHelpIcon /> How it works
+        </Button>
       </div>
 
       {/* AI Assistant entry point — §2: this feature does not exist yet, so it
@@ -493,22 +592,33 @@ export default function BudgetPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Summary</CardTitle>
-              <div className="flex items-center gap-1">
-                {/* Toggle */}
-                <div className="flex rounded-lg overflow-hidden border border-border text-xs">
-                  {(["actual", "forecast"] as const).map((m) => (
+              <div className="flex items-center gap-2">
+                {/* Which income the summary is measured against */}
+                <span className="text-xs text-muted-foreground">Income</span>
+                <div
+                  role="group"
+                  aria-label="Which income to use"
+                  className="flex rounded-lg overflow-hidden border border-border text-xs"
+                >
+                  {(
+                    [
+                      ["actual", "Received"],
+                      ["forecast", "Expected"],
+                    ] as const
+                  ).map(([m, label]) => (
                     <button
                       key={m}
                       type="button"
+                      aria-pressed={mode === m}
                       onClick={() => setMode(m)}
                       className={cn(
-                        "px-3 py-2 capitalize transition-colors",
+                        "px-3 py-2 transition-colors",
                         mode === m
                           ? "bg-primary text-primary-foreground"
                           : "bg-background text-muted-foreground hover:bg-muted",
                       )}
                     >
-                      {m}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -518,19 +628,35 @@ export default function BudgetPage() {
           <CardContent className="space-y-6">
             {/* Income display */}
             {mode === "actual" ? (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Income</span>
-                <span className="font-medium tabular-nums text-success">
-                  {fmt(actualIncome)}
-                </span>
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Income received</span>
+                  <span className="font-medium tabular-nums text-success">
+                    {fmt(actualIncome)}
+                  </span>
+                </div>
+                {actualIncome === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No income logged this cycle yet. Log your salary when it
+                    comes in, or switch to Expected to plan ahead.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Expected income</span>
-                  <span className="font-medium tabular-nums text-success">
-                    {fmt(forecastIncome)}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Expected income
+                    </span>
+                    <span className="font-medium tabular-nums text-success">
+                      {fmt(forecastIncome)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Add the income you expect this cycle, so you can plan
+                    before it arrives.
+                  </p>
                 </div>
                 {/* Saved items */}
                 {savedItems.length > 0 && (
@@ -621,7 +747,7 @@ export default function BudgetPage() {
                 {/* Add new item */}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="e.g. Salary, KWSP"
+                    placeholder="e.g. Salary, side income"
                     value={newLabel}
                     onChange={(e) => setNewLabel(e.target.value)}
                     className="flex-1 h-8 pointer-coarse:h-11 text-xs"
@@ -649,87 +775,88 @@ export default function BudgetPage() {
               </div>
             )}
 
-            {/* Allocation section */}
+            {/* Plan section */}
             <div className="overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/50">
               <div className="px-3 pt-3 pb-1">
                 <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-                  Allocation
+                  Your plan
                 </span>
               </div>
               <div className="px-3 py-3 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total budgeted</span>
-                  <span className="font-medium amt tabular-nums text-muted-foreground">
-                    <span className="text-foreground/40">−</span>{" "}
-                    {fmt(totalBudgeted)}
-                  </span>
-                </div>
+                <ExplainRow
+                  label="Set aside in budgets"
+                  labelClassName="text-muted-foreground hover:text-foreground"
+                  amount={
+                    <>
+                      <span className="text-foreground/40">−</span>{" "}
+                      {fmt(totalBudgeted)}
+                    </>
+                  }
+                  amountClassName="font-medium text-muted-foreground"
+                  info="The total of every budget you've set for this cycle."
+                  infoClassName="text-muted-foreground border-border"
+                  open={openInfo === "budgeted"}
+                  onToggle={() => toggleInfo("budgeted")}
+                />
                 {unbudgetedSpending > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <button
-                        type="button"
-                        onClick={() => setUnbudgetedInfoOpen((v) => !v)}
-                        className="flex items-center gap-1 text-warning-strong hover:text-warning-strong transition-colors"
-                      >
-                        Unbudgeted spending
-                        <InfoIcon className="size-3 shrink-0" />
-                      </button>
-                      <span className="font-medium tabular-nums text-warning-strong">
+                  <ExplainRow
+                    label="Spent without a budget"
+                    labelClassName="text-warning-strong"
+                    amount={
+                      <>
                         <span className="text-warning-strong/70">−</span>{" "}
                         {fmt(unbudgetedSpending)}
-                      </span>
-                    </div>
-                    {unbudgetedInfoOpen && (
-                      <p className="text-xs text-warning-strong leading-relaxed pl-3 border-l-2 border-warning/40">
-                        Spending on categories that have no budget set.
-                      </p>
-                    )}
-                  </div>
+                      </>
+                    }
+                    amountClassName="font-medium text-warning-strong"
+                    info="Spending on items that don't have a budget yet. It still comes out of your income, so give them a budget if it happens often."
+                    infoClassName="text-warning-strong border-warning/40"
+                    open={openInfo === "unbudgeted"}
+                    onToggle={() => toggleInfo("unbudgeted")}
+                  />
                 )}
                 {totalExceedAmount > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <button
-                        type="button"
-                        onClick={() => setOverBudgetInfoOpen((v) => !v)}
-                        className="flex items-center gap-1 text-danger-strong hover:text-danger transition-colors"
-                      >
-                        Over-budget spending
-                        <InfoIcon className="size-3 shrink-0" />
-                      </button>
-                      <span className="font-medium tabular-nums text-danger">
+                  <ExplainRow
+                    label="Spent over budget"
+                    labelClassName="text-danger-strong hover:text-danger"
+                    amount={
+                      <>
                         <span className="text-danger/70">−</span>{" "}
                         {fmt(totalExceedAmount)}
-                      </span>
-                    </div>
-                    {overBudgetInfoOpen && (
-                      <p className="text-xs text-danger leading-relaxed pl-3 border-l-2 border-danger/40">
-                        Spending that exceeded category budgets.
-                      </p>
-                    )}
-                  </div>
+                      </>
+                    }
+                    amountClassName="font-medium text-danger"
+                    info="How far spending went past its budgets. It comes out of your income on top of the budgets themselves."
+                    infoClassName="text-danger border-danger/40"
+                    open={openInfo === "over"}
+                    onToggle={() => toggleInfo("over")}
+                  />
                 )}
-                <div
-                  className={cn(
-                    "flex justify-between text-sm font-semibold rounded-lg py-2 border-t border-dashed border-border/60 pt-3 mt-0.5",
+                <div className="space-y-2 border-t border-dashed border-border/60 pt-3 mt-0.5">
+                  <ExplainRow
+                    label="Left to budget"
+                    labelClassName={cn(
+                      "font-semibold",
+                      unallocated < 0 ? "text-danger" : "text-info",
+                    )}
+                    amount={fmt(unallocated)}
+                    amountClassName={cn(
+                      "font-semibold",
+                      unallocated < 0 ? "text-danger" : "text-info",
+                    )}
+                    info={`Your ${mode === "actual" ? "income received" : "expected income"}, minus everything above. It's money without a plan yet: give it a budget, or keep it as a buffer.`}
+                    infoClassName="text-muted-foreground border-border"
+                    open={openInfo === "left"}
+                    onToggle={() => toggleInfo("left")}
+                  />
+                  {/* Negative is the one state that needs saying out loud */}
+                  {unallocated < 0 && (
+                    <p className="text-xs text-danger">
+                      Your budgets and spending add up to more than your{" "}
+                      {mode === "actual" ? "income received" : "expected income"}
+                      .
+                    </p>
                   )}
-                >
-                  <span
-                    className={cn(
-                      unallocated < 0 ? "text-danger" : "text-info",
-                    )}
-                  >
-                    Unallocated
-                  </span>
-                  <span
-                    className={cn(
-                      "amt tabular-nums",
-                      unallocated < 0 ? "text-danger" : "text-info",
-                    )}
-                  >
-                    {fmt(unallocated)}
-                  </span>
                 </div>
               </div>
             </div>
@@ -738,18 +865,18 @@ export default function BudgetPage() {
             <div className="overflow-hidden rounded-xl bg-muted/30 dark:bg-muted/50">
               <div className="px-3 pt-3 pb-1">
                 <span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-                  Actuals
+                  So far this cycle
                 </span>
               </div>
               <div className="px-3 py-3 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Spent so far</span>
+                  <span className="text-muted-foreground">Spent</span>
                   <span className="font-medium amt tabular-nums text-danger">
                     {fmt(totalSpent)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold">
-                  <span>Remaining</span>
+                  <span>Left to spend</span>
                   <span
                     className={cn(
                       "amt tabular-nums",
@@ -778,7 +905,7 @@ export default function BudgetPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>By Category</CardTitle>
+              <CardTitle>Budgets by category</CardTitle>
               <Button
                 variant="ghost"
                 size="icon"
@@ -792,16 +919,30 @@ export default function BudgetPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {!hasBudgets ? (
-              <p className="text-sm text-muted-foreground">
-                No budgets set. Add budgets from the{" "}
-                <a
-                  href="/categories"
-                  className="link-underline text-foreground"
-                >
-                  Categories
-                </a>{" "}
-                page.
-              </p>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  No budgets yet. Setting one takes a minute:
+                </p>
+                <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+                  <li>
+                    Open Categories and pick an item, like Groceries under Food
+                    &amp; Drinks.
+                  </li>
+                  <li>Enter how much you plan to spend on it each cycle.</li>
+                  <li>
+                    Come back here to see how much is spent and how much is
+                    left.
+                  </li>
+                </ol>
+                {!isReadOnly && (
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => router.push("/categories")}
+                  >
+                    <TagsIcon /> Set your first budget
+                  </Button>
+                )}
+              </div>
             ) : (
               l1Categories.map((l1) => {
                 const l2s = categories
@@ -886,7 +1027,7 @@ export default function BudgetPage() {
 
                           const l2budgetedSpent = l3s.reduce(
                             (s, l3) =>
-                              effectiveCatBudget(l3) > 0
+                              effectiveCatBudget(l3, cycle) > 0
                                 ? s + (l3SpendingMap[l3.id] ?? 0)
                                 : s,
                             0,
@@ -903,7 +1044,7 @@ export default function BudgetPage() {
                             l2budget > 0 && l2budgetedSpent > l2budget;
                           const l3sVisible = l3s.filter(
                             (l3) =>
-                              effectiveCatBudget(l3) > 0 ||
+                              effectiveCatBudget(l3, cycle) > 0 ||
                               (l3SpendingMap[l3.id] ?? 0) > 0,
                           );
 
@@ -922,10 +1063,6 @@ export default function BudgetPage() {
                                 <span
                                   className={cn(
                                     "min-w-0 truncate font-medium text-left",
-                                    l2budget > 0 &&
-                                      !l2over &&
-                                      l2remaining === 0 &&
-                                      "line-through text-muted-foreground",
                                   )}
                                 >
                                   {l2.name}
@@ -961,27 +1098,27 @@ export default function BudgetPage() {
                                       }}
                                     />
                                   </div>
-                                  {(l2over || l2remaining !== 0) && (
-                                    <span
-                                      className={cn(
-                                        "text-xs tabular-nums amt shrink-0 w-24 text-right",
-                                        l2over
-                                          ? "text-danger"
-                                          : "text-muted-foreground",
-                                      )}
-                                    >
-                                      {l2over
-                                        ? `Over ${fmt(Math.abs(l2remaining))}`
+                                  <span
+                                    className={cn(
+                                      "text-xs tabular-nums amt shrink-0 min-w-24 text-right",
+                                      l2over
+                                        ? "text-danger"
+                                        : "text-muted-foreground",
+                                    )}
+                                  >
+                                    {l2over
+                                      ? `${fmt(Math.abs(l2remaining))} over`
+                                      : l2remaining === 0
+                                        ? "Used up"
                                         : `${fmt(l2remaining)} left`}
-                                    </span>
-                                  )}
+                                  </span>
                                 </div>
                               )}
                               {/* L3 rows */}
                               {l3sVisible.length > 0 && (
                                 <div className="space-y-1 pt-0.5 pl-3 border-l border-border/40">
                                   {l3sVisible.map((l3) => {
-                                    const l3budget = effectiveCatBudget(l3);
+                                    const l3budget = effectiveCatBudget(l3, cycle);
                                     const l3spent = l3SpendingMap[l3.id] ?? 0;
                                     const l3remaining = l3budget - l3spent;
                                     const l3over =
@@ -1002,10 +1139,6 @@ export default function BudgetPage() {
                                               : l3budget === 0
                                                 ? "text-warning-strong hover:text-foreground"
                                                 : "text-muted-foreground/80 hover:text-muted-foreground",
-                                            l3budget > 0 &&
-                                              !l3over &&
-                                              l3remaining === 0 &&
-                                              "line-through",
                                           )}
                                         >
                                           {l3.name}
@@ -1029,23 +1162,26 @@ export default function BudgetPage() {
                                               </span>
                                             )}
                                           </span>
-                                          {l3budget > 0 &&
-                                            (l3over || l3remaining !== 0) && (
-                                              <span
-                                                className={cn(
-                                                  "text-xs amt tabular-nums",
-                                                  l3over
-                                                    ? "text-danger"
-                                                    : "text-muted-foreground",
-                                                )}
-                                              >
-                                                (
-                                                {l3over
-                                                  ? `-${fmt(Math.abs(l3remaining))}`
-                                                  : `${fmt(l3remaining)} left`}
-                                                )
-                                              </span>
-                                            )}
+                                          {l3budget === 0 ? (
+                                            <span className="text-xs text-warning-strong">
+                                              (no budget)
+                                            </span>
+                                          ) : (
+                                            <span
+                                              className={cn(
+                                                "text-xs amt tabular-nums",
+                                                l3over
+                                                  ? "text-danger"
+                                                  : "text-muted-foreground",
+                                              )}
+                                            >
+                                              {l3over
+                                                ? `(${fmt(Math.abs(l3remaining))} over)`
+                                                : l3remaining === 0
+                                                  ? "(used up)"
+                                                  : `(${fmt(l3remaining)} left)`}
+                                            </span>
+                                          )}
                                         </div>
                                       </button>
                                     );
@@ -1069,7 +1205,7 @@ export default function BudgetPage() {
       {(() => {
         const l3 = selectedL3;
         if (!l3) return null;
-        const l3budget = effectiveCatBudget(l3);
+        const l3budget = effectiveCatBudget(l3, cycle);
         const l3spent = l3SpendingMap[l3.id] ?? 0;
         const l3over = l3budget > 0 && l3spent > l3budget;
         const l1 = categories.find((c) => {
@@ -1105,10 +1241,10 @@ export default function BudgetPage() {
                         {fmt(l3budget)}
                       </p>
                       {l3.budgetType === "daily" &&
-                        l3.budget !== undefined &&
-                        l3.budgetDays && (
+                        l3.budget !== undefined && (
                           <p className="text-xs text-muted-foreground">
-                            {fmt(l3.budget)}/day × {l3.budgetDays} days
+                            {fmt(l3.budget)}/day ×{" "}
+                            {dailyBudgetDays(l3, cycle)} days this cycle
                           </p>
                         )}
                     </div>
@@ -1199,7 +1335,7 @@ export default function BudgetPage() {
       <Dialog open={l3EditOpen} onOpenChange={setL3EditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
+            <DialogTitle>Edit {l3EditTarget?.name ?? "item"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleL3Save} className="space-y-4">
             <div className="space-y-2">
@@ -1231,10 +1367,15 @@ export default function BudgetPage() {
                           : "bg-background text-muted-foreground hover:bg-muted",
                       )}
                     >
-                      {t === "cycle" ? "Per Cycle" : "Per Day"}
+                      {t === "cycle" ? "Whole cycle" : "Per day"}
                     </button>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {l3EditForm.budgetType === "cycle"
+                    ? "One amount for the whole cycle, like RM400 for groceries."
+                    : "An amount for each day you pick, like RM15 for lunch on workdays."}
+                </p>
               </div>
               {l3EditForm.budgetType === "cycle" ? (
                 <div className="space-y-2">
@@ -1252,7 +1393,7 @@ export default function BudgetPage() {
                   />
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Amount / day (MYR)</Label>
                     <Input
@@ -1267,56 +1408,14 @@ export default function BudgetPage() {
                       }
                     />
                   </div>
-                  <div className="space-y-2 mt-4">
-                    <div className="flex items-center justify-between">
-                      <Label>Select days this cycle</Label>
-                      {l3EditForm.budgetSelectedDates.length > 0 && (
-                        <button
-                          type="button"
-                          className="text-xs text-muted-foreground link-underline hover:text-foreground"
-                          onClick={() =>
-                            setL3EditForm({
-                              ...l3EditForm,
-                              budgetSelectedDates: [],
-                            })
-                          }
-                        >
-                          Clear all
-                        </button>
-                      )}
-                    </div>
-                    <div className="rounded-xl border border-border min-h-[420px] bg-background overflow-hidden">
-                      <Calendar
-                        mode="multiple"
-                        selected={l3EditForm.budgetSelectedDates}
-                        onSelect={(dates: Date[] | undefined) =>
-                          setL3EditForm({
-                            ...l3EditForm,
-                            budgetSelectedDates: dates ?? [],
-                          })
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                  {l3EditForm.budget &&
-                    parseFloat(l3EditForm.budget) > 0 &&
-                    l3EditForm.budgetSelectedDates.length > 0 && (
-                      <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                        <span className="text-xs text-muted-foreground">
-                          {l3EditForm.budgetSelectedDates.length} days selected
-                        </span>
-                        <span className="text-sm font-semibold">
-                          RM{" "}
-                          {(
-                            parseFloat(l3EditForm.budget) *
-                            l3EditForm.budgetSelectedDates.length
-                          ).toLocaleString("ms-MY", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
-                    )}
+                  <WeekdayPicker
+                    value={l3EditForm.budgetWeekdays}
+                    onChange={(days) =>
+                      setL3EditForm({ ...l3EditForm, budgetWeekdays: days })
+                    }
+                    amount={parseFloat(l3EditForm.budget) || 0}
+                    cycle={cycle}
+                  />
                 </div>
               )}
             </div>
@@ -1392,6 +1491,82 @@ export default function BudgetPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* How it works — the questions a first-time user asks on this page */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>How budgets work</DialogTitle>
+          </DialogHeader>
+          <dl className="space-y-4 text-sm">
+            <div className="space-y-1">
+              <dt className="font-medium">What&apos;s a cycle?</dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                The stretch from one payday to the day before the next. This
+                cycle runs {cycleLabel}. Spending starts from zero each cycle
+                and your budgets apply again.
+                {!userProfile?.salaryDay && (
+                  <>
+                    {" "}
+                    You haven&apos;t set a payday yet, so the 25th is used.
+                    You can change it in{" "}
+                    <button
+                      type="button"
+                      className="link-underline text-foreground"
+                      onClick={() => {
+                        setHelpOpen(false);
+                        router.push("/settings");
+                      }}
+                    >
+                      Settings
+                    </button>
+                    .
+                  </>
+                )}
+              </dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="font-medium">Where do I set a budget?</dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                On the Categories page. Budgets go on items, the smallest
+                level, like Groceries under Food &amp; Drinks. Any item with a
+                budget or spending this cycle shows up here.
+              </dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="font-medium">Received or Expected income?</dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                Received uses the income you&apos;ve logged this cycle.
+                Expected uses a list you type in, so you can plan before your
+                salary arrives.
+              </dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="font-medium">
+                What does &ldquo;Left to budget&rdquo; mean?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                Income that doesn&apos;t have a plan yet: your income, minus
+                your budgets, minus anything spent without a budget or over
+                budget. If it goes below zero, you&apos;ve planned or spent
+                more than you have.
+              </dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="font-medium">Whole cycle or per day?</dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                Whole cycle suits spending that comes in chunks, like
+                groceries or bills. Per day suits a set daily amount, like
+                RM15 for lunch: pick the days, and the budget is that amount
+                times the days you picked.
+              </dd>
+            </div>
+          </dl>
+          <DialogFooter>
+            <Button onClick={() => setHelpOpen(false)}>Got it</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

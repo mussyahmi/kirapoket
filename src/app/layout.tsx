@@ -16,11 +16,12 @@ const nunito = Nunito({
 });
 
 export const viewport: Viewport = {
-  // The light value is only the SSR placeholder — themeColor cannot be
-  // theme-aware here (enableSystem is false, so prefers-color-scheme says
-  // nothing about the user's stored choice). ThemeColorInit below corrects it
-  // during HTML parse; ThemeColorSync keeps it correct after that.
-  themeColor: THEME_COLOR.light,
+  // No themeColor here on purpose. Next would render that meta as a React-owned
+  // node, and ThemeColorSync has to replace the tag (WebKit ignores in-place
+  // edits) — removing a node React owns crashes the next client navigation
+  // with "Cannot read properties of null (reading 'removeChild')". It also
+  // couldn't be theme-aware (enableSystem is false). ThemeColorInit below
+  // creates the tag during HTML parse; ThemeColorSync keeps it correct after.
   // Deliberately NOT locking scale — this app is read as small numbers, and
   // blocking pinch-zoom fails WCAG 1.4.4.
 };
@@ -59,11 +60,11 @@ export const metadata: Metadata = {
 
 // Runs during HTML parse, before the first paint, alongside the inline script
 // next-themes uses to set the `dark` class. Without it a dark-mode user cold-
-// launching the PWA gets a cream status bar until hydration finishes, because
-// the SSR themeColor above can only carry one value. Reads the same
+// launching the PWA gets a cream status bar until hydration finishes. It is also
+// the only source of the tag (see viewport above). Reads the same
 // localStorage key next-themes writes, so the two agree on the very first frame.
 function ThemeColorInit() {
-  const js = `try{var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',localStorage.getItem('theme')==='dark'?'${THEME_COLOR.dark}':'${THEME_COLOR.light}')}catch(e){}`;
+  const js = `(function(){var c='${THEME_COLOR.light}';try{if(localStorage.getItem('theme')==='dark')c='${THEME_COLOR.dark}'}catch(e){}var m=document.createElement('meta');m.name='theme-color';m.content=c;document.head.appendChild(m)})()`;
   return <script dangerouslySetInnerHTML={{ __html: js }} />;
 }
 

@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "1 September 2026";
+const LAST_UPDATED = "12 September 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,44 @@ const LAST_UPDATED = "1 September 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.13.x",
-    dateRange: "2026-08-27 – present",
+    version: "0.14.x",
+    dateRange: "2026-09-12 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "The Budget page is easier to understand — plain wording throughout, tap any figure in the summary to see what it means, a “How it works” guide, step-by-step help to set your first budget, and it remembers whether you're looking at income received or expected",
+      },
+      {
+        type: "feat",
+        text: "Per-day budgets now repeat by weekday — pick Mon–Fri once and the days are counted again every cycle, so RM15 lunch on workdays stays right whether a cycle has 20 workdays or 23",
+      },
+      {
+        type: "feat",
+        text: "After you add a transaction, the list scrolls to it and highlights it — even when it's backdated further down — and tells you if your filters are hiding it",
+      },
+      {
+        type: "feat",
+        text: "A new KiraPoket icon: a K on a spend meter, the same bar you see on the home screen. If you added KiraPoket to your iPhone home screen, remove it and add it again to see the new icon",
+      },
+      {
+        type: "feat",
+        text: "Find MariSolat, our prayer times app, under Settings → Other apps",
+      },
+      {
+        type: "fix",
+        text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones",
+      },
+      {
+        type: "fix",
+        text: "Fixed an error that could appear when moving between pages, and the “Add to Home Screen” card on the welcome page now lines up with the cards above it",
+      },
+    ],
+  },
+  {
+    version: "0.13.x",
+    dateRange: "2026-08-27 – 2026-09-11",
+    latest: false,
     changes: [
       {
         type: "feat",

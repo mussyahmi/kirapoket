@@ -32,7 +32,15 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { WeekdayPicker } from "@/components/budget/WeekdayPicker";
+import { useCurrentCycle } from "@/hooks/useCurrentCycle";
+import {
+  effectiveCatBudget,
+  dailyBudgetDays,
+  countWeekdays,
+  initialWeekdays,
+  type CycleRange,
+} from "@/lib/budget";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -71,7 +79,7 @@ interface CategoryFormData {
   name: string;
   budgetType: "cycle" | "daily";
   budget: string;
-  budgetSelectedDates: Date[];
+  budgetWeekdays: number[];
   note: string;
   links: string[];
   color: string;
@@ -81,7 +89,8 @@ const DEFAULT_FORM: CategoryFormData = {
   name: "",
   budgetType: "cycle",
   budget: "",
-  budgetSelectedDates: [],
+  // Per day defaults to every day; the picker's presets narrow it
+  budgetWeekdays: [0, 1, 2, 3, 4, 5, 6],
   note: "",
   links: [],
   color: "",
@@ -97,17 +106,12 @@ interface L3ItemProps {
   readOnly?: boolean;
 }
 
-function fmtItemBudget(c: Category): string | null {
+function fmtItemBudget(c: Category, cycle: CycleRange): string | null {
   if (c.budget === undefined) return null;
-  if (c.budgetType === "daily") {
-    const days = c.budgetDays ?? 30;
-    const total = (c.budget * days).toLocaleString("ms-MY", {
-      minimumFractionDigits: 2,
-    });
-    return `· RM ${total}`;
-  }
-  const amt = c.budget.toLocaleString("ms-MY", { minimumFractionDigits: 2 });
-  return `· RM ${amt}`;
+  const total = effectiveCatBudget(c, cycle).toLocaleString("ms-MY", {
+    minimumFractionDigits: 2,
+  });
+  return `· RM ${total}`;
 }
 
 function L3Item({
@@ -118,6 +122,7 @@ function L3Item({
   readOnly,
 }: L3ItemProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const cycle = useCurrentCycle();
   const {
     attributes,
     listeners,
@@ -161,9 +166,9 @@ function L3Item({
           className="flex-1 text-sm text-muted-foreground truncate flex items-center gap-2 min-w-0 text-left"
         >
           <span className="truncate">{item.name}</span>
-          {fmtItemBudget(item) && (
+          {fmtItemBudget(item, cycle) && (
             <span className="text-xs shrink-0 text-muted-foreground">
-              {fmtItemBudget(item)}
+              {fmtItemBudget(item, cycle)}
             </span>
           )}
         </button>
@@ -211,11 +216,12 @@ function L3Item({
                 </span>
                 <div className="text-right">
                   <p className="text-lg font-bold tabular-nums">
-                    {fmtItemBudget(item)?.replace("· ", "")}
+                    {fmtItemBudget(item, cycle)?.replace("· ", "")}
                   </p>
-                  {item.budgetType === "daily" && item.budgetDays && (
+                  {item.budgetType === "daily" && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      RM {item.budget?.toFixed(2)}/day × {item.budgetDays} days
+                      RM {item.budget?.toFixed(2)}/day ×{" "}
+                      {dailyBudgetDays(item, cycle)} days this cycle
                     </p>
                   )}
                 </div>
@@ -506,11 +512,9 @@ export default function CategoriesPage() {
       .filter((c) => c.level === level && c.parentId === parentId)
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-  const effectiveBudget = (c: Category): number => {
-    if (c.budget === undefined) return 0;
-    if (c.budgetType === "daily") return c.budget * (c.budgetDays ?? 30);
-    return c.budget;
-  };
+  const cycle = useCurrentCycle();
+  const effectiveBudget = (c: Category): number =>
+    effectiveCatBudget(c, cycle);
 
   const l2Subtotal = (l2Id: string): number =>
     categories
@@ -568,12 +572,7 @@ export default function CategoriesPage() {
       name: cat.name,
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
-      budgetSelectedDates: cat.budgetSelectedDates
-        ? cat.budgetSelectedDates.map((s) => {
-            const [y, m, d] = s.split("-").map(Number);
-            return new Date(y, m - 1, d);
-          })
-        : [],
+      budgetWeekdays: initialWeekdays(cat),
       note: cat.note ?? "",
       links: cat.links ?? [],
       color: cat.color ?? "",
@@ -603,17 +602,17 @@ export default function CategoriesPage() {
     const effectiveBudgetType = form.budget.trim()
       ? form.budgetType
       : undefined;
-    const effectiveBudgetDays =
-      effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
-        ? form.budgetSelectedDates.length
-        : undefined;
-    const effectiveSelectedDates =
-      effectiveBudgetType === "daily" && form.budgetSelectedDates.length > 0
-        ? form.budgetSelectedDates.map(
-            (d) =>
-              `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-          )
-        : undefined;
+    if (effectiveBudgetType === "daily" && form.budgetWeekdays.length === 0) {
+      toast.error("Pick at least one day for this budget.");
+      return;
+    }
+    const effectiveWeekdays =
+      effectiveBudgetType === "daily" ? [...form.budgetWeekdays].sort() : undefined;
+    // Still written so older app versions (which only read a day count) show
+    // this cycle's total; current code recounts from budgetWeekdays.
+    const effectiveBudgetDays = effectiveWeekdays
+      ? countWeekdays(effectiveWeekdays, cycle)
+      : undefined;
 
     setSaving(true);
     try {
@@ -625,7 +624,7 @@ export default function CategoriesPage() {
         budget,
         budgetType: effectiveBudgetType,
         budgetDays: effectiveBudgetDays,
-        budgetSelectedDates: effectiveSelectedDates,
+        budgetWeekdays: effectiveWeekdays,
         note: form.note.trim() || undefined,
         links:
           form.links.filter((l) => l.trim()).length > 0
@@ -648,7 +647,9 @@ export default function CategoriesPage() {
           budget: payload.budget,
           budgetType: payload.budgetType,
           budgetDays: payload.budgetDays,
-          budgetSelectedDates: payload.budgetSelectedDates,
+          budgetWeekdays: payload.budgetWeekdays,
+          // Legacy picked dates are superseded by weekdays; clear them on save
+          budgetSelectedDates: undefined,
           note: payload.note,
           links: payload.links,
           color: payload.color,
@@ -926,10 +927,15 @@ export default function CategoriesPage() {
                             : "bg-background text-muted-foreground hover:bg-muted",
                         )}
                       >
-                        {t === "cycle" ? "Per Cycle" : "Per Day"}
+                        {t === "cycle" ? "Whole cycle" : "Per day"}
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {form.budgetType === "cycle"
+                      ? "One amount for the whole cycle, like RM400 for groceries."
+                      : "An amount for each day you pick, like RM15 for lunch on workdays."}
+                  </p>
                 </div>
 
                 {form.budgetType === "cycle" ? (
@@ -949,7 +955,7 @@ export default function CategoriesPage() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="cat-budget-daily">
                         Amount / day (MYR)
@@ -967,53 +973,14 @@ export default function CategoriesPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-2 mt-4">
-                      <div className="flex items-center justify-between">
-                        <Label>Select days this cycle</Label>
-                        {form.budgetSelectedDates.length > 0 && (
-                          <button
-                            type="button"
-                            className="text-xs text-muted-foreground link-underline hover:text-foreground"
-                            onClick={() =>
-                              setForm({ ...form, budgetSelectedDates: [] })
-                            }
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-                      <div className="rounded-xl border border-border min-h-[420px] bg-background overflow-hidden">
-                        <Calendar
-                          mode="multiple"
-                          selected={form.budgetSelectedDates}
-                          onSelect={(dates: Date[] | undefined) =>
-                            setForm({
-                              ...form,
-                              budgetSelectedDates: dates ?? [],
-                            })
-                          }
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                    {form.budget &&
-                      parseFloat(form.budget) > 0 &&
-                      form.budgetSelectedDates.length > 0 && (
-                        <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-                          <span className="text-xs text-muted-foreground">
-                            {form.budgetSelectedDates.length} days selected
-                          </span>
-                          <span className="text-sm font-semibold">
-                            RM{" "}
-                            {(
-                              parseFloat(form.budget) *
-                              form.budgetSelectedDates.length
-                            ).toLocaleString("ms-MY", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                      )}
+                    <WeekdayPicker
+                      value={form.budgetWeekdays}
+                      onChange={(days) =>
+                        setForm({ ...form, budgetWeekdays: days })
+                      }
+                      amount={parseFloat(form.budget) || 0}
+                      cycle={cycle}
+                    />
                   </div>
                 )}
               </div>

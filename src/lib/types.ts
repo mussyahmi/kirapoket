@@ -95,7 +95,14 @@ export interface Category {
   type?: "needs" | "wants" | "savings";
   budget?: number;
   budgetType?: "cycle" | "daily";
+  // Per-day budgets. budgetWeekdays (0 = Sunday … 6 = Saturday) is the current
+  // model: the day count is worked out fresh for each cycle. budgetDays is the
+  // count for the cycle it was saved in — still written for older app versions
+  // and used as the fallback for budgets saved before weekdays existed.
+  // budgetSelectedDates is legacy (one cycle's picked dates); only read to
+  // pre-select weekdays when an old budget is edited.
   budgetDays?: number;
+  budgetWeekdays?: number[];
   budgetSelectedDates?: string[];
   note?: string;
   links?: string[];

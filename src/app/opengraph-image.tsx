@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { LogoMark } from "@/components/common/LogoMark";
 
 export const alt = "KiraPoket — Know where your money goes";
 export const size = { width: 1200, height: 630 };
@@ -28,23 +29,7 @@ export default function OpengraphImage() {
     >
       {/* Brand lockup */}
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 20,
-            background: BRAND,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: 34,
-            fontWeight: 900,
-            letterSpacing: "-1px",
-          }}
-        >
-          KP
-        </div>
+        <LogoMark size={72} tile={BRAND} ink="#ffffff" radius={28} />
         <span
           style={{
             fontSize: 40,

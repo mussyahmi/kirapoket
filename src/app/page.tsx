@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LogoMark } from "@/components/common/LogoMark";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import PullToRefresh from "@/components/common/PullToRefresh";
@@ -591,7 +592,10 @@ function InstallBanner() {
   if (!platform) return null;
 
   return (
-    <div className="flex gap-3 items-start p-4 rounded-xl border border-border bg-card/60">
+    <div
+      className="flex gap-3 items-start p-4 rounded-xl border border-border bg-card/60 sm:col-span-2 anim-fade-up"
+      style={{ animationDelay: "820ms" }}
+    >
       <div className="shrink-0 size-9 rounded-lg bg-primary/10 flex items-center justify-center">
         <Smartphone className="size-4 text-primary" />
       </div>
@@ -613,8 +617,8 @@ function InstallBanner() {
           <ol className="text-xs text-muted-foreground mt-1 leading-relaxed space-y-0.5">
             <li>
               1. Tap the{" "}
-              <span className="font-medium text-foreground">Share</span> button
-              (⬆︎) in Safari&apos;s toolbar
+              <span className="font-medium text-foreground">Share</span>{" "}
+              button (⬆︎) in Safari&apos;s toolbar
             </li>
             <li>
               2. Scroll and tap{" "}
@@ -703,7 +707,7 @@ function useTyping(text: string, speed = 55, delay = 0) {
 
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
-  const { userProfile } = useApp();
+  const { ownProfile } = useApp();
   const [inAppBrowser, setInAppBrowser] = useState(false);
 
   useEffect(() => {
@@ -737,11 +741,13 @@ export default function LandingPage() {
       .slice(0, 2);
   };
 
-  const greeting = userProfile?.salaryDay ? "Welcome back," : "Welcome,";
+  const greeting = ownProfile?.salaryDay ? "Welcome back," : "Welcome,";
   const typedGreeting = useTyping(user ? greeting : "", 55, 500);
   const displayName = user
-    ? (user.displayName ?? userProfile?.displayName ?? user.email ?? "")
+    ? (ownProfile?.displayName ?? user.displayName ?? user.email ?? "")
     : "";
+  // Same precedence as Settings: an uploaded avatar overrides the Google photo.
+  const avatarSrc = ownProfile?.customPhotoURL ?? user?.photoURL ?? null;
   const nameDelay = 500 + greeting.length * 55 + 80;
   const typedName = useTyping(displayName, 55, nameDelay);
   const buttonsDelay = nameDelay + displayName.length * 55 + 150;
@@ -759,9 +765,7 @@ export default function LandingPage() {
         <div className="relative flex flex-col flex-1">
           <header className="flex items-center justify-between px-6 md:px-12 py-6">
             <div className="flex items-center gap-3">
-              <div className="size-8 rounded-lg bg-primary text-primary-foreground text-sm font-black flex items-center justify-center select-none">
-                KP
-              </div>
+              <LogoMark className="size-8" />
               <span className="font-bold text-foreground tracking-tight">
                 KiraPoket
               </span>
@@ -772,14 +776,11 @@ export default function LandingPage() {
           <main className="flex-1 flex items-center justify-center px-6 py-16">
             <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
               <Avatar size="lg" className="size-20 anim-scale-in">
-                {user.photoURL && (
-                  <AvatarImage
-                    src={user.photoURL}
-                    alt={user.displayName ?? "User"}
-                  />
+                {avatarSrc && (
+                  <AvatarImage src={avatarSrc} alt={displayName || "User"} />
                 )}
                 <AvatarFallback className="text-2xl">
-                  {getInitials(user.displayName)}
+                  {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
 
@@ -860,9 +861,7 @@ export default function LandingPage() {
         {/* ── Nav bar ── */}
         <header className="flex items-center justify-between px-6 md:px-12 py-6">
           <div className="flex items-center gap-3">
-            <div className="size-8 rounded-lg bg-primary text-primary-foreground text-sm font-black flex items-center justify-center select-none">
-              KP
-            </div>
+            <LogoMark className="size-8" />
             <span className="font-bold text-foreground tracking-tight">
               KiraPoket
             </span>
@@ -996,8 +995,10 @@ export default function LandingPage() {
                     desc="Invite your partner to see your finances in read-only mode. Pause anytime."
                   />
                 </div>
-              </div>
-              <div className="anim-fade-up" style={{ animationDelay: "820ms" }}>
+                {/* Inside the grid so it shares the cards' gap-3 spacing. It
+                    carries its own fade-up wrapper: InstallBanner renders
+                    nothing on desktop/unsupported browsers, and an empty wrapper
+                    here would still take a grid row and add a stray gap. */}
                 <InstallBanner />
               </div>
             </div>

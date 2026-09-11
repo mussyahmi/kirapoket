@@ -421,6 +421,7 @@ export async function updateCategory(
     "budget",
     "budgetType",
     "budgetDays",
+    "budgetWeekdays",
     "budgetSelectedDates",
     "note",
     "links",

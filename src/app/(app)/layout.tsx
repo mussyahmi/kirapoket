@@ -6,6 +6,7 @@ import { useApp } from "@/contexts/AppContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { AddTransactionProvider } from "@/components/transactions/AddTransactionSheet";
 import { PartnerBanner } from "@/components/common/PartnerBanner";
+import { LogoMark } from "@/components/common/LogoMark";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { HeartHandshakeIcon } from "lucide-react";
@@ -47,9 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!loading && !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <span className="flex size-10 animate-pulse items-center justify-center rounded-xl bg-primary text-sm font-black text-primary-foreground select-none">
-          KP
-        </span>
+        <LogoMark className="size-10 animate-pulse" />
         <span className="sr-only">Redirecting to sign in…</span>
       </div>
     );

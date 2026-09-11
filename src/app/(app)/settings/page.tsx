@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -20,6 +21,7 @@ import {
   ClipboardCheckIcon,
   CameraIcon,
   Loader2Icon,
+  ExternalLinkIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
@@ -604,6 +606,45 @@ function SettingsPage() {
 
       {/* Install App */}
       <InstallAppCard />
+
+      {/* Other apps — the only place KiraPoket points to another app, mirroring
+          MariSolat's "Aplikasi lain" on its Tetapan page. Settings is where
+          people come to learn about the app itself; a promo on Home or in the
+          transaction flow would get between them and their money. Outside the
+          read-only guard so partners see it too. */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Other apps</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <a
+            href="https://marisolat.web.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              {/* MariSolat's maskable icon (full-bleed, copied from its
+                  public/) rather than the regular one, which has white corners
+                  baked in that show against the dark theme. */}
+              <Image
+                src="/marisolat-icon.png"
+                alt=""
+                width={36}
+                height={36}
+                className="size-9 shrink-0 rounded-lg"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">MariSolat</p>
+                <p className="text-xs text-muted-foreground">
+                  Prayer times, Qibla and tasbih in one app
+                </p>
+              </div>
+            </div>
+            <ExternalLinkIcon className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+          </a>
+        </CardContent>
+      </Card>
 
       {!isReadOnly && (
         <>

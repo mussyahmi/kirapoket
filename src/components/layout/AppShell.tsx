@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAddTransaction } from "@/components/transactions/AddTransactionSheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/common/LogoMark";
 import FeedbackButton from "@/components/common/FeedbackButton";
 import SupportButton from "@/components/common/SupportButton";
 import PullToRefresh from "@/components/common/PullToRefresh";
@@ -335,9 +336,7 @@ export function AppShell({
       <aside className="hidden md:flex md:flex-col md:w-56 md:shrink-0 md:border-r md:border-border md:bg-card md:sticky md:top-0 md:h-screen md:overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2">
-            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">
-              KP
-            </span>
+            <LogoMark className="size-7" />
             <span className="text-base font-bold tracking-tight text-foreground">
               KiraPoket
             </span>
@@ -414,9 +413,7 @@ export function AppShell({
           )}
         >
           <Link href="/" className="flex items-center gap-2">
-            <span className="size-7 rounded-lg bg-primary text-primary-foreground text-xs font-black flex items-center justify-center select-none">
-              KP
-            </span>
+            <LogoMark className="size-7" />
             <span className="text-base font-bold tracking-tight text-foreground">
               KiraPoket
             </span>

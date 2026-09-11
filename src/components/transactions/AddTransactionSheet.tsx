@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { usePathname } from "next/navigation";
 import {
   Sheet,
@@ -17,6 +24,9 @@ type AddTransactionCtx = {
   openAdd: () => void;
   openEdit: (id: string) => void;
   close: () => void;
+  // Called with a newly added transaction's id once the sheet has finished
+  // closing. Returns an unsubscribe function.
+  subscribeAdded: (fn: (id: string) => void) => () => void;
 };
 
 const AddTransactionContext = createContext<AddTransactionCtx | null>(null);
@@ -54,6 +64,18 @@ export function AddTransactionProvider({
 
   const close = () => setOpen(false);
 
+  // The id is held until the close animation completes rather than announced
+  // on save: releasing the sheet's scroll lock puts the page back at the scroll
+  // position it had when the sheet opened, which would undo an earlier scroll.
+  const pendingAddedId = useRef<string | null>(null);
+  const addedListeners = useRef(new Set<(id: string) => void>());
+  const subscribeAdded = useCallback((fn: (id: string) => void) => {
+    addedListeners.current.add(fn);
+    return () => {
+      addedListeners.current.delete(fn);
+    };
+  }, []);
+
   // Fade + blur + inert; also stop the body scrolling behind the confirm dialog
   const recede =
     confirmOpen && "blur-[3px] opacity-50 pointer-events-none select-none";
@@ -72,6 +94,7 @@ export function AddTransactionProvider({
           setOpen(true);
         },
         close,
+        subscribeAdded,
       }}
     >
       {children}
@@ -83,6 +106,17 @@ export function AddTransactionProvider({
             setEditId(null);
             setConfirmOpen(false);
           }
+        }}
+        onOpenChangeComplete={(v) => {
+          if (v) return;
+          const id = pendingAddedId.current;
+          pendingAddedId.current = null;
+          // Next frame: Base UI runs this inside its own flushSync, and a
+          // listener may need to flushSync a render (e.g. revealing more rows).
+          if (id)
+            requestAnimationFrame(() =>
+              addedListeners.current.forEach((fn) => fn(id)),
+            );
         }}
       >
         <SheetContent
@@ -105,7 +139,9 @@ export function AddTransactionProvider({
           </SheetHeader>
           <div
             className={cn(
-              "flex-1 min-h-0 px-4 pt-4 transition-[filter,opacity] duration-200",
+              // overscroll-contain: at either end of the form, a swipe would
+              // otherwise chain out and rubber-band the page behind the sheet.
+              "flex-1 min-h-0 px-4 pt-4 overscroll-contain transition-[filter,opacity] duration-200",
               confirmOpen ? "overflow-hidden" : "overflow-y-auto",
               recede,
             )}
@@ -114,7 +150,10 @@ export function AddTransactionProvider({
               key={editId ?? "new"}
               embedded
               editId={editId ?? undefined}
-              onDone={close}
+              onDone={(addedId) => {
+                pendingAddedId.current = addedId ?? null;
+                close();
+              }}
               onCancel={close}
               onConfirmOpenChange={setConfirmOpen}
             />

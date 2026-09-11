@@ -1,5 +1,7 @@
 "use client";
 
+import { LogoMark } from "@/components/common/LogoMark";
+
 /**
  * Catches errors thrown by the root layout itself, so it must render its own
  * <html>/<body> — globals.css and the theme provider are not available here.
@@ -31,22 +33,9 @@ export default function GlobalError({
             "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
         }}
       >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            background: "#d93400",
-            color: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 22,
-            fontWeight: 900,
-          }}
-        >
-          KP
-        </div>
+        {/* Hex, not CSS variables: this replaces the root layout, so
+            globals.css may never have loaded. */}
+        <LogoMark size={56} tile="#d93400" ink="#ffffff" radius={28} />
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
           KiraPoket couldn&apos;t start
         </h1>
