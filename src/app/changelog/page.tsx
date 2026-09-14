@@ -50,7 +50,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones",
+        text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones — and your photo loads in smoothly instead of flicking through your Google photo and initials first",
       },
       {
         type: "fix",

@@ -707,7 +707,7 @@ function useTyping(text: string, speed = 55, delay = 0) {
 
 export default function LandingPage() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
-  const { ownProfile } = useApp();
+  const { ownProfile, loadingProfile } = useApp();
   const [inAppBrowser, setInAppBrowser] = useState(false);
 
   useEffect(() => {
@@ -742,8 +742,12 @@ export default function LandingPage() {
   };
 
   const greeting = ownProfile?.salaryDay ? "Welcome back," : "Welcome,";
-  const typedGreeting = useTyping(user ? greeting : "", 55, 500);
-  const displayName = user
+  // Hold the greeting until the profile arrives, so the Google name and photo
+  // never flash before the ones set in Settings.
+  const profileReady = !!user && !loadingProfile;
+  const typedGreeting = useTyping(profileReady ? greeting : "", 55, 500);
+  const displayName =
+    user && !loadingProfile
     ? (ownProfile?.displayName ?? user.displayName ?? user.email ?? "")
     : "";
   // Same precedence as Settings: an uploaded avatar overrides the Google photo.
@@ -775,14 +779,22 @@ export default function LandingPage() {
 
           <main className="flex-1 flex items-center justify-center px-6 py-16">
             <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
-              <Avatar size="lg" className="size-20 anim-scale-in">
-                {avatarSrc && (
-                  <AvatarImage src={avatarSrc} alt={displayName || "User"} />
-                )}
-                <AvatarFallback className="text-2xl">
-                  {getInitials(displayName)}
-                </AvatarFallback>
-              </Avatar>
+              {profileReady ? (
+                <Avatar size="lg" className="size-20 anim-scale-in">
+                  {avatarSrc && (
+                    <AvatarImage src={avatarSrc} alt={displayName || "User"} />
+                  )}
+                  {/* initials only if the photo is slow or fails, not while it loads */}
+                  <AvatarFallback
+                    className="text-2xl"
+                    delay={avatarSrc ? 600 : undefined}
+                  >
+                    {getInitials(displayName)}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <div className="size-20 rounded-full bg-muted animate-pulse" />
+              )}
 
               <div
                 className="space-y-1 anim-fade-up"

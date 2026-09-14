@@ -278,7 +278,10 @@ function SettingsPage() {
                     alt={ownProfile?.displayName ?? user?.displayName ?? "User"}
                   />
                 ) : null}
-                <AvatarFallback className="text-lg font-semibold">
+                <AvatarFallback
+                  className="text-lg font-semibold"
+                  delay={avatarSrc ? 600 : undefined}
+                >
                   {getInitials(ownProfile?.displayName ?? user?.displayName)}
                 </AvatarFallback>
               </Avatar>
@@ -739,7 +742,10 @@ function SettingsPage() {
                       }
                     />
                   ) : null}
-                  <AvatarFallback className="text-2xl font-semibold">
+                  <AvatarFallback
+                    className="text-2xl font-semibold"
+                    delay={avatarSrc ? 600 : undefined}
+                  >
                     {getInitials(ownProfile?.displayName ?? user?.displayName)}
                   </AvatarFallback>
                 </Avatar>

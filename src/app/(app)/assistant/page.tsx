@@ -215,7 +215,14 @@ function AssistantChat() {
                     alt={userProfile?.displayName ?? "You"}
                   />
                 )}
-                <AvatarFallback className="text-xs font-semibold">
+                <AvatarFallback
+                  className="text-xs font-semibold"
+                  delay={
+                    (userProfile?.customPhotoURL ?? user?.photoURL)
+                      ? 600
+                      : undefined
+                  }
+                >
                   {getInitials(userProfile?.displayName ?? user?.displayName)}
                 </AvatarFallback>
               </Avatar>
