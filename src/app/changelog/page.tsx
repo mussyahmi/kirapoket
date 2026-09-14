@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "12 September 2026";
+const LAST_UPDATED = "14 September 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -55,6 +55,10 @@ const releases: Release[] = [
       {
         type: "fix",
         text: "Fixed an error that could appear when moving between pages, and the “Add to Home Screen” card on the welcome page now lines up with the cards above it",
+      },
+      {
+        type: "fix",
+        text: "The QR codes in Buy Me a Coffee and the MariSolat icon in Settings show up again instead of a broken image",
       },
     ],
   },
