@@ -34,6 +34,9 @@ import {
   parseISO,
   isWithinInterval,
   addDays,
+  subMonths,
+  setDate,
+  differenceInCalendarDays,
 } from "date-fns";
 
 // ─── Default category seed ───────────────────────────────────────────────────
@@ -987,6 +990,18 @@ export async function updatePartnershipName(
 
 export const DEMO_UID = process.env.NEXT_PUBLIC_DEMO_UID ?? "";
 
+// The fixtures below were written against two fixed cycles. Seeding maps them
+// onto real cycles around today, so the demo account always looks like a month
+// in progress rather than data from the month the fixtures were written.
+const FIXTURE_PREV_START = "2026-03-25";
+const FIXTURE_CUR_START = "2026-04-25";
+// The current cycle fixtures run from day 0 to day 18; stretching them over a
+// whole cycle means the elapsed part reads as a month partly spent.
+const FIXTURE_CUR_SPAN = 18;
+const CYCLE_DAYS = 30;
+// How far into the cycle "today" should sit when the demo data is seeded.
+const ELAPSED_DAYS = 18;
+
 export async function clearAndSeedDemoData(): Promise<void> {
   const uid = DEMO_UID;
 
@@ -1006,26 +1021,45 @@ export async function clearAndSeedDemoData(): Promise<void> {
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   }
 
+  // Pick the pay day that leaves today partway through the cycle, so budgets
+  // show progress instead of a finished or an empty month. Only plausible pay
+  // days are considered, so the demo account still reads like a real one.
+  const today = startOfDay(new Date());
+  const startFor = (day: number) => {
+    const candidate = setDate(today, day);
+    return differenceInCalendarDays(candidate, today) > 0
+      ? subMonths(candidate, 1)
+      : candidate;
+  };
+  const salaryDay = [1, 5, 10, 15, 20, 25]
+    .map((day) => ({
+      day,
+      distance: Math.abs(
+        differenceInCalendarDays(today, startFor(day)) / CYCLE_DAYS - ELAPSED_DAYS / CYCLE_DAYS,
+      ),
+    }))
+    .sort((a, b) => a.distance - b.distance)[0].day;
+  const curStart = startFor(salaryDay);
+  const prevStart = subMonths(curStart, 1);
+
   // Update user profile with salary day
   await setDoc(
     doc(db, "users", uid),
     {
-      salaryDay: 25,
+      salaryDay,
       categoriesSeeded: true,
       categoriesSeedVersion: 3,
     },
     { merge: true },
   );
 
-  // Account — balance reflects net of BOTH cycles
-  // Prev cycle net: 6200 - 4229.08 = 1970.92
-  // Current cycle net: 6200 - 4730.58 = 1469.42
-  // Total: 3440.34
+  // Account — the balance is written after seeding, from the transactions that
+  // actually landed, so it always matches what the app adds up.
   const accountRef = await addDoc(collection(db, "accounts"), {
     userId: uid,
     name: "Maybank",
     type: "bank",
-    balance: 3440.34,
+    balance: 0,
     createdAt: Timestamp.now(),
     sortOrder: 0,
   });
@@ -1310,23 +1344,43 @@ export async function clearAndSeedDemoData(): Promise<void> {
 
   // ── Transactions (two cycles) ──────────────────────────────────────────────
 
-  const tx = (
+  // Maps a fixture date onto the matching real cycle. Returns null for anything
+  // that would fall after today, which is what leaves the current cycle partly
+  // spent.
+  const realDate = (fixture: string): Date | null => {
+    const parsed = parseISO(fixture);
+    const isCurrent = differenceInCalendarDays(parsed, parseISO(FIXTURE_CUR_START)) >= 0;
+    const anchor = parseISO(isCurrent ? FIXTURE_CUR_START : FIXTURE_PREV_START);
+    const offset = differenceInCalendarDays(parsed, anchor);
+    const spread = isCurrent ? Math.round((offset * CYCLE_DAYS) / FIXTURE_CUR_SPAN) : offset;
+    const mapped = addDays(isCurrent ? curStart : prevStart, spread);
+    if (isCurrent && differenceInCalendarDays(mapped, today) > 0) return null;
+    return mapped;
+  };
+
+  let balance = 0;
+
+  const tx = async (
     type: string,
     amount: number,
     date: string,
     categoryId: string | null,
     note?: string,
-  ) =>
-    addDoc(collection(db, "transactions"), {
+  ) => {
+    const mapped = realDate(date);
+    if (!mapped) return;
+    balance += type === "income" ? amount : -amount;
+    await addDoc(collection(db, "transactions"), {
       userId: uid,
       type,
       amount,
-      date,
+      date: format(mapped, "yyyy-MM-dd"),
       accountId: accId,
       ...(categoryId ? { categoryId } : {}),
       ...(note ? { note } : {}),
       createdAt: Timestamp.now(),
     });
+  };
 
   // ── PREVIOUS CYCLE (Mar 25 – Apr 24, 2026) ─────────────────────────────────
   // Designed to produce meaningful cycle-over-cycle deltas vs the current cycle below
@@ -1410,7 +1464,7 @@ export async function clearAndSeedDemoData(): Promise<void> {
 
   // Health — budget 200, spend 285.00 → over by 85
   await tx("expense", 85.0, "2026-05-04", medicineRef.id, "Guardian pharmacy");
-  await tx("expense", 200.0, "2026-05-09", doctorRef.id, "Klinik panel");
+  await tx("expense", 200.0, "2026-05-02", doctorRef.id, "Klinik panel");
 
   // Entertainment — budget 200, spend 95.00 → under
   await tx("expense", 60.0, "2026-04-28", moviesRef.id, "GSC TGV");
@@ -1440,4 +1494,6 @@ export async function clearAndSeedDemoData(): Promise<void> {
     electronicsRef.id,
     "Phone case + accessories",
   );
+
+  await updateDoc(accountRef, { balance: Number(balance.toFixed(2)) });
 }
