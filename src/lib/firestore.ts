@@ -1049,6 +1049,18 @@ export async function clearAndSeedDemoData(): Promise<void> {
       salaryDay,
       categoriesSeeded: true,
       categoriesSeedVersion: 3,
+      // Record both cycle starts, so the home screen shows "Started on ..."
+      // rather than prompting the demo account to set a date.
+      cycleStarts: {
+        [format(prevStart, "yyyy-MM-dd")]: format(prevStart, "yyyy-MM-dd"),
+        [format(curStart, "yyyy-MM-dd")]: format(curStart, "yyyy-MM-dd"),
+      },
+      // Put the feedback pulse on cooldown so it stays out of the way.
+      feedbackPrompt: {
+        lastGivenAt: new Date().toISOString(),
+        lastShownAt: new Date().toISOString(),
+        dismissals: 0,
+      },
     },
     { merge: true },
   );
