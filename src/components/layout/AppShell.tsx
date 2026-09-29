@@ -343,6 +343,20 @@ export function AppShell({
           </Link>
           <ThemeToggle />
         </div>
+        {/* Desktop quick-add — the bottom nav's centre button has no desktop
+            counterpart, so logging used to mean navigating first */}
+        {showAdd && (
+          <div className="px-2 pt-3">
+            <button
+              type="button"
+              onClick={openAdd}
+              className="flex w-full items-center gap-3 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-e1 transition-colors hover:bg-primary/90 active:scale-[0.98]"
+            >
+              <PlusIcon className="size-4 shrink-0" strokeWidth={2.5} />
+              Add Transaction
+            </button>
+          </div>
+        )}
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {allNavItems.map(({ href, label, icon: Icon, ...rest }) => {
             const disabled =

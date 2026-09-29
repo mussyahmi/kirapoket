@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "14 September 2026";
+const LAST_UPDATED = "29 September 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -47,6 +47,10 @@ const releases: Release[] = [
       {
         type: "feat",
         text: "Find MariSolat, our prayer times app, under Settings → Other apps",
+      },
+      {
+        type: "feat",
+        text: "On a computer, there's now an Add Transaction button at the top of the sidebar, so you can log something from any page without hunting for it",
       },
       {
         type: "fix",
