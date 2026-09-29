@@ -24,9 +24,9 @@ type AddTransactionCtx = {
   openAdd: () => void;
   openEdit: (id: string) => void;
   close: () => void;
-  // Called with a newly added transaction's id once the sheet has finished
-  // closing. Returns an unsubscribe function.
-  subscribeAdded: (fn: (id: string) => void) => () => void;
+  // Called with a saved transaction's id — added or edited — once the sheet has
+  // finished closing. Returns an unsubscribe function.
+  subscribeSaved: (fn: (id: string) => void) => () => void;
 };
 
 const AddTransactionContext = createContext<AddTransactionCtx | null>(null);
@@ -67,12 +67,12 @@ export function AddTransactionProvider({
   // The id is held until the close animation completes rather than announced
   // on save: releasing the sheet's scroll lock puts the page back at the scroll
   // position it had when the sheet opened, which would undo an earlier scroll.
-  const pendingAddedId = useRef<string | null>(null);
-  const addedListeners = useRef(new Set<(id: string) => void>());
-  const subscribeAdded = useCallback((fn: (id: string) => void) => {
-    addedListeners.current.add(fn);
+  const pendingSavedId = useRef<string | null>(null);
+  const savedListeners = useRef(new Set<(id: string) => void>());
+  const subscribeSaved = useCallback((fn: (id: string) => void) => {
+    savedListeners.current.add(fn);
     return () => {
-      addedListeners.current.delete(fn);
+      savedListeners.current.delete(fn);
     };
   }, []);
 
@@ -94,7 +94,7 @@ export function AddTransactionProvider({
           setOpen(true);
         },
         close,
-        subscribeAdded,
+        subscribeSaved,
       }}
     >
       {children}
@@ -109,13 +109,13 @@ export function AddTransactionProvider({
         }}
         onOpenChangeComplete={(v) => {
           if (v) return;
-          const id = pendingAddedId.current;
-          pendingAddedId.current = null;
+          const id = pendingSavedId.current;
+          pendingSavedId.current = null;
           // Next frame: Base UI runs this inside its own flushSync, and a
           // listener may need to flushSync a render (e.g. revealing more rows).
           if (id)
             requestAnimationFrame(() =>
-              addedListeners.current.forEach((fn) => fn(id)),
+              savedListeners.current.forEach((fn) => fn(id)),
             );
         }}
       >
@@ -150,8 +150,8 @@ export function AddTransactionProvider({
               key={editId ?? "new"}
               embedded
               editId={editId ?? undefined}
-              onDone={(addedId) => {
-                pendingAddedId.current = addedId ?? null;
+              onDone={(savedId) => {
+                pendingSavedId.current = savedId ?? null;
                 close();
               }}
               onCancel={close}

@@ -232,7 +232,7 @@ function L3Item({
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                   Note
                 </p>
-                <p className="text-sm whitespace-pre-wrap">{item.note}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{item.note}</p>
               </div>
             )}
             {item.links && item.links.length > 0 && (

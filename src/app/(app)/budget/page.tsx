@@ -1280,7 +1280,7 @@ export default function BudgetPage() {
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                       Note
                     </p>
-                    <p className="text-sm whitespace-pre-wrap">{l3.note}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{l3.note}</p>
                   </div>
                 )}
                 {l3.links && l3.links.length > 0 && (

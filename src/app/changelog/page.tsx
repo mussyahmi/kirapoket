@@ -38,7 +38,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "After you add a transaction, the list scrolls to it and highlights it — even when it's backdated further down — and tells you if your filters are hiding it",
+        text: "After you add or edit a transaction, the list scrolls to it and highlights it — even when it's backdated further down — and tells you if your filters are hiding it. At the start of a new cycle it now says nothing's logged yet, with a shortcut back to last cycle",
       },
       {
         type: "feat",
@@ -53,6 +53,10 @@ const releases: Release[] = [
         text: "On a computer, there's now an Add Transaction button at the top of the sidebar, so you can log something from any page without hunting for it",
       },
       {
+        type: "feat",
+        text: "The transaction form now follows you down — pick an account and the category appears, pick a category and its subcategories do, so you're not scrolling to find the next step",
+      },
+      {
         type: "fix",
         text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones — and your photo loads in smoothly instead of flicking through your Google photo and initials first",
       },
@@ -62,7 +66,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "The QR codes in Buy Me a Coffee and the MariSolat icon in Settings show up again instead of a broken image",
+        text: "Fixed a few display glitches — the QR codes in Buy Me a Coffee and the MariSolat icon in Settings show up again, and a long link saved on a category no longer stretches its details pop-up off the screen",
       },
     ],
   },

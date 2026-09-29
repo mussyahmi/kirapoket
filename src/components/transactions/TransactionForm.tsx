@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { format, parseISO, startOfDay, subDays, isSameDay } from "date-fns";
 import { toast } from "sonner";
 import { ArrowLeftIcon, TriangleAlertIcon, CalendarIcon } from "lucide-react";
@@ -38,9 +38,9 @@ export function TransactionForm({
 }: {
   embedded?: boolean;
   editId?: string;
-  // Receives the new transaction's id after an add (undefined after an edit),
-  // so a host can scroll the list to it.
-  onDone: (addedId?: string) => void;
+  // Receives the saved transaction's id — the new one after an add, the edited
+  // one after an edit — so a host can scroll the list to it.
+  onDone: (savedId?: string) => void;
   onCancel: () => void;
   // Lets a sheet host recede/lock its chrome while the confirm dialog is open
   onConfirmOpenChange?: (open: boolean) => void;
@@ -167,14 +167,52 @@ export function TransactionForm({
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
 
+  // Picking an option reveals the step it unlocks: the form is taller than the
+  // sheet, so the next question is usually just below the fold and easy to miss.
+  // The section often doesn't exist yet at click time (it renders because of the
+  // click), so the scroll is queued and runs after the next commit.
+  const toAccountRef = useRef<HTMLDivElement | null>(null);
+  const categoryRef = useRef<HTMLDivElement | null>(null);
+  const subcategoryRef = useRef<HTMLDivElement | null>(null);
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const submitBarRef = useRef<HTMLDivElement | null>(null);
+  const pendingReveal = useRef<React.RefObject<HTMLDivElement | null> | null>(
+    null,
+  );
+  const queueReveal = (ref: React.RefObject<HTMLDivElement | null>) => {
+    pendingReveal.current = ref;
+  };
+  useEffect(() => {
+    const target = pendingReveal.current;
+    if (!target) return;
+    pendingReveal.current = null;
+    const el = target.current;
+    if (!el) return; // step doesn't apply (e.g. no subcategories under this one)
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    // In the sheet the submit button is sticky, so it covers the bottom of the
+    // scroll container. Push the section clear of it, or it lands underneath.
+    const inset = embedded ? (submitBarRef.current?.offsetHeight ?? 0) : 0;
+    el.style.scrollMarginBottom = `${inset + 16}px`;
+    // "nearest" scrolls the least amount needed, and does nothing at all when
+    // the section is already fully in view.
+    el.scrollIntoView({
+      block: "nearest",
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  });
+
   const handleSelectL1 = (id: string) => {
     setL1Id(id);
     setL2Id(null);
     setL3Id(null);
+    queueReveal(subcategoryRef);
   };
   const handleSelectL2 = (id: string) => {
     setL2Id(id);
     setL3Id(null);
+    queueReveal(itemRef);
   };
 
   const date = format(selectedDate, "yyyy-MM-dd");
@@ -523,16 +561,17 @@ export function TransactionForm({
           txType !== "transfer" ? (selectedCategoryId ?? undefined) : undefined,
         note: note.trim() || undefined,
       };
-      let addedId: string | undefined;
+      let savedId: string | undefined;
       if (isEdit && editId) {
         await editTransaction(editId, payload);
+        savedId = editId;
         toast.success("Transaction updated.");
       } else {
-        addedId = (await createTransaction(payload)).id;
+        savedId = (await createTransaction(payload)).id;
         toast.success("Transaction added.");
       }
       setConfirmOpen(false);
-      onDone(addedId);
+      onDone(savedId);
     } catch (e) {
       toast.error(
         e instanceof Error
@@ -573,7 +612,7 @@ export function TransactionForm({
   const CategoryDrillDown = () => (
     <div className="space-y-6">
       {/* L1 */}
-      <div>
+      <div ref={categoryRef} className="scroll-mt-4">
         <Label className="mb-2 block">Category</Label>
         {loadingCategories ? (
           <PillSkeletons widths={["w-16", "w-16", "w-20"]} />
@@ -605,7 +644,7 @@ export function TransactionForm({
 
       {/* L2 */}
       {l1Id && l2Categories.length > 0 && (
-        <div>
+        <div ref={subcategoryRef} className="scroll-mt-4">
           <Label className="mb-2 block">Subcategory</Label>
           <div className="flex flex-wrap gap-2">
             {l2Categories.map((cat) => (
@@ -629,7 +668,7 @@ export function TransactionForm({
 
       {/* L3 */}
       {l2Id && l3Categories.length > 0 && (
-        <div>
+        <div ref={itemRef} className="scroll-mt-4">
           <Label className="mb-2 block">Item</Label>
           <div className="flex flex-wrap gap-2">
             {l3Categories.map((cat) => (
@@ -866,7 +905,12 @@ export function TransactionForm({
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => setAccountId(a.id)}
+                  onClick={() => {
+                    setAccountId(a.id);
+                    queueReveal(
+                      txType === "transfer" ? toAccountRef : categoryRef,
+                    );
+                  }}
                   className={cn(
                     "px-3 py-2 rounded-lg text-sm border transition-colors",
                     accountId === a.id
@@ -884,7 +928,7 @@ export function TransactionForm({
 
         {/* To Account (Transfer only) */}
         {txType === "transfer" && (
-          <div>
+          <div ref={toAccountRef} className="scroll-mt-4">
             <Label className="mb-2 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
               {accounts
@@ -925,6 +969,7 @@ export function TransactionForm({
         </div>
 
         <div
+          ref={submitBarRef}
           className={cn(
             embedded &&
               "sticky bottom-0 -mx-4 border-t bg-popover px-4 pt-4 pb-4",

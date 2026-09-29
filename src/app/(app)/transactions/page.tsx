@@ -66,7 +66,7 @@ function TransactionsPage() {
     refreshTransactions,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
-  const { openAdd, openEdit, subscribeAdded } = useAddTransaction();
+  const { openAdd, openEdit, subscribeSaved } = useAddTransaction();
 
   const searchParams = useSearchParams();
 
@@ -160,8 +160,10 @@ function TransactionsPage() {
       let guard = 0;
       while (
         guard < 45 &&
-        format(getSalaryCycleRange(salaryDay, prev, opts).start, "yyyy-MM-dd") ===
-          from
+        format(
+          getSalaryCycleRange(salaryDay, prev, opts).start,
+          "yyyy-MM-dd",
+        ) === from
       ) {
         prev = subDays(prev, 1);
         guard++;
@@ -209,6 +211,24 @@ function TransactionsPage() {
     filterAccount !== "all" ||
     filterCategory !== "all" ||
     !datesAtDefault;
+
+  // The default view is "this cycle", which is empty for the first few days of
+  // every new cycle. That is not a filter the user chose, so it gets its own
+  // empty state rather than "nothing matches these filters".
+  const showingDefaultCycle = !hasActiveFilters && dateInitDone;
+
+  // When this cycle is empty, offer a jump to the most recent earlier cycle
+  // that actually has something in it — otherwise the empty state is a dead end.
+  const earlierCycleWithData = useMemo(() => {
+    if (!showingDefaultCycle) return null;
+    return (
+      cyclePresets
+        .slice(1)
+        .find((p) =>
+          transactions.some((t) => t.date >= p.from && t.date <= p.to),
+        ) ?? null
+    );
+  }, [showingDefaultCycle, cyclePresets, transactions]);
 
   const clearFilters = () => {
     setFilterType("all");
@@ -315,21 +335,21 @@ function TransactionsPage() {
     return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
   }, [filtered]);
 
-  // After a quick-add, bring the new row into view. The sheet closes over the
-  // list without navigating, so the page keeps whatever scroll position it had
-  // — the new row usually lands above the fold (or, when backdated, somewhere
-  // mid-list or past "Load more"). Scroll to the row itself rather than the top.
+  // After a save — add or edit — bring the affected row into view. The sheet
+  // closes over the list without navigating, so the page keeps whatever scroll
+  // position it had; the row can sit anywhere (a backdated add, or an edit that
+  // moved the date), including past "Load more". Scroll to the row itself.
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightTimer = useRef<number | undefined>(undefined);
-  const onAddedRef = useRef<(id: string) => void>(() => {});
+  const onSavedRef = useRef<(id: string) => void>(() => {});
   useEffect(() => {
-    onAddedRef.current = (id) => {
+    onSavedRef.current = (id) => {
       const groupIndex = grouped.findIndex(([, txs]) =>
         txs.some((t) => t.id === id),
       );
       if (groupIndex === -1) {
         // Saved, but outside the current filters (e.g. a past cycle is picked)
-        toast.info("The new transaction is hidden by your current filters.");
+        toast.info("That transaction is hidden by your current filters.");
         return;
       }
       if (groupIndex >= visibleGroups) {
@@ -358,8 +378,8 @@ function TransactionsPage() {
     };
   });
   useEffect(
-    () => subscribeAdded((id) => onAddedRef.current(id)),
-    [subscribeAdded],
+    () => subscribeSaved((id) => onSavedRef.current(id)),
+    [subscribeSaved],
   );
   useEffect(() => () => window.clearTimeout(highlightTimer.current), []);
 
@@ -651,6 +671,40 @@ function TransactionsPage() {
                 <PlusIcon /> Add your first transaction
               </Button>
             )}
+          </div>
+        ) : showingDefaultCycle ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
+              <ReceiptTextIcon className="size-7 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold">
+                Nothing logged this cycle yet
+              </p>
+              <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
+                Your new salary cycle started on{" "}
+                {format(parseISO(defaultDates.from), "d MMMM")}. Anything you
+                log will show up here.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {!isReadOnly && (
+                <Button className="gap-2" onClick={openAdd}>
+                  <PlusIcon /> Add a transaction
+                </Button>
+              )}
+              {earlierCycleWithData && (
+                <Button
+                  variant="outline"
+                  onClick={() => applyPeriod(earlierCycleWithData.key)}
+                >
+                  View{" "}
+                  {earlierCycleWithData.key === "cycle-1"
+                    ? "last cycle"
+                    : earlierCycleWithData.label}
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
