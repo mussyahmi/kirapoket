@@ -126,14 +126,27 @@ export default function AdminPage() {
     return best;
   }, [users]);
 
-  // App-version distribution (most common first), for spotting stale/cached builds
+  // App-version distribution, newest build first, for spotting stale/cached
+  // builds — sorted by version rather than by count so the tail of old builds
+  // reads in order. Unknown (never reported a version) sorts last.
   const versionDist = useMemo(() => {
     const counts: Record<string, number> = {};
     users.forEach((u) => {
       const v = u.lastAppVersion ?? "unknown";
       counts[v] = (counts[v] ?? 0) + 1;
     });
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const parts = (v: string) => v.split(".").map((n) => parseInt(n, 10) || 0);
+    return Object.entries(counts).sort(([a], [b]) => {
+      if (a === "unknown") return 1;
+      if (b === "unknown") return -1;
+      const pa = parts(a);
+      const pb = parts(b);
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    });
   }, [users]);
 
   const mauPct = users.length ? Math.round((mau / users.length) * 100) : 0;
