@@ -175,6 +175,7 @@ export function TransactionForm({
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const subcategoryRef = useRef<HTMLDivElement | null>(null);
   const itemRef = useRef<HTMLDivElement | null>(null);
+  const noteRef = useRef<HTMLDivElement | null>(null);
   const submitBarRef = useRef<HTMLDivElement | null>(null);
   const pendingReveal = useRef<React.RefObject<HTMLDivElement | null> | null>(
     null,
@@ -675,7 +676,12 @@ export function TransactionForm({
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setL3Id(l3Id === cat.id ? null : cat.id)}
+                onClick={() => {
+                  const next = l3Id === cat.id ? null : cat.id;
+                  setL3Id(next);
+                  // Only on select — deselecting shouldn't drag the form down
+                  if (next) queueReveal(noteRef);
+                }}
                 className={cn(
                   "px-3 py-2 rounded-lg text-sm border transition-colors",
                   l3Id === cat.id
@@ -957,7 +963,7 @@ export function TransactionForm({
         {txType === "expense" && <CategoryDrillDown />}
 
         {/* Note */}
-        <div className="space-y-2">
+        <div ref={noteRef} className="space-y-2 scroll-mt-4">
           <Label htmlFor="note">Note (optional)</Label>
           <Textarea
             id="note"

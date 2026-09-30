@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "29 September 2026";
+const LAST_UPDATED = "30 September 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -54,7 +54,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "The transaction form now follows you down — pick an account and the category appears, pick a category and its subcategories do, so you're not scrolling to find the next step",
+        text: "The transaction form now follows you down — pick an account and the category appears, pick a category and its subcategories do, all the way to the note, so you're not scrolling to find the next step",
       },
       {
         type: "fix",
