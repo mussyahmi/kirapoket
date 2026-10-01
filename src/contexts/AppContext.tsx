@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 import type {
   Account,
@@ -71,6 +72,8 @@ function sortTransactions(txs: Transaction[]): Transaction[] {
 
 interface AppContextValue {
   accounts: Account[];
+  /** Accounts minus archived ones — use for pickers, lists and balance totals. */
+  activeAccounts: Account[];
   categories: Category[];
   transactions: Transaction[];
   userProfile: UserProfile | null;
@@ -100,6 +103,7 @@ interface AppContextValue {
     data: Partial<Omit<Account, "id" | "userId" | "createdAt">>,
   ) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
+  setAccountArchived: (id: string, archived: boolean) => Promise<void>;
   reorderAccounts: (ids: string[]) => Promise<void>;
 
   // Categories
@@ -705,6 +709,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ── Account CRUD ──────────────────────────────────────────────────────────
 
+  // `accounts` stays the full list so a transaction pointing at an archived
+  // account still resolves its name; everything user-facing uses this instead.
+  const activeAccounts = useMemo(
+    () => accounts.filter((a) => !a.archived),
+    [accounts],
+  );
+
   const createAccount = useCallback(
     async (data: Omit<Account, "id" | "userId" | "createdAt">) => {
       if (!uid) throw new Error("Not authenticated");
@@ -736,6 +747,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setAccounts((prev) => prev.filter((a) => a.id !== id));
       if (acc && uid)
         void logActivity(uid, "account_delete", `Deleted account"${acc.name}"`);
+    },
+    [accounts, uid],
+  );
+
+  const setAccountArchived = useCallback(
+    async (id: string, archived: boolean) => {
+      const acc = accounts.find((a) => a.id === id);
+      await updateAccount(id, { archived });
+      setAccounts((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, archived } : a)),
+      );
+      if (acc && uid)
+        void logActivity(
+          uid,
+          "account_archive",
+          `${archived ? "Archived" : "Unarchived"} account "${acc.name}"`,
+        );
     },
     [accounts, uid],
   );
@@ -1070,6 +1098,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         accounts,
+        activeAccounts,
         categories,
         transactions,
         userProfile,
@@ -1083,6 +1112,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createAccount,
         editAccount,
         removeAccount,
+        setAccountArchived,
         reorderAccounts: reorderAccountItems,
         refreshCategories,
         createCategory,

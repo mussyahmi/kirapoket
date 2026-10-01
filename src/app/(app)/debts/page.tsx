@@ -357,7 +357,7 @@ export default function DebtsPage() {
     createDebt,
     editDebt,
     removeDebt,
-    accounts,
+    activeAccounts,
     createTransaction,
     categories,
     createCategory,
@@ -1070,7 +1070,7 @@ export default function DebtsPage() {
             </div>
 
             {/* Account linkage — only on create, not edit */}
-            {!editTarget && accounts.length > 0 && (
+            {!editTarget && activeAccounts.length > 0 && (
               <div className="space-y-2">
                 <Label>
                   {form.direction === "i_owe"
@@ -1083,7 +1083,7 @@ export default function DebtsPage() {
                     : "Picks an account → records as expense automatically"}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {accounts.map((a) => (
+                  {activeAccounts.map((a) => (
                     <button
                       key={a.id}
                       type="button"
@@ -1188,7 +1188,7 @@ export default function DebtsPage() {
                   {isIOweDialog ? "Pay from account" : "Receive into account"}
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {accounts.map((a) => (
+                  {activeAccounts.map((a) => (
                     <button
                       key={a.id}
                       type="button"
@@ -1270,7 +1270,7 @@ export default function DebtsPage() {
               <div className="space-y-2">
                 <Label>Account</Label>
                 <div className="flex flex-wrap gap-2">
-                  {accounts.map((a) => (
+                  {activeAccounts.map((a) => (
                     <button
                       key={a.id}
                       type="button"

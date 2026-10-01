@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "30 September 2026";
+const LAST_UPDATED = "1 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,23 @@ const LAST_UPDATED = "30 September 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.14.x",
-    dateRange: "2026-09-12 – present",
+    version: "0.15.x",
+    dateRange: "2026-10-01 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "Finished with an account but can't delete it because transactions are linked to it? You can now archive it instead. An archived account disappears from your account list, from every picker, and from your total balance, but all of its transactions stay exactly where they are. Find it under Archived at the bottom of the Accounts page and bring it back whenever you like",
+      },
+      {
+        type: "fix",
+        text: "The account pop-up is tidier. Transactions and Edit sit together at the top, with Archive and Delete kept quietly below them, and the \u201ccan't delete this account\u201d message now offers to archive it for you instead of leaving you stuck",
+      },
+    ],
+  },
+  {
+    version: "0.14.x",
+    dateRange: "2026-09-12 – 2026-09-30",
     changes: [
       {
         type: "feat",

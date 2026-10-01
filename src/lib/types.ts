@@ -7,6 +7,7 @@ export type ActivityType =
   | "transaction_delete"
   | "account_add"
   | "account_delete"
+  | "account_archive"
   | "debt_add"
   | "debt_settle"
   | "debt_delete"
@@ -84,6 +85,9 @@ export interface Account {
   balance: number;
   createdAt: Timestamp | string;
   sortOrder?: number;
+  // Archived accounts stay in Firestore (their past transactions still point at
+  // them) but drop out of pickers, lists and balance totals. Absent = active.
+  archived?: boolean;
 }
 
 export interface Category {

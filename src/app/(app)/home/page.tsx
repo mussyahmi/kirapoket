@@ -59,6 +59,7 @@ function DashboardPage() {
   const {
     userProfile,
     accounts,
+    activeAccounts,
     categories,
     transactions,
     loadingTransactions,
@@ -245,8 +246,8 @@ function DashboardPage() {
   );
 
   const totalBalance = useMemo(
-    () => accounts.reduce((s, a) => s + a.balance, 0),
-    [accounts],
+    () => activeAccounts.reduce((s, a) => s + a.balance, 0),
+    [activeAccounts],
   );
 
   // Build L1 category spending
@@ -485,7 +486,7 @@ function DashboardPage() {
       label: "Add your first account",
       description: "Track your cash, bank, and e-wallet balances.",
       cta: "Add Account",
-      done: accounts.length > 0,
+      done: activeAccounts.length > 0,
       href: "/accounts?from=onboarding",
     },
     {
@@ -766,7 +767,7 @@ function DashboardPage() {
             </CardAction>
           </CardHeader>
           <CardContent className="space-y-3">
-            {accounts.length === 0 ? (
+            {activeAccounts.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No accounts yet.{" "}
                 <Link href="/accounts" className="link-underline">
@@ -777,8 +778,8 @@ function DashboardPage() {
             ) : (
               <>
                 {(showAllAccounts
-                  ? accounts
-                  : accounts.slice(0, ACCOUNTS_COLLAPSE)
+                  ? activeAccounts
+                  : activeAccounts.slice(0, ACCOUNTS_COLLAPSE)
                 ).map((acc) => (
                   <button
                     key={acc.id}
@@ -802,7 +803,7 @@ function DashboardPage() {
                     </span>
                   </button>
                 ))}
-                {accounts.length > ACCOUNTS_COLLAPSE && (
+                {activeAccounts.length > ACCOUNTS_COLLAPSE && (
                   <button
                     type="button"
                     onClick={() => setShowAllAccounts((v) => !v)}
@@ -816,7 +817,7 @@ function DashboardPage() {
                     />
                     {showAllAccounts
                       ? "Show less"
-                      : `${accounts.length - ACCOUNTS_COLLAPSE} more`}
+                      : `${activeAccounts.length - ACCOUNTS_COLLAPSE} more`}
                   </button>
                 )}
                 <div className="flex items-center justify-between border-t pt-2">
@@ -827,7 +828,7 @@ function DashboardPage() {
                 </div>
                 {/* Reframe a negative balance (common right after the first expense
                   against the auto-created RM0 account) as"set your real balance" */}
-                {!isReadOnly && accounts.some((a) => a.balance < 0) && (
+                {!isReadOnly && activeAccounts.some((a) => a.balance < 0) && (
                   <Link
                     href="/accounts"
                     className="flex items-start gap-2 pt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"

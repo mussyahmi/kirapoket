@@ -14,6 +14,9 @@ import {
   GripVerticalIcon,
   ListIcon,
   Loader2Icon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import {
   DndContext,
@@ -86,12 +89,14 @@ function SortableAccountRow({
   formatMoney,
   onEdit,
   onDelete,
+  onToggleArchive,
   readOnly,
 }: {
   account: Account;
   formatMoney: (n: number) => string;
   onEdit?: (a: Account) => void;
   onDelete?: (a: Account) => void;
+  onToggleArchive?: (a: Account) => void;
   readOnly?: boolean;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
@@ -111,10 +116,13 @@ function SortableAccountRow({
       <Card
         ref={setNodeRef}
         style={{ transform: CSS.Transform.toString(transform), transition }}
-        className={cn(isDragging && "opacity-50")}
+        className={cn(
+          isDragging && "opacity-50",
+          account.archived && "bg-muted/40",
+        )}
       >
         <CardContent className="flex items-center gap-3 py-3">
-          {!readOnly && (
+          {!readOnly && !account.archived && (
             <button
               type="button"
               className="text-muted-foreground/70 hover:text-foreground cursor-grab active:cursor-grabbing touch-none shrink-0"
@@ -134,6 +142,7 @@ function SortableAccountRow({
               className={cn(
                 "flex items-center justify-center size-9 rounded-lg shrink-0",
                 colors.bg,
+                account.archived && "opacity-60",
               )}
             >
               <Icon className={cn("size-4.5", colors.icon)} />
@@ -181,40 +190,78 @@ function SortableAccountRow({
                 {ACCOUNT_TYPE_LABELS[account.type]}
               </span>
             </div>
-            <div className="flex gap-2 pt-1">
-              <Link
-                href={`/transactions?account=${account.id}`}
-                className={onEdit ? "flex-1" : "w-full"}
-                onClick={() => setDetailOpen(false)}
-              >
-                <Button variant="outline" className="w-full gap-2">
-                  <ListIcon /> Transactions
-                </Button>
-              </Link>
-              {onEdit && (
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => {
-                    setDetailOpen(false);
-                    onEdit(account);
-                  }}
+            {account.archived && (
+              <p className="rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+                Archived. Hidden from pickers and left out of your total
+                balance. Its past transactions are untouched.
+              </p>
+            )}
+            {/* One primary action, one secondary beside it, and the
+                lifecycle actions set apart below as quiet tertiary text. */}
+            <div className="pt-1">
+              <div className="flex gap-2">
+                <Link
+                  href={`/transactions?account=${account.id}`}
+                  className={onEdit ? "flex-1" : "w-full"}
+                  onClick={() => setDetailOpen(false)}
                 >
-                  <PencilIcon /> Edit
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive shrink-0"
-                  onClick={() => {
-                    setDetailOpen(false);
-                    onDelete(account);
-                  }}
-                >
-                  <TrashIcon />
-                </Button>
+                  <Button size="lg" className="w-full gap-2">
+                    <ListIcon /> Transactions
+                  </Button>
+                </Link>
+                {onEdit && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1 gap-2"
+                    onClick={() => {
+                      setDetailOpen(false);
+                      onEdit(account);
+                    }}
+                  >
+                    <PencilIcon /> Edit
+                  </Button>
+                )}
+              </div>
+              {(onToggleArchive || onDelete) && (
+                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                  {onToggleArchive ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-2 gap-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setDetailOpen(false);
+                        onToggleArchive(account);
+                      }}
+                    >
+                      {account.archived ? (
+                        <>
+                          <ArchiveRestoreIcon /> Unarchive
+                        </>
+                      ) : (
+                        <>
+                          <ArchiveIcon /> Archive
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-mr-2 gap-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => {
+                        setDetailOpen(false);
+                        onDelete(account);
+                      }}
+                    >
+                      <TrashIcon /> Delete
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -229,11 +276,13 @@ function AccountsPage() {
   const searchParams = useSearchParams();
   const {
     accounts,
+    activeAccounts,
     loadingAccounts,
     transactions,
     createAccount,
     editAccount,
     removeAccount,
+    setAccountArchived,
     reorderAccounts,
     isViewingPartner,
     isImpersonating,
@@ -250,6 +299,13 @@ function AccountsPage() {
   const [form, setForm] = useState<AccountFormData>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Account | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const archivedAccounts = useMemo(
+    () => accounts.filter((a) => a.archived),
+    [accounts],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -261,9 +317,9 @@ function AccountsPage() {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = accounts.findIndex((a) => a.id === active.id);
-    const newIndex = accounts.findIndex((a) => a.id === over.id);
-    const reordered = arrayMove(accounts, oldIndex, newIndex);
+    const oldIndex = activeAccounts.findIndex((a) => a.id === active.id);
+    const newIndex = activeAccounts.findIndex((a) => a.id === over.id);
+    const reordered = arrayMove(activeAccounts, oldIndex, newIndex);
     try {
       await reorderAccounts(reordered.map((a) => a.id));
     } catch {
@@ -271,17 +327,17 @@ function AccountsPage() {
     }
   };
 
-  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+  const totalBalance = activeAccounts.reduce((s, a) => s + a.balance, 0);
 
   const typeBreakdown = useMemo(() => {
     const totals: Partial<Record<AccountType, number>> = {};
-    for (const a of accounts) {
+    for (const a of activeAccounts) {
       totals[a.type] = (totals[a.type] ?? 0) + a.balance;
     }
     return (Object.entries(totals) as [AccountType, number][])
       .filter(([, v]) => v > 0)
       .sort(([, a], [, b]) => b - a);
-  }, [accounts]);
+  }, [activeAccounts]);
 
   const formatMoney = (n: number) => {
     const v = parseFloat(n.toFixed(2));
@@ -335,7 +391,7 @@ function AccountsPage() {
           balance,
         });
         if (
-          accounts.length === 0 &&
+          activeAccounts.length === 0 &&
           searchParams.get("from") === "onboarding"
         ) {
           setOnboardingModalOpen(true);
@@ -383,10 +439,7 @@ function AccountsPage() {
   }, [deleteTarget, transactions]);
 
   const checkingLinked = !!deleteTarget && linkedCount === null;
-  const deleteBlockReason = useMemo(() => {
-    if (!deleteTarget || linkedCount == null || linkedCount <= 0) return null;
-    return `${linkedCount} transaction${linkedCount > 1 ? "s are" : " is"} linked to this account. Reassign or delete them first.`;
-  }, [deleteTarget, linkedCount]);
+  const deleteBlocked = !!deleteTarget && !!linkedCount && linkedCount > 0;
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -400,6 +453,28 @@ function AccountsPage() {
       setDeleting(false);
       setDeleteTarget(null);
     }
+  };
+
+  const runToggleArchive = async (account: Account) => {
+    const next = !account.archived;
+    setArchiving(true);
+    try {
+      await setAccountArchived(account.id, next);
+      if (next) setArchivedOpen(true);
+      toast.success(next ? "Account archived." : "Account unarchived.");
+      setArchiveTarget(null);
+    } catch {
+      toast.error(next ? "Failed to archive." : "Failed to unarchive.");
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  // Archiving pulls an account out of every picker and total, so it gets a
+  // confirm. Unarchiving only puts things back, so it goes straight through.
+  const handleToggleArchive = (account: Account) => {
+    if (account.archived) void runToggleArchive(account);
+    else setArchiveTarget(account);
   };
 
   return (
@@ -426,7 +501,7 @@ function AccountsPage() {
               </p>
             </div>
           </div>
-          {accounts.length > 0 && totalBalance > 0 && (
+          {activeAccounts.length > 0 && totalBalance > 0 && (
             <>
               <div className="flex h-2 rounded-full overflow-hidden gap-px">
                 {typeBreakdown.map(([type, val]) => (
@@ -471,21 +546,29 @@ function AccountsPage() {
         </div>
       ) : loadError.accounts ? (
         <LoadError what="accounts" onRetry={refreshAccounts} />
-      ) : accounts.length === 0 ? (
+      ) : activeAccounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
             <WalletIcon className="size-7 text-primary" />
           </div>
           <div className="space-y-1">
-            <p className="text-base font-semibold">No accounts yet</p>
+            <p className="text-base font-semibold">
+              {archivedAccounts.length > 0
+                ? "No active accounts"
+                : "No accounts yet"}
+            </p>
             <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
-              Add the bank, cash, or e-wallet you spend from. Every transaction
-              is tracked against an account.
+              {archivedAccounts.length > 0
+                ? "Everything you have is archived. Add a new account, or unarchive one below."
+                : "Add the bank, cash, or e-wallet you spend from. Every transaction is tracked against an account."}
             </p>
           </div>
           {!isReadOnly && (
             <Button className="gap-2" onClick={openCreate}>
-              <PlusIcon /> Add your first account
+              <PlusIcon />{" "}
+              {archivedAccounts.length > 0
+                ? "Add an account"
+                : "Add your first account"}
             </Button>
           )}
         </div>
@@ -496,23 +579,74 @@ function AccountsPage() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={accounts.map((a) => a.id)}
+            items={activeAccounts.map((a) => a.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2">
-              {accounts.map((account) => (
+              {activeAccounts.map((account) => (
                 <SortableAccountRow
                   key={account.id}
                   account={account}
                   formatMoney={formatMoney}
                   onEdit={isReadOnly ? undefined : openEdit}
                   onDelete={isReadOnly ? undefined : setDeleteTarget}
+                  onToggleArchive={isReadOnly ? undefined : handleToggleArchive}
                   readOnly={isReadOnly}
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {/* Archived: collapsed by default, out of the totals above */}
+      {!loadingAccounts && archivedAccounts.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setArchivedOpen((o) => !o)}
+            className="flex w-full items-center gap-2 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded={archivedOpen}
+          >
+            <ArchiveIcon className="size-4 shrink-0" />
+            <span className="font-medium">
+              Archived ({archivedAccounts.length})
+            </span>
+            <ChevronDownIcon
+              className={cn(
+                "size-4 shrink-0 transition-transform",
+                archivedOpen && "rotate-180",
+              )}
+            />
+          </button>
+          {archivedOpen && (
+            /* Rows share the sortable component, so they still need a dnd-kit
+               ancestor, but archived rows render no drag handle, so nothing
+               here is actually draggable. */
+            <DndContext sensors={sensors} collisionDetection={closestCenter}>
+              <SortableContext
+                items={archivedAccounts.map((a) => a.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {archivedAccounts.map((account) => (
+                    <SortableAccountRow
+                      key={account.id}
+                      account={account}
+                      formatMoney={formatMoney}
+                      onEdit={isReadOnly ? undefined : openEdit}
+                      onDelete={isReadOnly ? undefined : setDeleteTarget}
+                      onToggleArchive={
+                        isReadOnly ? undefined : handleToggleArchive
+                      }
+                      readOnly={isReadOnly}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
+        </div>
       )}
 
       {/* Add / Edit Dialog */}
@@ -589,6 +723,46 @@ function AccountsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Archive Confirm */}
+      <Dialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Archive <strong>{archiveTarget?.name}</strong>? It will be hidden
+              from your account lists and pickers, and its balance of{" "}
+              <strong>{formatMoney(archiveTarget?.balance ?? 0)}</strong> will
+              be left out of your total.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Nothing is deleted. Its past transactions stay exactly as they
+              are, and you can unarchive it at any time.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveTarget(null)}
+              disabled={archiving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => archiveTarget && runToggleArchive(archiveTarget)}
+              disabled={archiving}
+              className="gap-2"
+            >
+              <ArchiveIcon /> {archiving ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirm */}
       <Dialog
         open={!!deleteTarget}
@@ -596,20 +770,35 @@ function AccountsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Account</DialogTitle>
+            <DialogTitle>
+              {deleteBlocked ? "Can't delete this account" : "Delete Account"}
+            </DialogTitle>
           </DialogHeader>
           {checkingLinked ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2Icon className="size-4 animate-spin" />
               Checking linked transactions…
             </p>
-          ) : deleteBlockReason ? (
+          ) : deleteBlocked ? (
             <div className="space-y-3">
-              <p className="text-sm text-destructive">{deleteBlockReason}</p>
+              <p className="text-sm text-muted-foreground">
+                <strong className="font-semibold text-foreground">
+                  {linkedCount} transaction{linkedCount === 1 ? "" : "s"}
+                </strong>{" "}
+                still {linkedCount === 1 ? "points" : "point"} at{" "}
+                {deleteTarget?.name}. Reassign or delete{" "}
+                {linkedCount === 1 ? "it" : "them"} first.
+              </p>
+              {!deleteTarget?.archived && (
+                <p className="text-sm text-muted-foreground">
+                  Archiving keeps all of it. The account drops out of your lists
+                  and total balance, and every transaction stays where it is.
+                </p>
+              )}
               <Link
                 href={`/transactions?account=${deleteTarget?.id}`}
                 onClick={() => setDeleteTarget(null)}
-                className="inline-flex items-center justify-center w-full rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                className="inline-block text-sm font-medium text-primary hover:link-underline"
               >
                 View linked transactions
               </Link>
@@ -626,17 +815,30 @@ function AccountsPage() {
               onClick={() => setDeleteTarget(null)}
               disabled={deleting}
             >
-              {deleteBlockReason ? "OK" : "Cancel"}
+              Cancel
             </Button>
-            {!deleteBlockReason && (
-              <Button
-                variant="destructive-solid"
-                onClick={handleDelete}
-                disabled={deleting || checkingLinked}
-              >
-                {deleting ? "Deleting..." : "Delete"}
-              </Button>
-            )}
+            {deleteBlocked
+              ? !deleteTarget?.archived && (
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      const target = deleteTarget;
+                      setDeleteTarget(null);
+                      if (target) setArchiveTarget(target);
+                    }}
+                  >
+                    <ArchiveIcon /> Archive instead
+                  </Button>
+                )
+              : /* Kept mounted (disabled) while the count is still loading,
+                   so the footer doesn't jump once it lands. */
+                <Button
+                  variant="destructive-solid"
+                  onClick={handleDelete}
+                  disabled={deleting || checkingLinked}
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>

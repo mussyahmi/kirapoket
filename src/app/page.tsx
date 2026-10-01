@@ -994,7 +994,7 @@ export default function LandingPage() {
                   <FeatureCard
                     icon={Wallet}
                     title="Multiple accounts"
-                    desc="Bank, cash, e-wallet, credit, savings — all in one place with colour coding."
+                    desc="Bank, cash, e-wallet, credit, savings, all in one place with colour coding. Archive the ones you've closed."
                   />
                 </div>
                 <div

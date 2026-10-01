@@ -79,7 +79,7 @@ export function AppShell({
   const pathname = usePathname();
   const {
     userProfile,
-    accounts,
+    activeAccounts,
     debts,
     transactions,
     loadingProfile,
@@ -118,7 +118,7 @@ export function AppShell({
   // Setup-gated tabs unlock once setup is done — but never re-lock once transactions exist
   // Logging only needs an account now — salary day is optional (defaults to a
   // calendar-ish cycle) so users aren't walled off before seeing any value.
-  const setupComplete = accounts.length > 0;
+  const setupComplete = activeAccounts.length > 0;
   const setupGated = !setupComplete && transactions.length === 0;
 
   const isActive = (href: string) =>

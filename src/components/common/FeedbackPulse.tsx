@@ -34,7 +34,7 @@ type Sentiment = "up" | "down";
 export default function FeedbackPulse() {
   const {
     userProfile,
-    accounts,
+    activeAccounts,
     transactions,
     loadingProfile,
     loadingAccounts,
@@ -66,7 +66,7 @@ export default function FeedbackPulse() {
 
     decidedRef.current = true;
 
-    const setupComplete = accounts.length > 0;
+    const setupComplete = activeAccounts.length > 0;
     if (!setupComplete) return;
 
     const fp = userProfile?.feedbackPrompt;

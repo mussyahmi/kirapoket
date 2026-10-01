@@ -56,7 +56,7 @@ function ComingSoon() {
 function AssistantChat() {
   const {
     userProfile,
-    accounts,
+    activeAccounts,
     categories,
     transactions,
     debts,
@@ -88,7 +88,7 @@ function AssistantChat() {
       const token = await user.getIdToken();
       const context = buildAssistantContext({
         userProfile,
-        accounts,
+        accounts: activeAccounts,
         categories,
         transactions,
         debts,

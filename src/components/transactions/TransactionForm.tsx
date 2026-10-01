@@ -47,6 +47,7 @@ export function TransactionForm({
 }) {
   const {
     accounts,
+    activeAccounts,
     categories,
     transactions,
     createTransaction,
@@ -163,7 +164,16 @@ export function TransactionForm({
   );
 
   const setupLoading = loadingProfile || loadingAccounts;
-  const setupComplete = accounts.length > 0;
+  const setupComplete = activeAccounts.length > 0;
+
+  // Archived accounts are out of the picker, except one an existing transaction
+  // already points at; dropping that would silently lose the user's selection.
+  const pickableAccounts = useMemo(() => {
+    const extras = accounts.filter(
+      (a) => a.archived && (a.id === accountId || a.id === toAccountId),
+    );
+    return extras.length ? [...activeAccounts, ...extras] : activeAccounts;
+  }, [accounts, activeAccounts, accountId, toAccountId]);
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
 
@@ -907,7 +917,7 @@ export function TransactionForm({
             <PillSkeletons widths={["w-20", "w-24", "w-20"]} />
           ) : (
             <div className="flex flex-wrap gap-2">
-              {accounts.map((a) => (
+              {pickableAccounts.map((a) => (
                 <button
                   key={a.id}
                   type="button"
@@ -937,7 +947,7 @@ export function TransactionForm({
           <div ref={toAccountRef} className="scroll-mt-4">
             <Label className="mb-2 block">To Account</Label>
             <div className="flex flex-wrap gap-2">
-              {accounts
+              {pickableAccounts
                 .filter((a) => a.id !== accountId)
                 .map((a) => (
                   <button
