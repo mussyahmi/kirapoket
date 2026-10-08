@@ -7,6 +7,7 @@ import type {
   Debt,
   UserProfile,
 } from "@/lib/types";
+import { sumEarnedIncome } from "./income";
 
 const rm = (n: number) =>
   `RM${new Intl.NumberFormat("en-MY", {
@@ -58,9 +59,7 @@ export function buildAssistantContext({
   const cycleTx = transactions.filter(
     (t) => t.date >= startStr && t.date <= endStr,
   );
-  const income = cycleTx
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
+  const income = sumEarnedIncome(cycleTx);
   const expenses = cycleTx
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);

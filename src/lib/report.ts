@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import type { Account, Category, Transaction } from "@/lib/types";
+import { sumEarnedIncome } from "./income";
 
 export interface CategoryReportNode {
   id: string;
@@ -88,9 +89,7 @@ export function buildCycleReport(
       (b.date + (b.time ?? "")).localeCompare(a.date + (a.time ?? "")),
     );
 
-  const income = cycleTx
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
+  const income = sumEarnedIncome(cycleTx);
   const expenses = cycleTx
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
@@ -116,9 +115,7 @@ export function buildCycleReport(
     );
     if (prevTx.length > 0) {
       hasPrev = true;
-      prevIncome = prevTx
-        .filter((t) => t.type === "income")
-        .reduce((s, t) => s + t.amount, 0);
+      prevIncome = sumEarnedIncome(prevTx);
       prevExpenses = prevTx
         .filter((t) => t.type === "expense")
         .reduce((s, t) => s + t.amount, 0);

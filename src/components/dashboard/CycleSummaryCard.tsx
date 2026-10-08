@@ -3,6 +3,7 @@ import {
   ArrowDownIcon,
   ArrowUpRightIcon,
   ArrowDownRightIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,14 @@ export interface CycleSummaryProps {
   prevRemaining?: number;
   prevIncome?: number;
   prevExpenses?: number;
+  /**
+   * Money in that isn't income — loans taken and savings withdrawn this cycle.
+   * Reported on its own line so a cycle funded by borrowing can't read as a
+   * cycle funded by earning. Omit or pass 0 to hide the line.
+   */
+  borrowed?: number;
+  /** Labels the line precisely when it's only one of the two. */
+  borrowedLabel?: string;
 }
 
 export function CycleSummaryCard({
@@ -87,6 +96,8 @@ export function CycleSummaryCard({
   prevRemaining,
   prevIncome,
   prevExpenses,
+  borrowed = 0,
+  borrowedLabel = "Borrowed or withdrawn this cycle",
 }: CycleSummaryProps) {
   const spentPct = income > 0 ? (expenses / income) * 100 : null;
   const heroDiff = prevRemaining === undefined ? 0 : remaining - prevRemaining;
@@ -200,6 +211,17 @@ export function CycleSummaryCard({
             ),
           )}
         </div>
+        {borrowed > 0 && (
+          <div className="flex items-center gap-2 border-t border-border bg-warning-soft px-4 py-2.5">
+            <TriangleAlertIcon className="size-4 shrink-0 text-warning-strong" />
+            <p className="flex-1 text-xs text-warning-strong">
+              {borrowedLabel}
+            </p>
+            <p className="text-xs font-semibold tabular-nums text-warning-strong">
+              {money(borrowed)}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

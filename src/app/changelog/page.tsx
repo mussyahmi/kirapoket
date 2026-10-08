@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "1 October 2026";
+const LAST_UPDATED = "8 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,31 @@ const LAST_UPDATED = "1 October 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.15.x",
-    dateRange: "2026-10-01 – present",
+    version: "0.16.x",
+    dateRange: "2026-10-08 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "Income now asks where the money came from: Earned, Returned, Borrowed or Withdrawn. Only Earned counts towards your income, so a loan or a savings withdrawal no longer makes a cycle look better than it really was. It defaults to Earned, so logging your salary is exactly as quick as before",
+      },
+      {
+        type: "feat",
+        text: "Your home screen shows borrowed money and savings withdrawals on their own line, separate from income, so you can see at a glance when a cycle was funded by borrowing rather than earning",
+      },
+      {
+        type: "fix",
+        text: "Income is now counted the same way everywhere. Home, Budget, your PDF report and the assistant all use earned income only, so the figures finally agree with each other",
+      },
+      {
+        type: "fix",
+        text: "Income you logged before this still counts as Earned and nothing has changed on its own. Open any income transaction and pick a different source whenever you want to correct it",
+      },
+    ],
+  },
+  {
+    version: "0.15.x",
+    dateRange: "2026-10-01 – 2026-10-07",
     changes: [
       {
         type: "feat",
@@ -119,7 +141,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Percentages no longer round away — the home and budget screens stop saying \"0% left\" while you still have money, and going over budget now says so plainly",
+        text: 'Percentages no longer round away — the home and budget screens stop saying "0% left" while you still have money, and going over budget now says so plainly',
       },
       {
         type: "fix",

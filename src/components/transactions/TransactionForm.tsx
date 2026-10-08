@@ -3,7 +3,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { format, parseISO, startOfDay, subDays, isSameDay } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeftIcon, TriangleAlertIcon, CalendarIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  TriangleAlertIcon,
+  CalendarIcon,
+  InfoIcon,
+} from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +20,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getSalaryCycleRange } from "@/lib/firestore";
 import { computeBudgetImpact, type BudgetImpact } from "@/lib/budget";
+import {
+  INCOME_SOURCES,
+  DEFAULT_INCOME_SOURCE,
+  incomeSourceMeta,
+} from "@/lib/income";
+import type { IncomeSource } from "@/lib/types";
 import {
   TransactionConfirmDialog,
   type AccountImpact,
@@ -77,6 +88,9 @@ export function TransactionForm({
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
   const [note, setNote] = useState("");
+  const [incomeSource, setIncomeSource] = useState<IncomeSource>(
+    DEFAULT_INCOME_SOURCE,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Snapshot of the account impacts taken when the confirm dialog opens. The
@@ -87,6 +101,7 @@ export function TransactionForm({
   const [frozenBudget, setFrozenBudget] = useState<BudgetImpact | null>(null);
 
   const confirmBeforeSaving = userProfile?.confirmBeforeSaving ?? true;
+  const sourceMeta = incomeSourceMeta(incomeSource);
 
   // Category drill-down state
   const [l1Id, setL1Id] = useState<string | null>(null);
@@ -103,6 +118,7 @@ export function TransactionForm({
     setTime(editTx.time ?? format(new Date(), "HH:mm"));
     setAccountId(editTx.accountId);
     setToAccountId(editTx.toAccountId ?? "");
+    setIncomeSource(editTx.source ?? DEFAULT_INCOME_SOURCE);
     setNote(editTx.note ?? "");
     if (editTx.categoryId) {
       const cat = categories.find((c) => c.id === editTx.categoryId);
@@ -570,6 +586,8 @@ export function TransactionForm({
         toAccountId: txType === "transfer" ? toAccountId : undefined,
         categoryId:
           txType !== "transfer" ? (selectedCategoryId ?? undefined) : undefined,
+        // Only income carries a source; clear it if the type changed on edit.
+        source: txType === "income" ? incomeSource : undefined,
         note: note.trim() || undefined,
       };
       let savedId: string | undefined;
@@ -801,6 +819,7 @@ export function TransactionForm({
                   setL1Id(null);
                   setL2Id(null);
                   setL3Id(null);
+                  if (type !== "income") setIncomeSource(DEFAULT_INCOME_SOURCE);
                 }}
                 className={cn(
                   "flex-1 py-2 text-sm font-medium capitalize transition-colors",
@@ -833,6 +852,42 @@ export function TransactionForm({
             required
           />
         </div>
+
+        {/* Source (Income only) — a loan or an EPF withdrawal arrives the same
+            way a salary does; only "earned" counts towards income. Same pill
+            treatment as Date and Account — it is the same kind of choice. */}
+        {txType === "income" && (
+          <div className="space-y-2">
+            <Label>Source</Label>
+            <div className="flex flex-wrap gap-2">
+              {INCOME_SOURCES.map((src) => (
+                <button
+                  key={src.value}
+                  type="button"
+                  onClick={() => setIncomeSource(src.value)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-sm border transition-colors",
+                    incomeSource === src.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted",
+                  )}
+                >
+                  {src.label}
+                </button>
+              ))}
+            </div>
+            {/* One rule: the icon means "excluded from your income total",
+                not a judgement on which kind of money is worse. The amber
+                warning lives on the dashboard, where it reports a pattern
+                across a whole cycle rather than a single entry. */}
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              {!sourceMeta.isIncome && (
+                <InfoIcon className="size-3.5 shrink-0 mt-px" />
+              )}
+              <span>{sourceMeta.hint}</span>
+            </p>
+          </div>
+        )}
 
         {/* Date & Time — §3: the date is "today" the overwhelming majority of
             the time, so a permanently-open 450px calendar was taking the most

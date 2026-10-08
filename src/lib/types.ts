@@ -144,6 +144,16 @@ export interface Partnership {
   acceptedAt?: Timestamp | string;
 }
 
+/**
+ * Where an income transaction's money came from. Only "earned" is real income;
+ * the rest are money coming back, money borrowed, or your own savings pulled
+ * in — counting them as income makes a cycle look healthier than it was.
+ *
+ * Absent on transactions logged before this existed; treat missing as "earned"
+ * (see `incomeSourceOf`). There is no backfill.
+ */
+export type IncomeSource = "earned" | "returned" | "borrowed" | "withdrawn";
+
 export interface Transaction {
   id: string;
   userId: string;
@@ -154,6 +164,8 @@ export interface Transaction {
   accountId: string;
   toAccountId?: string;
   categoryId?: string;
+  // Income only. Absent = "earned".
+  source?: IncomeSource;
   note?: string;
   createdAt: Timestamp | string;
 }

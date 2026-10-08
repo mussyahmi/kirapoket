@@ -31,6 +31,10 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import {
+  sumEarnedIncome,
+  nonIncomeInflowBreakdown,
+} from "@/lib/income";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
 import {
@@ -224,13 +228,24 @@ function DashboardPage() {
     return transactions.filter((t) => t.date >= startStr && t.date <= endStr);
   }, [transactions, start, end]);
 
+  // Earned income only — loans and savings withdrawals are reported separately
+  // below so a borrowed cycle can't read as an earned one.
   const totalIncome = useMemo(
-    () =>
-      cycleTransactions
-        .filter((t) => t.type === "income")
-        .reduce((s, t) => s + t.amount, 0),
+    () => sumEarnedIncome(cycleTransactions),
     [cycleTransactions],
   );
+
+  const nonIncome = useMemo(
+    () => nonIncomeInflowBreakdown(cycleTransactions),
+    [cycleTransactions],
+  );
+
+  const nonIncomeLabel =
+    nonIncome.borrowed > 0 && nonIncome.withdrawn > 0
+      ? "Borrowed or withdrawn this cycle"
+      : nonIncome.borrowed > 0
+        ? "Borrowed this cycle"
+        : "Withdrawn from savings this cycle";
 
   const totalExpenses = useMemo(
     () =>
@@ -345,10 +360,7 @@ function DashboardPage() {
   const hasPrev = prevCycleTx.length > 0;
 
   const prevIncome = useMemo(
-    () =>
-      prevCycleTx
-        .filter((t) => t.type === "income")
-        .reduce((s, t) => s + t.amount, 0),
+    () => sumEarnedIncome(prevCycleTx),
     [prevCycleTx],
   );
 
@@ -748,6 +760,8 @@ function DashboardPage() {
           prevRemaining={prevBalance}
           prevIncome={prevIncome}
           prevExpenses={prevExpenses}
+          borrowed={nonIncome.total}
+          borrowedLabel={nonIncomeLabel}
         />
       )}
 

@@ -59,6 +59,7 @@ import { cn } from "@/lib/utils";
 import { l1Color, tint } from "@/lib/palette";
 import { SpendMeter } from "@/components/common/SpendMeter";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
+import { sumEarnedIncome } from "@/lib/income";
 
 interface L3EditForm {
   name: string;
@@ -424,9 +425,7 @@ export default function BudgetPage() {
 
   const actualIncome = useMemo(
     () =>
-      cycleTransactions
-        .filter((t) => t.type === "income")
-        .reduce((s, t) => s + t.amount, 0),
+      sumEarnedIncome(cycleTransactions),
     [cycleTransactions],
   );
 
