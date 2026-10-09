@@ -20,6 +20,9 @@ const ZEBRA: RGB = [249, 246, 242];
 const GREEN: RGB = [29, 139, 61];
 const RED: RGB = [208, 56, 51];
 const BLUE: RGB = [33, 113, 204];
+// warm dark amber: readable on PAPER, cautionary without shouting
+const AMBER: RGB = [166, 108, 20];
+const AMBER_SOFT: RGB = [252, 244, 227];
 
 const TYPE_COLORS: Record<string, RGB> = {
   needs: [75, 177, 96],
@@ -206,7 +209,26 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       );
     }
   });
-  y += boxH + 24;
+  y += boxH + 12;
+
+  // ---- Money in that isn't income ----
+  // Reported on its own line rather than folded into INCOME, so a cycle
+  // funded by borrowing can't read as a cycle funded by earning.
+  if (report.nonIncome.total > 0) {
+    const stripH = 30;
+    doc.setFillColor(...AMBER_SOFT);
+    doc.roundedRect(margin, y, contentW, stripH, 8, 8, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(T.body);
+    doc.setTextColor(...AMBER);
+    doc.text(report.nonIncomeLabel, margin + 16, y + 19);
+    doc.setFont("helvetica", "bold");
+    doc.text(rm(report.nonIncome.total), margin + contentW - 16, y + 19, {
+      align: "right",
+    });
+    y += stripH + 12;
+  }
+  y += 12;
 
   // ---- Spending split bar ----
   if (report.split.length > 0 && report.expenses > 0) {
@@ -397,7 +419,11 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
       ],
       body: report.transactions.map((t, i) => {
         const details =
-          t.note && t.type !== "income" ? `${t.label} · ${t.note}` : t.label;
+          t.note && t.type !== "income"
+            ? `${t.label} · ${t.note}`
+            : t.sourceLabel
+              ? `${t.label} · ${t.sourceLabel}`
+              : t.label;
         const account =
           t.type === "transfer" && t.toAccountName
             ? `${t.accountName}\n${t.toAccountName}`

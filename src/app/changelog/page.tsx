@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "8 October 2026";
+const LAST_UPDATED = "9 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -35,6 +35,10 @@ const releases: Release[] = [
       {
         type: "feat",
         text: "Your home screen shows borrowed money and savings withdrawals on their own line, separate from income, so you can see at a glance when a cycle was funded by borrowing rather than earning",
+      },
+      {
+        type: "feat",
+        text: "A transaction's source now shows everywhere you look at it: in the transaction details, in the confirm step before saving, in your PDF report and in your CSV export. Your report also lists borrowed money and savings withdrawals on their own line, same as the home screen",
       },
       {
         type: "fix",

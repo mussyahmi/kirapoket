@@ -1,4 +1,5 @@
 import type { Account, Category, Transaction } from "@/lib/types";
+import { incomeSourceOf, incomeSourceMeta } from "@/lib/income";
 
 function escapeField(value: string): string {
   if (/[",\n\r]/.test(value) || value !== value.trim()) {
@@ -20,6 +21,7 @@ const HEADERS = [
   "To Account",
   "Category",
   "Subcategory",
+  "Source",
   "Note",
 ];
 
@@ -46,6 +48,9 @@ export function transactionsToCsv(
       t.toAccountId ? (accountMap.get(t.toAccountId)?.name ?? "") : "",
       category?.name ?? "",
       parent?.name ?? "",
+      // Income only. Always written (including "Earned") so anything reading
+      // the file can tell a tagged row from a blank one.
+      t.type === "income" ? incomeSourceMeta(incomeSourceOf(t)).label : "",
       t.note ?? "",
     ]);
   });

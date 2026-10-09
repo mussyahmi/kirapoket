@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import { cn } from "@/lib/utils";
+import { incomeSourceOf, incomeSourceMeta } from "@/lib/income";
 import { l1Color } from "@/lib/palette";
 import type { Transaction } from "@/lib/types";
 
@@ -956,6 +957,15 @@ function TransactionsPage() {
                           ? ` › ${category.name}`
                           : ""}
                       </span>
+                    </p>
+                  )}
+                  {/* Source is income's equivalent of a category, so it uses
+                      the same tag icon. They never collide: category is
+                      expense-only. */}
+                  {tx.type === "income" && (
+                    <p className="flex items-center gap-2">
+                      <TagIcon className="size-4 shrink-0 text-muted-foreground" />
+                      <span>{incomeSourceMeta(incomeSourceOf(tx)).label}</span>
                     </p>
                   )}
                   {tx.note && tx.type !== "income" && (

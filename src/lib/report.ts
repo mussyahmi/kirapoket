@@ -1,6 +1,11 @@
 import { format } from "date-fns";
 import type { Account, Category, Transaction } from "@/lib/types";
-import { sumEarnedIncome } from "./income";
+import {
+  sumEarnedIncome,
+  nonIncomeInflowBreakdown,
+  incomeSourceOf,
+  incomeSourceMeta,
+} from "./income";
 
 export interface CategoryReportNode {
   id: string;
@@ -21,6 +26,8 @@ export interface ReportTransaction {
   accountName: string;
   toAccountName?: string;
   note?: string;
+  /** Income only, and only when it isn't plain earned income. */
+  sourceLabel?: string;
 }
 
 export interface SplitSlice {
@@ -39,6 +46,9 @@ export interface CycleReport {
   income: number;
   expenses: number;
   net: number;
+  /** Money in that isn't income: loans taken and savings withdrawn. */
+  nonIncome: { borrowed: number; withdrawn: number; total: number };
+  nonIncomeLabel: string;
   hasPrev: boolean;
   prevIncome?: number;
   prevExpenses?: number;
@@ -90,6 +100,13 @@ export function buildCycleReport(
     );
 
   const income = sumEarnedIncome(cycleTx);
+  const nonIncome = nonIncomeInflowBreakdown(cycleTx);
+  const nonIncomeLabel =
+    nonIncome.borrowed > 0 && nonIncome.withdrawn > 0
+      ? "Borrowed or withdrawn this cycle"
+      : nonIncome.borrowed > 0
+        ? "Borrowed this cycle"
+        : "Withdrawn from savings this cycle";
   const expenses = cycleTx
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
@@ -213,6 +230,12 @@ export function buildCycleReport(
         ? (accountMap.get(t.toAccountId)?.name ?? "—")
         : undefined,
       note: t.note?.trim() || undefined,
+      // Only when it varies from the default. A dense table repeating
+      // "Earned" on every salary row is noise, not information.
+      sourceLabel:
+        t.type === "income" && incomeSourceOf(t) !== "earned"
+          ? incomeSourceMeta(incomeSourceOf(t)).label
+          : undefined,
     };
   });
 
@@ -225,6 +248,8 @@ export function buildCycleReport(
     income,
     expenses,
     net: income - expenses,
+    nonIncome,
+    nonIncomeLabel,
     hasPrev,
     prevIncome,
     prevExpenses,

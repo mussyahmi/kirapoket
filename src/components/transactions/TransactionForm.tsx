@@ -477,6 +477,7 @@ export function TransactionForm({
       dateLabel: format(selectedDate, "d MMM yyyy"),
       timeLabel,
       categoryPath: txType === "expense" ? path || undefined : undefined,
+      sourceLabel: txType === "income" ? sourceMeta.label : undefined,
       fromAccount: accountName(accountId),
       toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
       note: note.trim() || undefined,
@@ -485,6 +486,7 @@ export function TransactionForm({
   }, [
     amount,
     txType,
+    sourceMeta,
     selectedDate,
     time,
     accountId,

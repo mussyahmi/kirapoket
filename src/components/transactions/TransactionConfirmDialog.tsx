@@ -26,6 +26,8 @@ export type TxConfirmSummary = {
   dateLabel: string;
   timeLabel?: string;
   categoryPath?: string;
+  /** Income only: "Earned", "Borrowed", etc. */
+  sourceLabel?: string;
   fromAccount?: string;
   toAccount?: string;
   note?: string;
@@ -142,6 +144,9 @@ export function TransactionConfirmDialog({
               )}
               {summary.categoryPath && (
                 <Row label="Category">{summary.categoryPath}</Row>
+              )}
+              {summary.sourceLabel && (
+                <Row label="Source">{summary.sourceLabel}</Row>
               )}
               {summary.note && <Row label="Note">{summary.note}</Row>}
             </div>
