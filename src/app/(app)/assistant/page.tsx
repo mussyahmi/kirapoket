@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { SparklesIcon, SendIcon } from "lucide-react";
+import { SparklesIcon, SendIcon, ArrowLeftIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildAssistantContext } from "@/lib/aiContext";
@@ -79,6 +80,7 @@ function AssistantChat() {
     saveUserProfile,
   } = useApp();
   const { user } = useAuth();
+  const router = useRouter();
   const readOnly = isViewingPartner || isImpersonating;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -88,6 +90,29 @@ function AssistantChat() {
   const [savingNote, setSavingNote] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isAdmin = user?.uid === ADMIN_UID;
+
+  /**
+   * True if the user has effectively saved this already. Compared loosely,
+   * since the model rarely proposes the exact same wording twice.
+   */
+  const alreadyKnown = (note?: string) => {
+    if (!note) return false;
+    const norm = (t: string) =>
+      t
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const existing = norm(userProfile?.assistantNotes ?? "");
+    if (!existing) return false;
+    const candidate = norm(note);
+    if (existing.includes(candidate)) return true;
+    // Fall back to word overlap so a reworded duplicate is still caught.
+    const words = candidate.split(" ").filter((w) => w.length > 3);
+    if (words.length === 0) return false;
+    const hits = words.filter((w) => existing.includes(w)).length;
+    return hits / words.length >= 0.8;
+  };
 
   /**
    * Appends a proposed fact to the user's notes. Nothing is ever written
@@ -191,8 +216,16 @@ function AssistantChat() {
           {
             role: "assistant",
             text: data.reply ?? "",
-            suggestedNote: data.suggestedNote || undefined,
-            noteState: data.suggestedNote ? "offered" : undefined,
+            // Don't offer something already in their notes. The save path
+            // catches duplicates too, but being re-asked for a fact you
+            // already saved reads as the app not listening.
+            suggestedNote: alreadyKnown(data.suggestedNote)
+              ? undefined
+              : data.suggestedNote || undefined,
+            noteState:
+              data.suggestedNote && !alreadyKnown(data.suggestedNote)
+                ? "offered"
+                : undefined,
           },
         ]);
       }
@@ -222,16 +255,23 @@ function AssistantChat() {
 
   return (
     <div
-      // Fills the screen under the mobile header (61px, or 69px with the
-      // larger touch targets). The shell's pb-32 nav gutter is cancelled
-      // with -mb-32: it's sized for scrolling content, and left in place it
-      // parks the composer a whole nav-height above the nav. The composer
-      // clears the nav itself.
-      className="max-w-2xl mx-auto px-4 flex flex-col min-h-[calc(100dvh-61px)] pointer-coarse:min-h-[calc(100dvh-69px)] -mb-32 md:mb-0 md:min-h-[calc(100dvh-2rem)]"
+      // On mobile the shell hides its header and bottom nav for this route, so
+      // the conversation owns the viewport and the composer can sit on the
+      // keyboard. On desktop the sidebar stays and only the top padding differs.
+      className="max-w-2xl mx-auto px-4 flex flex-col h-[100dvh] md:h-auto md:min-h-[calc(100dvh-2rem)]"
     >
-      {/* Header */}
+      {/* Header. The back button only exists on mobile, where the shell's
+          chrome is hidden and this is the only way out. */}
       <div className="flex items-center gap-3 py-4 shrink-0">
-        <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Back"
+          className="md:hidden size-9 pointer-coarse:size-11 -ml-2 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
+        >
+          <ArrowLeftIcon className="size-5" />
+        </button>
+        <div className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 md:flex">
           <SparklesIcon className="size-5 text-primary" />
         </div>
         <div>
@@ -243,7 +283,7 @@ function AssistantChat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 pb-4">
+      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pb-4 md:overflow-visible">
         {messages.length === 0 && !loading && (
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-sm text-foreground/80">
@@ -406,12 +446,9 @@ function AssistantChat() {
       </div>
 
       {/* Input */}
-      {/* Not sticky on mobile: the shell's <main> is the nearest scroll
-          container but never scrolls itself (the document does), and its
-          pb-32 shifts any sticky bottom up by 8rem. Bottom padding = the
-          nav's bottom offset (same max() as AppShell) + its 4rem height + a
-          0.75rem gap, so the composer sits just above the nav. */}
-      <div className="z-20 shrink-0 bg-background pb-[calc(max(1.25rem,_env(safe-area-inset-bottom)_+_0.5rem)_+_4.75rem)] md:sticky md:bottom-4 md:pb-2">
+      {/* Pinned to the bottom of the conversation. With the nav gone there is
+          nothing to clear but the home indicator. */}
+      <div className="z-20 shrink-0 bg-background pb-[max(0.5rem,env(safe-area-inset-bottom))] md:sticky md:bottom-4 md:pb-2">
         <form
           onSubmit={(e) => {
             e.preventDefault();

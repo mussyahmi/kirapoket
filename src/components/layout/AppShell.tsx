@@ -86,6 +86,10 @@ export function AppShell({
   banner?: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // The assistant is a conversation, not a page you scroll. On mobile it takes
+  // the whole screen so the input can sit on the keyboard, with its own back
+  // button instead of the shell's chrome.
+  const fullScreenMobile = pathname === "/assistant";
   const {
     userProfile,
     activeAccounts,
@@ -431,6 +435,7 @@ export function AppShell({
         <header
           className={cn(
             "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60]",
+            fullScreenMobile && "hidden",
             // Matches the page background, with a hairline to separate from content
             "bg-background border-b border-border",
           )}
@@ -558,7 +563,13 @@ export function AppShell({
 
         {/* Page Content */}
         {banner}
-        <main className="flex-1 overflow-auto pb-32 md:pb-0">
+        <main
+          className={cn(
+            "flex-1 overflow-auto md:pb-0",
+            // No floating bottom nav to clear when the page owns the screen
+            fullScreenMobile ? "pb-0" : "pb-32",
+          )}
+        >
           <PullToRefresh onRefresh={refreshAll}>{children}</PullToRefresh>
         </main>
       </div>
@@ -581,6 +592,7 @@ export function AppShell({
         className={cn(
           "md:hidden fixed left-1/2 -translate-x-1/2 z-50 flex items-center justify-around px-2",
           "rounded-3xl",
+          fullScreenMobile && "hidden",
           // Slide out of the way while the add-transaction sheet is open
           addOpen && "translate-y-[140%] opacity-0 pointer-events-none",
           // Minimal fill — the bar tints toward whatever content scrolls behind it
