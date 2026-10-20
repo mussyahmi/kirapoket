@@ -195,7 +195,7 @@ export default function AdminPage() {
       toast.success("Demo data seeded");
     } catch (e) {
       console.error(e);
-      toast.error("Seed failed — check console");
+      toast.error("Seed failed, check console");
     } finally {
       setSeedingDemo(false);
     }
@@ -367,7 +367,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Last signup — time since the acquisition funnel last produced a user */}
+            {/* Last signup, time since the acquisition funnel last produced a user */}
             <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -671,9 +671,9 @@ export default function AdminPage() {
                         ) : (
                           stats && (
                             <div className="space-y-3">
-                              <div className="flex gap-6">
+                              <div className="flex flex-wrap gap-x-6 gap-y-3">
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
                                     Transactions
                                   </p>
                                   <p className="text-base font-bold">
@@ -681,7 +681,7 @@ export default function AdminPage() {
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
                                     Accounts
                                   </p>
                                   <p className="text-base font-bold">
@@ -690,7 +690,7 @@ export default function AdminPage() {
                                 </div>
                                 {stats.activeCycles != null && (
                                   <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
                                       Active cycles
                                     </p>
                                     <p className="text-base font-bold">
@@ -698,6 +698,19 @@ export default function AdminPage() {
                                       <span className="text-xs font-normal text-muted-foreground">
                                         /{stats.totalCycles}
                                       </span>
+                                    </p>
+                                  </div>
+                                )}
+                                {/* Volume only. What someone asked their money
+                                    assistant is never recorded. */}
+                                {(stats.aiMessagesToday > 0 ||
+                                  stats.aiTokensMonth > 0) && (
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium whitespace-nowrap">
+                                      AI today
+                                    </p>
+                                    <p className="text-base font-bold">
+                                      {stats.aiMessagesToday}
                                     </p>
                                   </div>
                                 )}
@@ -729,6 +742,13 @@ export default function AdminPage() {
                                         % of cycles
                                       </>
                                     )}
+                                  {stats.aiTokensMonth > 0 && (
+                                    <>
+                                      {" · "}
+                                      {stats.aiTokensMonth.toLocaleString()} AI
+                                      tokens this month
+                                    </>
+                                  )}
                                 </p>
                               )}
                             </div>

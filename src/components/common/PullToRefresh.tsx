@@ -110,7 +110,7 @@ export default function PullToRefresh({
 
   return (
     <>
-      {/* Spinner indicator — centred in the gap the sliding content opens up,
+      {/* Spinner indicator, centred in the gap the sliding content opens up,
           just below the sticky header */}
       <div
         aria-hidden={pull === 0}

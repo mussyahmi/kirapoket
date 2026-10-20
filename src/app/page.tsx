@@ -268,7 +268,7 @@ function MockDashboard() {
           className="absolute top-[5px] left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-white/20 md:top-[7px] md:w-14"
         />
         <div className="mock-window relative overflow-hidden rounded-[1.5rem] border-0 bg-background select-none md:rounded-[2rem]">
-          {/* Faux status bar — sells the device and covers the panning cut edge */}
+          {/* Faux status bar, sells the device and covers the panning cut edge */}
           <div className="text-foreground absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-background/80 px-4 py-2 text-xs font-medium backdrop-blur-sm">
             <span>9:41</span>
             <span className="flex items-center gap-2">
@@ -278,226 +278,232 @@ function MockDashboard() {
             </span>
           </div>
           <div className="mock-pan space-y-4 p-3 pt-12">
-          {/* cycle selector */}
-          <div className="flex items-center justify-between px-1">
-            <ChevronLeft className="size-4 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">
-              25 Mar – 24 Apr 2026
-            </p>
-            <span className="inline-flex h-7 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium">
-              <Download className="size-3.5" /> Report
-            </span>
-          </div>
-
-          {/* summary — literally the same component the dashboard renders,
-              so the marketing shot cannot drift from the product */}
-          <CycleSummaryCard
-            remaining={2190}
-            income={4500}
-            expenses={2310}
-            hasPrev
-            prevRemaining={1845}
-            prevIncome={4300}
-            prevExpenses={2455}
-          />
-
-          {/* accounts */}
-          <MockCard
-            title="Accounts"
-            action={<Wallet className="size-4 shrink-0 text-muted-foreground" />}
-          >
-            <div className="space-y-3">
-              {MOCK_ACCOUNTS.map(({ name, balance }) => (
-                <div
-                  key={name}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="min-w-0 truncate text-sm text-foreground">
-                    {name}
-                  </span>
-                  <span className="shrink-0 text-sm font-medium tabular-nums">
-                    {balance}
-                  </span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between border-t border-border pt-2">
-                <span className="text-sm font-medium">Total</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  RM 7,190.00
-                </span>
-              </div>
+            {/* cycle selector */}
+            <div className="flex items-center justify-between px-1">
+              <ChevronLeft className="size-4 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                25 Mar – 24 Apr 2026
+              </p>
+              <span className="inline-flex h-7 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium">
+                <Download className="size-3.5" /> Report
+              </span>
             </div>
-          </MockCard>
 
-          {/* spending by category */}
-          <MockCard
-            title="Spending by Category"
-            subtitle="vs previous full cycle"
-          >
-            <div className="space-y-4">
-              <div className="space-y-3 border-b border-border pb-3">
-                <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
-                  {MOCK_PIE.map(({ color, value, label }) => (
-                    <span
-                      key={label}
-                      style={{
-                        width: `${(value / MOCK_PIE_TOTAL) * 100}%`,
-                        backgroundColor: color,
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-                  {MOCK_PIE.map(({ label, value, color }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2 text-xs"
-                    >
-                      <span
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span>
-                        {label} {Math.round((value / MOCK_PIE_TOTAL) * 100)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {MOCK_L1.map(({ label, spent, dot, border, delta, l2 }) => (
-                <div key={label} className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2">
-                      <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: dot }}
-                      />
-                      <span className="text-sm font-semibold">{label}</span>
+            {/* summary, literally the same component the dashboard renders,
+              so the marketing shot cannot drift from the product */}
+            <CycleSummaryCard
+              remaining={2190}
+              income={4500}
+              expenses={2310}
+              hasPrev
+              prevRemaining={1845}
+              prevIncome={4300}
+              prevExpenses={2455}
+            />
+
+            {/* accounts */}
+            <MockCard
+              title="Accounts"
+              action={
+                <Wallet className="size-4 shrink-0 text-muted-foreground" />
+              }
+            >
+              <div className="space-y-3">
+                {MOCK_ACCOUNTS.map(({ name, balance }) => (
+                  <div
+                    key={name}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="min-w-0 truncate text-sm text-foreground">
+                      {name}
                     </span>
-                    <span className="flex shrink-0 items-center gap-3">
-                      <span className="text-sm tabular-nums">{spent}</span>
-                      <span
-                        className={`inline-flex w-20 items-center justify-end gap-0.5 text-xs tabular-nums ${delta?.color ?? ""}`}
-                      >
-                        {delta &&
-                          (delta.direction === "up" ? (
-                            <ArrowUp className="size-3" />
-                          ) : (
-                            <ArrowDown className="size-3" />
-                          ))}
-                        {delta?.amount ?? ""}
-                      </span>
+                    <span className="shrink-0 text-sm font-medium tabular-nums">
+                      {balance}
                     </span>
                   </div>
-                  <div
-                    className="space-y-2 border-l-2 pl-4"
-                    style={{ borderColor: border }}
-                  >
-                    {l2.map(({ name, spent: l2spent, delta: l2delta, l3 }) => (
-                      <div key={name} className="space-y-1">
-                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                          <span className="min-w-0 truncate">{name}</span>
-                          <span className="flex shrink-0 items-center gap-3">
-                            <span className="tabular-nums">{l2spent}</span>
-                            <span
-                              className={`inline-flex w-20 items-center justify-end gap-0.5 tabular-nums ${l2delta?.color ?? ""}`}
-                            >
-                              {l2delta &&
-                                (l2delta.direction === "up" ? (
-                                  <ArrowUp className="size-3" />
-                                ) : (
-                                  <ArrowDown className="size-3" />
-                                ))}
-                              {l2delta?.amount ?? ""}
-                            </span>
-                          </span>
-                        </div>
-                        {l3.length > 0 && (
-                          <div className="space-y-0.5 border-l border-border pl-3">
-                            {l3.map(
-                              ({
-                                name: l3name,
-                                spent: l3spent,
-                                delta: l3delta,
-                              }) => (
-                                <div
-                                  key={l3name}
-                                  className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
-                                >
-                                  <span className="min-w-0 truncate">
-                                    {l3name}
-                                  </span>
-                                  <span className="flex shrink-0 items-center gap-3">
-                                    <span className="tabular-nums">
-                                      {l3spent}
-                                    </span>
-                                    <span
-                                      className={`inline-flex w-20 items-center justify-end gap-0.5 tabular-nums ${l3delta?.color ?? ""}`}
-                                    >
-                                      {l3delta &&
-                                        (l3delta.direction === "up" ? (
-                                          <ArrowUp className="size-3" />
-                                        ) : (
-                                          <ArrowDown className="size-3" />
-                                        ))}
-                                      {l3delta?.amount ?? ""}
-                                    </span>
-                                  </span>
-                                </div>
-                              ),
-                            )}
-                          </div>
-                        )}
-                      </div>
+                ))}
+                <div className="flex items-center justify-between border-t border-border pt-2">
+                  <span className="text-sm font-medium">Total</span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    RM 7,190.00
+                  </span>
+                </div>
+              </div>
+            </MockCard>
+
+            {/* spending by category */}
+            <MockCard
+              title="Spending by Category"
+              subtitle="vs previous full cycle"
+            >
+              <div className="space-y-4">
+                <div className="space-y-3 border-b border-border pb-3">
+                  <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+                    {MOCK_PIE.map(({ color, value, label }) => (
+                      <span
+                        key={label}
+                        style={{
+                          width: `${(value / MOCK_PIE_TOTAL) * 100}%`,
+                          backgroundColor: color,
+                        }}
+                      />
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          </MockCard>
-
-          {/* recent transactions */}
-          <MockCard title="Recent Transactions">
-            <div className="space-y-3">
-              {MOCK_RECENT.map(({ group, txs }) => (
-                <div key={group}>
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    {group}
-                  </p>
-                  <div className="space-y-0.5">
-                    {txs.map(({ name, sub, amount, income }) => (
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    {MOCK_PIE.map(({ label, value, color }) => (
                       <div
-                        key={name + sub}
-                        className="flex items-center gap-3 py-2"
+                        key={label}
+                        className="flex items-center gap-2 text-xs"
                       >
-                        <div
-                          className={`flex size-8 shrink-0 items-center justify-center rounded-full ${income ? "bg-success-soft text-success-strong" : "bg-danger-soft text-danger-strong"}`}
-                        >
-                          {income ? (
-                            <ArrowDownRight className="size-4" />
-                          ) : (
-                            <ArrowUpRight className="size-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{name}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {sub}
-                          </p>
-                        </div>
                         <span
-                          className={`shrink-0 text-sm font-semibold tabular-nums ${income ? "text-success" : "text-danger"}`}
-                        >
-                          {amount}
+                          className="size-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span>
+                          {label} {Math.round((value / MOCK_PIE_TOTAL) * 100)}%
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </MockCard>
+                {MOCK_L1.map(({ label, spent, dot, border, delta, l2 }) => (
+                  <div key={label} className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span
+                          className="size-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: dot }}
+                        />
+                        <span className="text-sm font-semibold">{label}</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-3">
+                        <span className="text-sm tabular-nums">{spent}</span>
+                        <span
+                          className={`inline-flex w-20 items-center justify-end gap-0.5 text-xs tabular-nums ${delta?.color ?? ""}`}
+                        >
+                          {delta &&
+                            (delta.direction === "up" ? (
+                              <ArrowUp className="size-3" />
+                            ) : (
+                              <ArrowDown className="size-3" />
+                            ))}
+                          {delta?.amount ?? ""}
+                        </span>
+                      </span>
+                    </div>
+                    <div
+                      className="space-y-2 border-l-2 pl-4"
+                      style={{ borderColor: border }}
+                    >
+                      {l2.map(
+                        ({ name, spent: l2spent, delta: l2delta, l3 }) => (
+                          <div key={name} className="space-y-1">
+                            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                              <span className="min-w-0 truncate">{name}</span>
+                              <span className="flex shrink-0 items-center gap-3">
+                                <span className="tabular-nums">{l2spent}</span>
+                                <span
+                                  className={`inline-flex w-20 items-center justify-end gap-0.5 tabular-nums ${l2delta?.color ?? ""}`}
+                                >
+                                  {l2delta &&
+                                    (l2delta.direction === "up" ? (
+                                      <ArrowUp className="size-3" />
+                                    ) : (
+                                      <ArrowDown className="size-3" />
+                                    ))}
+                                  {l2delta?.amount ?? ""}
+                                </span>
+                              </span>
+                            </div>
+                            {l3.length > 0 && (
+                              <div className="space-y-0.5 border-l border-border pl-3">
+                                {l3.map(
+                                  ({
+                                    name: l3name,
+                                    spent: l3spent,
+                                    delta: l3delta,
+                                  }) => (
+                                    <div
+                                      key={l3name}
+                                      className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+                                    >
+                                      <span className="min-w-0 truncate">
+                                        {l3name}
+                                      </span>
+                                      <span className="flex shrink-0 items-center gap-3">
+                                        <span className="tabular-nums">
+                                          {l3spent}
+                                        </span>
+                                        <span
+                                          className={`inline-flex w-20 items-center justify-end gap-0.5 tabular-nums ${l3delta?.color ?? ""}`}
+                                        >
+                                          {l3delta &&
+                                            (l3delta.direction === "up" ? (
+                                              <ArrowUp className="size-3" />
+                                            ) : (
+                                              <ArrowDown className="size-3" />
+                                            ))}
+                                          {l3delta?.amount ?? ""}
+                                        </span>
+                                      </span>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </MockCard>
+
+            {/* recent transactions */}
+            <MockCard title="Recent Transactions">
+              <div className="space-y-3">
+                {MOCK_RECENT.map(({ group, txs }) => (
+                  <div key={group}>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      {group}
+                    </p>
+                    <div className="space-y-0.5">
+                      {txs.map(({ name, sub, amount, income }) => (
+                        <div
+                          key={name + sub}
+                          className="flex items-center gap-3 py-2"
+                        >
+                          <div
+                            className={`flex size-8 shrink-0 items-center justify-center rounded-full ${income ? "bg-success-soft text-success-strong" : "bg-danger-soft text-danger-strong"}`}
+                          >
+                            {income ? (
+                              <ArrowDownRight className="size-4" />
+                            ) : (
+                              <ArrowUpRight className="size-4" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {name}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {sub}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 text-sm font-semibold tabular-nums ${income ? "text-success" : "text-danger"}`}
+                          >
+                            {amount}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </MockCard>
           </div>
           {/* Soften both cut edges so the window reads as a viewport, not a crop */}
           <div
@@ -617,8 +623,8 @@ function InstallBanner() {
           <ol className="text-xs text-muted-foreground mt-1 leading-relaxed space-y-0.5">
             <li>
               1. Tap the{" "}
-              <span className="font-medium text-foreground">Share</span>{" "}
-              button (⬆︎) in Safari&apos;s toolbar
+              <span className="font-medium text-foreground">Share</span> button
+              (⬆︎) in Safari&apos;s toolbar
             </li>
             <li>
               2. Scroll and tap{" "}
@@ -748,8 +754,8 @@ export default function LandingPage() {
   const typedGreeting = useTyping(profileReady ? greeting : "", 55, 500);
   const displayName =
     user && !loadingProfile
-    ? (ownProfile?.displayName ?? user.displayName ?? user.email ?? "")
-    : "";
+      ? (ownProfile?.displayName ?? user.displayName ?? user.email ?? "")
+      : "";
   // Same precedence as Settings: an uploaded avatar overrides the Google photo.
   const avatarSrc = ownProfile?.customPhotoURL ?? user?.photoURL ?? null;
   const nameDelay = 500 + greeting.length * 55 + 80;
@@ -884,7 +890,7 @@ export default function LandingPage() {
         {/* ── Two-column hero (stacked on mobile, side-by-side on md+) ── */}
         <main className="flex-1 flex items-center px-6 md:px-12 py-12 md:py-0">
           <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
-            {/* Left — copy + CTA */}
+            {/* Left, copy + CTA */}
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-4">
                 <div
@@ -906,7 +912,7 @@ export default function LandingPage() {
                   style={{ animationDelay: "220ms" }}
                 >
                   Track spending by your salary cycle, not the calendar.
-                  Organise every cent into Needs, Wants, and Savings — with
+                  Organise every cent into Needs, Wants, and Savings, with
                   budgets, an AI assistant, and a shared partner view.
                 </p>
               </div>
@@ -974,7 +980,7 @@ export default function LandingPage() {
                   <FeatureCard
                     icon={Sparkles}
                     title="AI Assistant"
-                    desc="Chat about your spending and budgets, grounded in your real data — coming soon."
+                    desc="Chat about your spending and budgets, grounded in your real data, coming soon."
                   />
                 </div>
                 <div
@@ -984,7 +990,7 @@ export default function LandingPage() {
                   <FeatureCard
                     icon={HandCoins}
                     title="Debt Tracker"
-                    desc="Track what you owe and what's owed to you — with Pay and Collect flows."
+                    desc="Track what you owe and what's owed to you, with Pay and Collect flows."
                   />
                 </div>
                 <div
@@ -1015,7 +1021,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right — mock dashboard */}
+            {/* Right, mock dashboard */}
             <div
               className="anim-slide-right w-full md:ml-auto md:w-[417px]"
               style={{ animationDelay: "200ms" }}
@@ -1025,7 +1031,7 @@ export default function LandingPage() {
           </div>
         </main>
 
-        {/* Closing CTA — the hero button scrolls away on a phone, and by here
+        {/* Closing CTA, the hero button scrolls away on a phone, and by here
             the reader has gone through every feature. Same action as the hero,
             so it isn't a second competing primary. Hidden in an in-app browser
             where Google sign-in is blocked anyway. */}

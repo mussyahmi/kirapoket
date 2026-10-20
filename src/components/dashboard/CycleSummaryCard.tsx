@@ -4,6 +4,8 @@ import {
   ArrowUpRightIcon,
   ArrowDownRightIcon,
   TriangleAlertIcon,
+  GiftIcon,
+  UsersIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -86,6 +88,10 @@ export interface CycleSummaryProps {
   borrowed?: number;
   /** Labels the line precisely when it's only one of the two. */
   borrowedLabel?: string;
+  /** Gifts within `income`, so a Raya month doesn't read as a raise. */
+  gifts?: number;
+  /** Money held for others not yet spent on them. Hidden unless positive. */
+  heldForOthers?: number;
 }
 
 export function CycleSummaryCard({
@@ -98,6 +104,8 @@ export function CycleSummaryCard({
   prevExpenses,
   borrowed = 0,
   borrowedLabel = "Borrowed or withdrawn this cycle",
+  gifts = 0,
+  heldForOthers = 0,
 }: CycleSummaryProps) {
   const spentPct = income > 0 ? (expenses / income) * 100 : null;
   const heroDiff = prevRemaining === undefined ? 0 : remaining - prevRemaining;
@@ -107,7 +115,7 @@ export function CycleSummaryCard({
   return (
     <Card className="overflow-hidden py-0">
       <CardContent className="p-0">
-        {/* Hero — a tinted ground carries the mood so the number itself can
+        {/* Hero, a tinted ground carries the mood so the number itself can
             stay neutral and simply be the biggest thing on the page. */}
         <div
           className={cn(
@@ -151,7 +159,7 @@ export function CycleSummaryCard({
             />
           )}
         </div>
-        {/* Supporting — the two inputs that produced the figure above */}
+        {/* Supporting, the two inputs that produced the figure above */}
         <div className="grid grid-cols-2 divide-x divide-border border-t border-border">
           {[
             {
@@ -219,6 +227,28 @@ export function CycleSummaryCard({
             </p>
             <p className="text-xs font-semibold tabular-nums text-warning-strong">
               {money(borrowed)}
+            </p>
+          </div>
+        )}
+        {gifts > 0 && (
+          <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">
+            <GiftIcon className="size-4 shrink-0 text-muted-foreground" />
+            <p className="flex-1 text-xs text-muted-foreground">
+              Income includes gifts
+            </p>
+            <p className="text-xs font-semibold tabular-nums text-muted-foreground">
+              {money(gifts)}
+            </p>
+          </div>
+        )}
+        {heldForOthers > 0 && (
+          <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">
+            <UsersIcon className="size-4 shrink-0 text-muted-foreground" />
+            <p className="flex-1 text-xs text-muted-foreground">
+              Still holding for others
+            </p>
+            <p className="text-xs font-semibold tabular-nums text-muted-foreground">
+              {money(heldForOthers)}
             </p>
           </div>
         )}

@@ -48,8 +48,16 @@ export function LogoMark({
     >
       <rect width="100" height="100" rx={radius} fill={tile} />
       <path d={K_PATH} fill={ink} />
-      {/* Spend meter: track, then ~60% fill — same proportions as a mid-cycle bar */}
-      <rect x="22" y="67" width="56" height="13" rx="6.5" fill={ink} opacity="0.35" />
+      {/* Spend meter: track, then ~60% fill, same proportions as a mid-cycle bar */}
+      <rect
+        x="22"
+        y="67"
+        width="56"
+        height="13"
+        rx="6.5"
+        fill={ink}
+        opacity="0.35"
+      />
       <rect x="22" y="67" width="34" height="13" rx="6.5" fill={ink} />
     </svg>
   );

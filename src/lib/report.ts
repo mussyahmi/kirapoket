@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import type { Account, Category, Transaction } from "@/lib/types";
 import {
   sumEarnedIncome,
+  isOwnExpense,
   nonIncomeInflowBreakdown,
   incomeSourceOf,
   incomeSourceMeta,
@@ -26,7 +27,7 @@ export interface ReportTransaction {
   accountName: string;
   toAccountName?: string;
   note?: string;
-  /** Income only, and only when it isn't plain earned income. */
+  /** Non-earned income, or an expense paid for others. */
   sourceLabel?: string;
 }
 
@@ -67,7 +68,7 @@ function aggregateSpending(
 ): Record<string, number> {
   const result: Record<string, number> = {};
   for (const t of txs) {
-    if (t.type !== "expense" || !t.categoryId) continue;
+    if (!isOwnExpense(t) || !t.categoryId) continue;
     let cat = categoryMap.get(t.categoryId);
     while (cat && cat.level !== targetLevel && cat.parentId) {
       cat = categoryMap.get(cat.parentId);
@@ -108,7 +109,7 @@ export function buildCycleReport(
         ? "Borrowed this cycle"
         : "Withdrawn from savings this cycle";
   const expenses = cycleTx
-    .filter((t) => t.type === "expense")
+    .filter(isOwnExpense)
     .reduce((s, t) => s + t.amount, 0);
 
   const l1Spending = aggregateSpending(cycleTx, categoryMap, 1);
@@ -134,7 +135,7 @@ export function buildCycleReport(
       hasPrev = true;
       prevIncome = sumEarnedIncome(prevTx);
       prevExpenses = prevTx
-        .filter((t) => t.type === "expense")
+        .filter(isOwnExpense)
         .reduce((s, t) => s + t.amount, 0);
       prevNet = prevIncome - prevExpenses;
       prevL1 = aggregateSpending(prevTx, categoryMap, 1);
@@ -235,7 +236,9 @@ export function buildCycleReport(
       sourceLabel:
         t.type === "income" && incomeSourceOf(t) !== "earned"
           ? incomeSourceMeta(incomeSourceOf(t)).label
-          : undefined,
+          : t.type === "expense" && t.forOthers
+            ? "For others"
+            : undefined,
     };
   });
 

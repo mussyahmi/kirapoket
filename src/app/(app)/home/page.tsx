@@ -33,7 +33,10 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import {
   sumEarnedIncome,
+  isOwnExpense,
   nonIncomeInflowBreakdown,
+  sumGiftIncome,
+  heldForOthersBalance,
 } from "@/lib/income";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
@@ -228,7 +231,7 @@ function DashboardPage() {
     return transactions.filter((t) => t.date >= startStr && t.date <= endStr);
   }, [transactions, start, end]);
 
-  // Earned income only — loans and savings withdrawals are reported separately
+  // Earned income and gifts — loans and savings withdrawals are reported separately
   // below so a borrowed cycle can't read as an earned one.
   const totalIncome = useMemo(
     () => sumEarnedIncome(cycleTransactions),
@@ -237,6 +240,16 @@ function DashboardPage() {
 
   const nonIncome = useMemo(
     () => nonIncomeInflowBreakdown(cycleTransactions),
+    [cycleTransactions],
+  );
+
+  const gifts = useMemo(
+    () => sumGiftIncome(cycleTransactions),
+    [cycleTransactions],
+  );
+
+  const heldForOthers = useMemo(
+    () => heldForOthersBalance(cycleTransactions).left,
     [cycleTransactions],
   );
 
@@ -249,9 +262,7 @@ function DashboardPage() {
 
   const totalExpenses = useMemo(
     () =>
-      cycleTransactions
-        .filter((t) => t.type === "expense")
-        .reduce((s, t) => s + t.amount, 0),
+      cycleTransactions.filter(isOwnExpense).reduce((s, t) => s + t.amount, 0),
     [cycleTransactions],
   );
 
@@ -281,7 +292,7 @@ function DashboardPage() {
   const l1Spending = useMemo(() => {
     const result: Record<string, number> = {};
     for (const t of cycleTransactions) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
       while (cat && cat.level !== 1 && cat.parentId)
         cat = categoryMap[cat.parentId];
@@ -321,7 +332,7 @@ function DashboardPage() {
   const l2Spending = useMemo(() => {
     const result: Record<string, number> = {};
     for (const t of cycleTransactions) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
       while (cat && cat.level !== 2 && cat.parentId)
         cat = categoryMap[cat.parentId];
@@ -333,7 +344,7 @@ function DashboardPage() {
   const l3Spending = useMemo(() => {
     const result: Record<string, number> = {};
     for (const t of cycleTransactions) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       const cat = categoryMap[t.categoryId];
       if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
     }
@@ -359,16 +370,10 @@ function DashboardPage() {
 
   const hasPrev = prevCycleTx.length > 0;
 
-  const prevIncome = useMemo(
-    () => sumEarnedIncome(prevCycleTx),
-    [prevCycleTx],
-  );
+  const prevIncome = useMemo(() => sumEarnedIncome(prevCycleTx), [prevCycleTx]);
 
   const prevExpenses = useMemo(
-    () =>
-      prevCycleTx
-        .filter((t) => t.type === "expense")
-        .reduce((s, t) => s + t.amount, 0),
+    () => prevCycleTx.filter(isOwnExpense).reduce((s, t) => s + t.amount, 0),
     [prevCycleTx],
   );
 
@@ -381,7 +386,7 @@ function DashboardPage() {
     const result: Record<string, number> = {};
     if (!hasPrev) return result;
     for (const t of prevCycleTx) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
       while (cat && cat.level !== 1 && cat.parentId)
         cat = categoryMap[cat.parentId];
@@ -394,7 +399,7 @@ function DashboardPage() {
     const result: Record<string, number> = {};
     if (!hasPrev) return result;
     for (const t of prevCycleTx) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
       while (cat && cat.level !== 2 && cat.parentId)
         cat = categoryMap[cat.parentId];
@@ -407,7 +412,7 @@ function DashboardPage() {
     const result: Record<string, number> = {};
     if (!hasPrev) return result;
     for (const t of prevCycleTx) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       const cat = categoryMap[t.categoryId];
       if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
     }
@@ -641,7 +646,7 @@ function DashboardPage() {
         })()}
       </div>
 
-      {/* Cycle start banner — hidden in read-only mode */}
+      {/* Cycle start banner, hidden in read-only mode */}
       {!isReadOnly && userProfile?.salaryDay && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 pl-3 pr-4 py-3 border-l-2 border-l-primary">
           <BanknoteIcon className="size-4 text-primary shrink-0" />
@@ -762,12 +767,14 @@ function DashboardPage() {
           prevExpenses={prevExpenses}
           borrowed={nonIncome.total}
           borrowedLabel={nonIncomeLabel}
+          gifts={gifts}
+          heldForOthers={heldForOthers}
         />
       )}
 
       {!isReadOnly && <FeedbackPulse />}
 
-      {/* Account Balances — only shown for current cycle; balance is live and misleading for past cycles */}
+      {/* Account Balances, only shown for current cycle; balance is live and misleading for past cycles */}
       {cycleOffset < 0 ? null : loadingAccounts ? (
         <CardListSkeleton rows={3} />
       ) : (
@@ -806,7 +813,7 @@ function DashboardPage() {
                     {/* No type marker here. The colour encodes account *type*,
                         so a user whose accounts are mostly one type saw a column
                         of identical dots (then identical icons) carrying no
-                        information. This card is a balance list — name and
+                        information. This card is a balance list, name and
                         amount are the content. Type identity lives on
                         /accounts, next to an explicit label. */}
                     <span className="min-w-0 truncate text-sm text-foreground">
@@ -1065,7 +1072,7 @@ function DashboardPage() {
         </Card>
       )}
 
-      {/* Recent Transactions — only on the current cycle;"recent" is misleading when viewing a past cycle */}
+      {/* Recent Transactions, only on the current cycle;"recent" is misleading when viewing a past cycle */}
       {cycleOffset < 0 ? null : loadingTransactions ? (
         <CardListSkeleton rows={4} />
       ) : (

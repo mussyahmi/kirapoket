@@ -121,7 +121,10 @@ export function AddTransactionProvider({
       >
         <SheetContent
           side="bottom"
-          className="max-h-[92vh] rounded-t-2xl p-0 sm:mx-auto sm:max-w-xl"
+          // Full-screen on mobile (covers the app header); a regular bottom
+          // sheet from sm up. z-[65] clears the mobile header (z-60) while
+          // staying under the confirm dialog (z-70).
+          className="z-[65] h-dvh! max-h-none rounded-none p-0 sm:h-auto! sm:max-h-[92vh] sm:rounded-t-2xl sm:mx-auto sm:max-w-xl"
           // Hide the sheet's own close button while the confirm dialog is up —
           // it sits outside the receded area, so it'd otherwise stay sharp and
           // could close the whole sheet from behind the dialog.
@@ -130,6 +133,7 @@ export function AddTransactionProvider({
           <SheetHeader
             className={cn(
               "border-b shrink-0 transition-[filter,opacity] duration-200",
+              "pt-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] sm:pt-4",
               recede,
             )}
           >

@@ -16,6 +16,7 @@ import {
   DownloadIcon,
   WalletIcon,
   TagIcon,
+  UsersIcon,
   StickyNoteIcon,
   ReceiptTextIcon,
   SearchXIcon,
@@ -462,7 +463,7 @@ function TransactionsPage() {
         </div>
       </div>
 
-      {/* Filters — hidden until there is something to filter */}
+      {/* Filters, hidden until there is something to filter */}
       {hasAnyTransactions && (
         <div className="grid grid-cols-2 gap-2">
           <Select
@@ -517,7 +518,7 @@ function TransactionsPage() {
             </SelectContent>
           </Select>
 
-          {/* Category filter — full width */}
+          {/* Category filter, full width */}
           {(() => {
             const l1Cats = categories
               .filter((c) => c.level === 1)
@@ -546,7 +547,7 @@ function TransactionsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All categories</SelectItem>
-                  {/* §8 — a dropdown is just a floating box: it can carry the
+                  {/* §8, a dropdown is just a floating box: it can carry the
                       same Needs/Wants/Savings grouping the rest of the app
                       uses. This previously flattened all three roots away and
                       faked depth with a "·" prefix. */}
@@ -596,7 +597,7 @@ function TransactionsPage() {
             );
           })()}
 
-          {/* Period presets — the common cases (this cycle, last cycle) are one
+          {/* Period presets, the common cases (this cycle, last cycle) are one
               tap; From/To below stay for anything else. */}
           <Select value={periodValue} onValueChange={applyPeriod}>
             <SelectTrigger className="w-full col-span-2">
@@ -917,7 +918,7 @@ function TransactionsPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                {/* #13 — §2: labels are a last resort. The amount needs no
+                {/* #13, §2: labels are a last resort. The amount needs no
                     "AMOUNT" caption, a formatted date needs no "Date", and an
                     account name sits under an account-coloured icon. Folding
                     them away lets the figure own the dialog. */}
@@ -966,6 +967,12 @@ function TransactionsPage() {
                     <p className="flex items-center gap-2">
                       <TagIcon className="size-4 shrink-0 text-muted-foreground" />
                       <span>{incomeSourceMeta(incomeSourceOf(tx)).label}</span>
+                    </p>
+                  )}
+                  {tx.type === "expense" && tx.forOthers && (
+                    <p className="flex items-center gap-2">
+                      <UsersIcon className="size-4 shrink-0 text-muted-foreground" />
+                      <span>Paid for others</span>
                     </p>
                   )}
                   {tx.note && tx.type !== "income" && (

@@ -7,13 +7,11 @@ import {
   PlusIcon,
   Trash2Icon,
   GripVerticalIcon,
-  SparklesIcon,
   TagsIcon,
   ListIcon,
   PencilIcon,
   InfoIcon,
   ChevronDownIcon,
-  ChevronRightIcon,
   CircleHelpIcon,
 } from "lucide-react";
 import {
@@ -59,7 +57,7 @@ import { cn } from "@/lib/utils";
 import { l1Color, tint } from "@/lib/palette";
 import { SpendMeter } from "@/components/common/SpendMeter";
 import type { Category, ForecastIncomeItem } from "@/lib/types";
-import { sumEarnedIncome } from "@/lib/income";
+import { sumEarnedIncome, isOwnExpense } from "@/lib/income";
 
 interface L3EditForm {
   name: string;
@@ -283,7 +281,9 @@ export default function BudgetPage() {
       return;
     }
     const budgetWeekdays =
-      budgetType === "daily" ? [...l3EditForm.budgetWeekdays].sort() : undefined;
+      budgetType === "daily"
+        ? [...l3EditForm.budgetWeekdays].sort()
+        : undefined;
     // Still written so older app versions (which only read a day count) show
     // this cycle's total; current code recounts from budgetWeekdays.
     const budgetDays = budgetWeekdays
@@ -404,7 +404,7 @@ export default function BudgetPage() {
   const l3SpendingMap = useMemo(() => {
     const result: Record<string, number> = {};
     for (const t of cycleTransactions) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       const cat = categoryMap[t.categoryId];
       if (cat?.level === 3) result[cat.id] = (result[cat.id] ?? 0) + t.amount;
     }
@@ -414,7 +414,7 @@ export default function BudgetPage() {
   const l2SpendingMap = useMemo(() => {
     const result: Record<string, number> = {};
     for (const t of cycleTransactions) {
-      if (t.type !== "expense" || !t.categoryId) continue;
+      if (!isOwnExpense(t) || !t.categoryId) continue;
       let cat = categoryMap[t.categoryId];
       while (cat && cat.level !== 2 && cat.parentId)
         cat = categoryMap[cat.parentId];
@@ -424,8 +424,7 @@ export default function BudgetPage() {
   }, [cycleTransactions, categoryMap]);
 
   const actualIncome = useMemo(
-    () =>
-      sumEarnedIncome(cycleTransactions),
+    () => sumEarnedIncome(cycleTransactions),
     [cycleTransactions],
   );
 
@@ -443,9 +442,7 @@ export default function BudgetPage() {
 
   const totalSpent = useMemo(
     () =>
-      cycleTransactions
-        .filter((t) => t.type === "expense")
-        .reduce((s, t) => s + t.amount, 0),
+      cycleTransactions.filter(isOwnExpense).reduce((s, t) => s + t.amount, 0),
     [cycleTransactions],
   );
 
@@ -456,7 +453,7 @@ export default function BudgetPage() {
 
   const unbudgetedSpending = useMemo(() => {
     return cycleTransactions
-      .filter((t) => t.type === "expense" && t.categoryId)
+      .filter((t) => isOwnExpense(t) && t.categoryId)
       .reduce((s, t) => {
         const cat = categoryMap[t.categoryId!];
         if (!cat) return s + t.amount;
@@ -551,11 +548,11 @@ export default function BudgetPage() {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold">Budget</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{cycleLabel}</p>
-          {/* Only until the first budget exists — after that it's noise */}
+          {/* Only until the first budget exists, after that it's noise */}
           {!hasBudgets && (
             <p className="text-sm text-muted-foreground mt-2 max-w-prose">
-              Decide how much of this cycle&apos;s income goes to each
-              category, then see how your spending keeps up.
+              Decide how much of this cycle&apos;s income goes to each category,
+              then see how your spending keeps up.
             </p>
           )}
         </div>
@@ -568,22 +565,6 @@ export default function BudgetPage() {
           <CircleHelpIcon /> How it works
         </Button>
       </div>
-
-      {/* AI Assistant entry point — §2: this feature does not exist yet, so it
-          is a quiet link rather than a full-width gradient banner sitting above
-          the page's actual content. */}
-      <button
-        type="button"
-        onClick={() => router.push("/assistant")}
-        className="flex w-full items-center gap-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <SparklesIcon className="size-3.5 shrink-0 text-warning" />
-        <span>Ask AI about your spending</span>
-        <span className="bg-muted rounded-full px-2 py-0.5 text-xs font-medium">
-          Soon
-        </span>
-        <ChevronRightIcon className="ml-auto size-3.5 shrink-0" />
-      </button>
 
       <div className="space-y-6">
         {/* Forecast Summary */}
@@ -653,8 +634,8 @@ export default function BudgetPage() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Add the income you expect this cycle, so you can plan
-                    before it arrives.
+                    Add the income you expect this cycle, so you can plan before
+                    it arrives.
                   </p>
                 </div>
                 {/* Saved items */}
@@ -852,7 +833,9 @@ export default function BudgetPage() {
                   {unallocated < 0 && (
                     <p className="text-xs text-danger">
                       Your budgets and spending add up to more than your{" "}
-                      {mode === "actual" ? "income received" : "expected income"}
+                      {mode === "actual"
+                        ? "income received"
+                        : "expected income"}
                       .
                     </p>
                   )}
@@ -1117,7 +1100,10 @@ export default function BudgetPage() {
                               {l3sVisible.length > 0 && (
                                 <div className="space-y-1 pt-0.5 pl-3 border-l border-border/40">
                                   {l3sVisible.map((l3) => {
-                                    const l3budget = effectiveCatBudget(l3, cycle);
+                                    const l3budget = effectiveCatBudget(
+                                      l3,
+                                      cycle,
+                                    );
                                     const l3spent = l3SpendingMap[l3.id] ?? 0;
                                     const l3remaining = l3budget - l3spent;
                                     const l3over =
@@ -1239,13 +1225,12 @@ export default function BudgetPage() {
                       <p className="text-lg font-bold text-foreground">
                         {fmt(l3budget)}
                       </p>
-                      {l3.budgetType === "daily" &&
-                        l3.budget !== undefined && (
-                          <p className="text-xs text-muted-foreground">
-                            {fmt(l3.budget)}/day ×{" "}
-                            {dailyBudgetDays(l3, cycle)} days this cycle
-                          </p>
-                        )}
+                      {l3.budgetType === "daily" && l3.budget !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {fmt(l3.budget)}/day × {dailyBudgetDays(l3, cycle)}{" "}
+                          days this cycle
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1279,7 +1264,9 @@ export default function BudgetPage() {
                     <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
                       Note
                     </p>
-                    <p className="text-sm whitespace-pre-wrap break-words">{l3.note}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">
+                      {l3.note}
+                    </p>
                   </div>
                 )}
                 {l3.links && l3.links.length > 0 && (
@@ -1493,7 +1480,7 @@ export default function BudgetPage() {
         </DialogContent>
       </Dialog>
 
-      {/* How it works — the questions a first-time user asks on this page */}
+      {/* How it works, the questions a first-time user asks on this page */}
       <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1509,8 +1496,8 @@ export default function BudgetPage() {
                 {!userProfile?.salaryDay && (
                   <>
                     {" "}
-                    You haven&apos;t set a payday yet, so the 25th is used.
-                    You can change it in{" "}
+                    You haven&apos;t set a payday yet, so the 25th is used. You
+                    can change it in{" "}
                     <button
                       type="button"
                       className="link-underline text-foreground"
@@ -1529,17 +1516,17 @@ export default function BudgetPage() {
             <div className="space-y-1">
               <dt className="font-medium">Where do I set a budget?</dt>
               <dd className="text-muted-foreground leading-relaxed">
-                On the Categories page. Budgets go on items, the smallest
-                level, like Groceries under Food &amp; Drinks. Any item with a
-                budget or spending this cycle shows up here.
+                On the Categories page. Budgets go on items, the smallest level,
+                like Groceries under Food &amp; Drinks. Any item with a budget
+                or spending this cycle shows up here.
               </dd>
             </div>
             <div className="space-y-1">
               <dt className="font-medium">Received or Expected income?</dt>
               <dd className="text-muted-foreground leading-relaxed">
-                Received uses the income you&apos;ve logged this cycle.
-                Expected uses a list you type in, so you can plan before your
-                salary arrives.
+                Received uses the income you&apos;ve logged this cycle. Expected
+                uses a list you type in, so you can plan before your salary
+                arrives.
               </dd>
             </div>
             <div className="space-y-1">
@@ -1549,17 +1536,17 @@ export default function BudgetPage() {
               <dd className="text-muted-foreground leading-relaxed">
                 Income that doesn&apos;t have a plan yet: your income, minus
                 your budgets, minus anything spent without a budget or over
-                budget. If it goes below zero, you&apos;ve planned or spent
-                more than you have.
+                budget. If it goes below zero, you&apos;ve planned or spent more
+                than you have.
               </dd>
             </div>
             <div className="space-y-1">
               <dt className="font-medium">Whole cycle or per day?</dt>
               <dd className="text-muted-foreground leading-relaxed">
-                Whole cycle suits spending that comes in chunks, like
-                groceries or bills. Per day suits a set daily amount, like
-                RM15 for lunch: pick the days, and the budget is that amount
-                times the days you picked.
+                Whole cycle suits spending that comes in chunks, like groceries
+                or bills. Per day suits a set daily amount, like RM15 for lunch:
+                pick the days, and the budget is that amount times the days you
+                picked.
               </dd>
             </div>
           </dl>

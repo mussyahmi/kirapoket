@@ -15,7 +15,10 @@ export type ActivityType =
   | "partner_accept"
   | "partner_decline"
   | "partner_cancel"
-  | "partner_disconnect";
+  | "partner_disconnect"
+  // Assistant failures only. Successful chats are counted in aiUsage, never
+  // logged as events, and the question text is never stored anywhere.
+  | "ai_error";
 
 export interface Activity {
   id: string;
@@ -58,11 +61,18 @@ export interface UserProfile {
   partnershipId?: string | null;
   // Cooldown state for the periodic feedback pulse (see FeedbackPulse)
   feedbackPrompt?: FeedbackPromptState;
+  /**
+   * Free-text facts the user wants the assistant to know. Transaction data
+   * alone can't tell you that a RM10 "parking" row is really a card reload,
+   * or that a spouse earns separately, and those gaps are where an assistant
+   * invents things. Sent verbatim as grounding context.
+   */
+  assistantNotes?: string;
 }
 
 export interface FeedbackPromptState {
-  lastShownAt?: string; // ISO — when the pulse card was last shown
-  lastGivenAt?: string; // ISO — when the user last submitted feedback
+  lastShownAt?: string; // ISO, when the pulse card was last shown
+  lastGivenAt?: string; // ISO, when the user last submitted feedback
   dismissals?: number; // times explicitly dismissed; enough of these = stop asking
 }
 
@@ -145,14 +155,16 @@ export interface Partnership {
 }
 
 /**
- * Where an income transaction's money came from. Only "earned" is real income;
- * the rest are money coming back, money borrowed, or your own savings pulled
- * in — counting them as income makes a cycle look healthier than it was.
+ * Where an income transaction's money came from. Only "earned" and "gift" are
+ * real income; the rest are money coming back, money borrowed, your own
+ * savings pulled in, or money held for someone else — counting them as income
+ * makes a cycle look healthier than it was.
  *
  * Absent on transactions logged before this existed; treat missing as "earned"
  * (see `incomeSourceOf`). There is no backfill.
  */
-export type IncomeSource = "earned" | "returned" | "borrowed" | "withdrawn";
+export type IncomeSource =
+  "earned" | "gift" | "returned" | "borrowed" | "withdrawn" | "held";
 
 export interface Transaction {
   id: string;
@@ -166,6 +178,17 @@ export interface Transaction {
   categoryId?: string;
   // Income only. Absent = "earned".
   source?: IncomeSource;
+  // Expense only. Paid with someone else's money: moves the balance but stays
+  // out of spending totals and budgets.
+  forOthers?: boolean;
   note?: string;
   createdAt: Timestamp | string;
+}
+
+/** AI assistant usage, as /api/chat reports it under the chat box. */
+export interface AiUsageSummary {
+  messagesLeft: number;
+  dailyLimit: number;
+  tokensToday: number;
+  tokensMonth: number;
 }

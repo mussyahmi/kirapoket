@@ -1,4 +1,5 @@
 import type { Category, Transaction } from "@/lib/types";
+import { isOwnExpense } from "./income";
 
 export type CycleRange = { start: Date; end: Date };
 
@@ -147,7 +148,7 @@ export function computeBudgetImpact(params: {
   const spent = transactions
     .filter(
       (t) =>
-        t.type === "expense" &&
+        isOwnExpense(t) &&
         t.id !== excludeTransactionId &&
         t.categoryId != null &&
         subtree.has(t.categoryId) &&

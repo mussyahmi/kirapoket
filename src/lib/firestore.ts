@@ -634,6 +634,13 @@ export interface UserStats {
   activeCycles: number | null;
   /** Salary cycles elapsed from first activity to now, inclusive. null if salaryDay unset. */
   totalCycles: number | null;
+  /**
+   * Assistant usage: counts only, never the questions. A log of what someone
+   * asked their money assistant is a liability to hold; the volume is all the
+   * operational picture needs.
+   */
+  aiMessagesToday: number;
+  aiTokensMonth: number;
 }
 
 /** Monotonic index of the salary cycle a date falls into, for counting distinct cycles. */
@@ -650,12 +657,31 @@ export async function getUserStats(
   userId: string,
   salaryDay?: number | null,
 ): Promise<UserStats> {
-  const [txSnap, accSnap] = await Promise.all([
+  const [txSnap, accSnap, aiSnap] = await Promise.all([
     getDocs(
       query(collection(db, "transactions"), where("userId", "==", userId)),
     ),
     getDocs(query(collection(db, "accounts"), where("userId", "==", userId))),
+    // Tolerated separately: aiUsage is admin-read-only, and a rules change or
+    // a non-admin caller must not take the rest of the stats down with it.
+    getDoc(doc(db, "aiUsage", userId)).catch(() => null),
   ]);
+
+  // Counters are stamped with the day or month they belong to; a stale stamp
+  // means the period rolled over and the figure reads as zero.
+  const ai = aiSnap?.exists()
+    ? (aiSnap!.data() as {
+        date?: string;
+        count?: number;
+        month?: string;
+        tokensMonth?: number;
+      })
+    : undefined;
+  const nowMy = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const todayMy = nowMy.toISOString().slice(0, 10);
+  const aiMessagesToday = ai?.date === todayMy ? (ai?.count ?? 0) : 0;
+  const aiTokensMonth =
+    ai?.month === todayMy.slice(0, 7) ? (ai?.tokensMonth ?? 0) : 0;
 
   const toDate = (v: Timestamp | string | undefined): Date | null => {
     if (!v) return null;
@@ -709,6 +735,8 @@ export async function getUserStats(
     memberSince,
     activeCycles,
     totalCycles,
+    aiMessagesToday,
+    aiTokensMonth,
   };
 }
 
@@ -1035,7 +1063,8 @@ export async function clearAndSeedDemoData(): Promise<void> {
     .map((day) => ({
       day,
       distance: Math.abs(
-        differenceInCalendarDays(today, startFor(day)) / CYCLE_DAYS - ELAPSED_DAYS / CYCLE_DAYS,
+        differenceInCalendarDays(today, startFor(day)) / CYCLE_DAYS -
+          ELAPSED_DAYS / CYCLE_DAYS,
       ),
     }))
     .sort((a, b) => a.distance - b.distance)[0].day;
@@ -1361,10 +1390,13 @@ export async function clearAndSeedDemoData(): Promise<void> {
   // spent.
   const realDate = (fixture: string): Date | null => {
     const parsed = parseISO(fixture);
-    const isCurrent = differenceInCalendarDays(parsed, parseISO(FIXTURE_CUR_START)) >= 0;
+    const isCurrent =
+      differenceInCalendarDays(parsed, parseISO(FIXTURE_CUR_START)) >= 0;
     const anchor = parseISO(isCurrent ? FIXTURE_CUR_START : FIXTURE_PREV_START);
     const offset = differenceInCalendarDays(parsed, anchor);
-    const spread = isCurrent ? Math.round((offset * CYCLE_DAYS) / FIXTURE_CUR_SPAN) : offset;
+    const spread = isCurrent
+      ? Math.round((offset * CYCLE_DAYS) / FIXTURE_CUR_SPAN)
+      : offset;
     const mapped = addDays(isCurrent ? curStart : prevStart, spread);
     if (isCurrent && differenceInCalendarDays(mapped, today) > 0) return null;
     return mapped;

@@ -48,9 +48,14 @@ export function transactionsToCsv(
       t.toAccountId ? (accountMap.get(t.toAccountId)?.name ?? "") : "",
       category?.name ?? "",
       parent?.name ?? "",
-      // Income only. Always written (including "Earned") so anything reading
-      // the file can tell a tagged row from a blank one.
-      t.type === "income" ? incomeSourceMeta(incomeSourceOf(t)).label : "",
+      // Income always gets one (including "Earned") so anything reading the
+      // file can tell a tagged row from a blank one. Expenses only when paid
+      // for others.
+      t.type === "income"
+        ? incomeSourceMeta(incomeSourceOf(t)).label
+        : t.type === "expense" && t.forOthers
+          ? "For others"
+          : "",
       t.note ?? "",
     ]);
   });

@@ -91,6 +91,7 @@ export function TransactionForm({
   const [incomeSource, setIncomeSource] = useState<IncomeSource>(
     DEFAULT_INCOME_SOURCE,
   );
+  const [forOthers, setForOthers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Snapshot of the account impacts taken when the confirm dialog opens. The
@@ -119,6 +120,7 @@ export function TransactionForm({
     setAccountId(editTx.accountId);
     setToAccountId(editTx.toAccountId ?? "");
     setIncomeSource(editTx.source ?? DEFAULT_INCOME_SOURCE);
+    setForOthers(editTx.forOthers ?? false);
     setNote(editTx.note ?? "");
     if (editTx.categoryId) {
       const cat = categories.find((c) => c.id === editTx.categoryId);
@@ -354,7 +356,7 @@ export function TransactionForm({
           )}
           {short && (
             <p className="mt-1 text-xs text-destructive">
-              Short by {formatMoney(Math.abs(projected))} — saving this change
+              Short by {formatMoney(Math.abs(projected))}, saving this change
               leaves this account negative.
             </p>
           )}
@@ -426,7 +428,7 @@ export function TransactionForm({
         )}
         {short && (
           <p className="mt-1 text-xs text-destructive">
-            Short by {formatMoney(Math.abs(projected))} — not enough in this
+            Short by {formatMoney(Math.abs(projected))}, not enough in this
             account.
           </p>
         )}
@@ -477,7 +479,12 @@ export function TransactionForm({
       dateLabel: format(selectedDate, "d MMM yyyy"),
       timeLabel,
       categoryPath: txType === "expense" ? path || undefined : undefined,
-      sourceLabel: txType === "income" ? sourceMeta.label : undefined,
+      sourceLabel:
+        txType === "income"
+          ? sourceMeta.label
+          : txType === "expense" && forOthers
+            ? "Paid for others"
+            : undefined,
       fromAccount: accountName(accountId),
       toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
       note: note.trim() || undefined,
@@ -487,6 +494,7 @@ export function TransactionForm({
     amount,
     txType,
     sourceMeta,
+    forOthers,
     selectedDate,
     time,
     accountId,
@@ -547,7 +555,13 @@ export function TransactionForm({
 
   const confirmBudget = useMemo<BudgetImpact | null>(() => {
     const amt = parseFloat(amount);
-    if (txType !== "expense" || !selectedCategoryId || isNaN(amt) || amt <= 0)
+    if (
+      txType !== "expense" ||
+      forOthers ||
+      !selectedCategoryId ||
+      isNaN(amt) ||
+      amt <= 0
+    )
       return null;
     // Fall back to the default cycle when no salary day is set (matches the
     // budget page's ?? 25) so budget impact still shows before setup.
@@ -568,6 +582,7 @@ export function TransactionForm({
   }, [
     amount,
     txType,
+    forOthers,
     selectedCategoryId,
     selectedDate,
     categories,
@@ -590,6 +605,8 @@ export function TransactionForm({
           txType !== "transfer" ? (selectedCategoryId ?? undefined) : undefined,
         // Only income carries a source; clear it if the type changed on edit.
         source: txType === "income" ? incomeSource : undefined,
+        // Expense only; undefined (not false) so the field is dropped.
+        forOthers: txType === "expense" && forOthers ? true : undefined,
         note: note.trim() || undefined,
       };
       let savedId: string | undefined;
@@ -822,6 +839,7 @@ export function TransactionForm({
                   setL2Id(null);
                   setL3Id(null);
                   if (type !== "income") setIncomeSource(DEFAULT_INCOME_SOURCE);
+                  if (type !== "expense") setForOthers(false);
                 }}
                 className={cn(
                   "flex-1 py-2 text-sm font-medium capitalize transition-colors",
@@ -855,9 +873,9 @@ export function TransactionForm({
           />
         </div>
 
-        {/* Source (Income only) — a loan or an EPF withdrawal arrives the same
-            way a salary does; only "earned" counts towards income. Same pill
-            treatment as Date and Account — it is the same kind of choice. */}
+        {/* Source (Income only), a loan or an EPF withdrawal arrives the same
+            way a salary does; only earned and gift count towards income. Same pill
+            treatment as Date and Account, it is the same kind of choice. */}
         {txType === "income" && (
           <div className="space-y-2">
             <Label>Source</Label>
@@ -891,7 +909,7 @@ export function TransactionForm({
           </div>
         )}
 
-        {/* Date & Time — §3: the date is "today" the overwhelming majority of
+        {/* Date & Time, §3: the date is "today" the overwhelming majority of
             the time, so a permanently-open 450px calendar was taking the most
             vertical space in the form for the least-changed field. */}
         <div className="space-y-2">
@@ -1028,6 +1046,36 @@ export function TransactionForm({
 
         {/* Category (Expense only) */}
         {txType === "expense" && <CategoryDrillDown />}
+
+        {/* Paid for others (Expense only), the other half of "Held for
+            others". The balance still moves; spending and budgets don't. */}
+        {txType === "expense" && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={forOthers}
+              onClick={() => setForOthers((v) => !v)}
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm border transition-colors",
+                forOthers
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:bg-muted",
+              )}
+            >
+              Paid for others
+            </button>
+            {forOthers && (
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <InfoIcon className="size-3.5 shrink-0 mt-px" />
+                <span>
+                  Bought with someone else&apos;s money. Excluded from your
+                  spending and budgets.
+                </span>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Note */}
         <div ref={noteRef} className="space-y-2 scroll-mt-4">

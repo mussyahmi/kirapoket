@@ -4,7 +4,6 @@ import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import { THEME_COLOR } from "@/lib/theme-color";
 
-
 export function ThemeColorSync() {
   const { resolvedTheme } = useTheme();
 

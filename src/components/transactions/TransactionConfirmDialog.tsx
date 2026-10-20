@@ -189,7 +189,7 @@ export function TransactionConfirmDialog({
                       {short && (
                         <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
                           <TriangleAlertIcon className="size-3.5 shrink-0" />
-                          Short by {money(Math.abs(acc.projected))} — not enough
+                          Short by {money(Math.abs(acc.projected))}, not enough
                           in this account.
                         </p>
                       )}

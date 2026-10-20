@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { LogoMark } from "@/components/common/LogoMark";
 
-export const alt = "KiraPoket — Know where your money goes";
+export const alt = "KiraPoket: Know where your money goes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

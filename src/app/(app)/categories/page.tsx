@@ -232,7 +232,9 @@ function L3Item({
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                   Note
                 </p>
-                <p className="text-sm whitespace-pre-wrap break-words">{item.note}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {item.note}
+                </p>
               </div>
             )}
             {item.links && item.links.length > 0 && (
@@ -513,8 +515,7 @@ export default function CategoriesPage() {
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const cycle = useCurrentCycle();
-  const effectiveBudget = (c: Category): number =>
-    effectiveCatBudget(c, cycle);
+  const effectiveBudget = (c: Category): number => effectiveCatBudget(c, cycle);
 
   const l2Subtotal = (l2Id: string): number =>
     categories
@@ -607,7 +608,9 @@ export default function CategoriesPage() {
       return;
     }
     const effectiveWeekdays =
-      effectiveBudgetType === "daily" ? [...form.budgetWeekdays].sort() : undefined;
+      effectiveBudgetType === "daily"
+        ? [...form.budgetWeekdays].sort()
+        : undefined;
     // Still written so older app versions (which only read a day count) show
     // this cycle's total; current code recounts from budgetWeekdays.
     const effectiveBudgetDays = effectiveWeekdays
@@ -737,7 +740,7 @@ export default function CategoriesPage() {
           <div className="space-y-1">
             <p className="text-base font-semibold">No categories yet</p>
             <p className="mx-auto max-w-[32ch] text-sm text-muted-foreground">
-              Categories sort your spending into Needs, Wants, and Savings — and
+              Categories sort your spending into Needs, Wants, and Savings, and
               are where budgets are set.
             </p>
           </div>

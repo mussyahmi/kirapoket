@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — KiraPoket",
+  title: "Privacy Policy · KiraPoket",
 };
 
 const SECTIONS = [
@@ -17,7 +17,7 @@ We do not collect payment card details, identity documents, or any sensitive per
   },
   {
     title: "3. How We Use Your Data",
-    body: `Your data is used solely to provide the KiraPoket service — displaying your spending summaries, budgets, and insights. We do not sell, rent, or share your data with third parties for marketing or advertising.
+    body: `Your data is used solely to provide the KiraPoket service, displaying your spending summaries, budgets, and insights. We do not sell, rent, or share your data with third parties for marketing or advertising.
 
 AI-powered spending insights use your aggregated category totals (not raw transaction details) as context for Gemini, Google's AI service.`,
   },
@@ -25,13 +25,13 @@ AI-powered spending insights use your aggregated category totals (not raw transa
     title: "4. Who Can See Your Data",
     body: `Your data is private to your account by default. The only exceptions are:
 
-• Partner view — if you invite a partner, they gain read-only access to your financial data for as long as the partnership is active. You can revoke this at any time in Settings.
-• Developer access — as the developer, we have administrative access to the Firebase database for the purposes of maintenance, debugging, and support. We access individual user data only when necessary and do not browse it casually.
-• Infrastructure — your data is stored on Google Firebase (Firestore), hosted on Google Cloud infrastructure in the asia-southeast1 region. Google processes your data as a subprocessor under their standard terms.`,
+• Partner view, if you invite a partner, they gain read-only access to your financial data for as long as the partnership is active. You can revoke this at any time in Settings.
+• Developer access, as the developer, we have administrative access to the Firebase database for the purposes of maintenance, debugging, and support. We access individual user data only when necessary and do not browse it casually.
+• Infrastructure, your data is stored on Google Firebase (Firestore), hosted on Google Cloud infrastructure in the asia-southeast1 region. Google processes your data as a subprocessor under their standard terms.`,
   },
   {
     title: "5. Data Security",
-    body: `All data is transmitted over HTTPS (TLS). Data at rest is encrypted by Google Cloud. Firestore Security Rules are in place to ensure users can only read and write their own data through the app — administrative access is restricted to service account credentials that are never exposed client-side.`,
+    body: `All data is transmitted over HTTPS (TLS). Data at rest is encrypted by Google Cloud. Firestore Security Rules are in place to ensure users can only read and write their own data through the app, administrative access is restricted to service account credentials that are never exposed client-side.`,
   },
   {
     title: "6. Data Retention",
@@ -52,9 +52,9 @@ To exercise any of these rights, email us at mussyahmi31@gmail.com.`,
     title: "8. Third-Party Services",
     body: `KiraPoket uses the following third-party services, each governed by their own privacy policies:
 
-• Google Firebase (Auth, Firestore, Hosting) — data storage and authentication
-• Google Gemini API — AI-powered spending insights
-• Google Sign-In — authentication`,
+• Google Firebase (Auth, Firestore, Hosting), data storage and authentication
+• Google Gemini API, AI-powered spending insights
+• Google Sign-In, authentication`,
   },
   {
     title: "9. Changes to This Policy",

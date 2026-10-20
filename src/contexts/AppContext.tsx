@@ -55,8 +55,9 @@ import {
 } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
 import { useAuth } from "./AuthContext";
+import { ADMIN_UID } from "@/lib/admin";
 
-export const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
+export { ADMIN_UID };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

@@ -114,7 +114,7 @@ export default function FeedbackPulse() {
         lastShownAt: nowIso(),
         dismissals: 0,
       });
-      toast.success("Thank you — this genuinely helps. 🙏");
+      toast.success("Thank you, this genuinely helps. 🙏");
       setOpen(false);
     } catch {
       toast.error("Couldn't send that. Please try again.");

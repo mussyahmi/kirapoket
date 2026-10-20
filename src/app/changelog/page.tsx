@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "9 October 2026";
+const LAST_UPDATED = "20 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,31 @@ const LAST_UPDATED = "9 October 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.16.x",
-    dateRange: "2026-10-08 – present",
+    version: "0.17.x",
+    dateRange: "2026-10-20 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "Two more income sources: Gift, for duit raya, angpau and government aid, which counts as income; and Held for others, for money you're only looking after, like a group collection, which doesn't",
+      },
+      {
+        type: "feat",
+        text: "Paying for someone else no longer looks like your own spending. Tick \u201cpaid for someone else\u201d on an expense and it still moves your account balance but stays out of your spending totals and budgets",
+      },
+      {
+        type: "feat",
+        text: "Your home screen now shows what you're still holding for other people, so the money sitting in your account doesn't read as money you can spend",
+      },
+      {
+        type: "fix",
+        text: "Wording tidied across the whole app, from the home screen to the privacy policy, so it reads the way a person would write it",
+      },
+    ],
+  },
+  {
+    version: "0.16.x",
+    dateRange: "2026-10-08 – 2026-10-19",
     changes: [
       {
         type: "feat",
@@ -70,15 +92,15 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "The Budget page is easier to understand — plain wording throughout, tap any figure in the summary to see what it means, a “How it works” guide, step-by-step help to set your first budget, and it remembers whether you're looking at income received or expected",
+        text: "The Budget page is easier to understand: plain wording throughout, tap any figure in the summary to see what it means, a “How it works” guide, step-by-step help to set your first budget, and it remembers whether you're looking at income received or expected",
       },
       {
         type: "feat",
-        text: "Per-day budgets now repeat by weekday — pick Mon–Fri once and the days are counted again every cycle, so RM15 lunch on workdays stays right whether a cycle has 20 workdays or 23",
+        text: "Per-day budgets now repeat by weekday: pick Mon–Fri once and the days are counted again every cycle, so RM15 lunch on workdays stays right whether a cycle has 20 workdays or 23",
       },
       {
         type: "feat",
-        text: "After you add or edit a transaction, the list scrolls to it and highlights it — even when it's backdated further down — and tells you if your filters are hiding it. At the start of a new cycle it now says nothing's logged yet, with a shortcut back to last cycle",
+        text: "After you add or edit a transaction, the list scrolls to it and highlights it, even when it's backdated further down, and tells you if your filters are hiding it. At the start of a new cycle it now says nothing's logged yet, with a shortcut back to last cycle",
       },
       {
         type: "feat",
@@ -94,11 +116,11 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "The transaction form now follows you down — pick an account and the category appears, pick a category and its subcategories do, all the way to the note, so you're not scrolling to find the next step",
+        text: "The transaction form now follows you down: pick an account and the category appears, pick a category and its subcategories do, all the way to the note, so you're not scrolling to find the next step",
       },
       {
         type: "fix",
-        text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones — and your photo loads in smoothly instead of flicking through your Google photo and initials first",
+        text: "The welcome screen now shows the same profile photo and name as Settings, instead of your Google ones, and your photo loads in smoothly instead of flicking through your Google photo and initials first",
       },
       {
         type: "fix",
@@ -106,7 +128,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Fixed a few display glitches — the QR codes in Buy Me a Coffee and the MariSolat icon in Settings show up again, and a long link saved on a category no longer stretches its details pop-up off the screen",
+        text: "Fixed a few display glitches: the QR codes in Buy Me a Coffee and the MariSolat icon in Settings show up again, and a long link saved on a category no longer stretches its details pop-up off the screen",
       },
     ],
   },
@@ -117,47 +139,47 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "The home screen now leads with what's left this cycle — one large figure, a meter showing how much of your income you've spent, and income and expenses side by side beneath it",
+        text: "The home screen now leads with what's left this cycle: one large figure, a meter showing how much of your income you've spent, and income and expenses side by side beneath it",
       },
       {
         type: "feat",
-        text: "Adding a transaction is quicker — the date is now Today / Yesterday / Pick a date instead of a full calendar filling the form, so the amount and category are right where you need them",
+        text: "Adding a transaction is quicker: the date is now Today / Yesterday / Pick a date instead of a full calendar filling the form, so the amount and category are right where you need them",
       },
       {
         type: "feat",
-        text: "KiraPoket tells you when something goes wrong — proper offline, error and page-not-found screens instead of a blank browser message, and a list that fails to load now says so rather than pretending you have nothing",
+        text: "KiraPoket tells you when something goes wrong: proper offline, error and page-not-found screens instead of a blank browser message, and a list that fails to load now says so rather than pretending you have nothing",
       },
       {
         type: "feat",
-        text: "A visual refresh across every screen — consistent sizing, spacing and colour, a warmer palette, and a dark mode that's been checked properly for readability",
+        text: "A visual refresh across every screen: consistent sizing, spacing and colour, a warmer palette, and a dark mode that's been checked properly for readability",
       },
       {
         type: "feat",
-        text: "Pick a whole salary cycle on the Transactions page in one tap — this cycle, last cycle, the ones before it, or all time — instead of setting two dates by hand",
+        text: "Pick a whole salary cycle on the Transactions page in one tap, this cycle, last cycle, the ones before it, or all time, instead of setting two dates by hand",
       },
       {
         type: "fix",
-        text: "Much easier to use on a phone — every button, field and dropdown now meets the recommended touch size, tapping a field no longer zooms the page in on iPhone, and pinch-to-zoom still works when you want it",
+        text: "Much easier to use on a phone: every button, field and dropdown now meets the recommended touch size, tapping a field no longer zooms the page in on iPhone, and pinch-to-zoom still works when you want it",
       },
       {
         type: "fix",
-        text: "Better for everyone — animations respect your device's reduced-motion setting, keyboard focus is always visible, and text contrast meets the accessibility standard throughout",
+        text: "Better for everyone: animations respect your device's reduced-motion setting, keyboard focus is always visible, and text contrast meets the accessibility standard throughout",
       },
       {
         type: "fix",
-        text: 'Percentages no longer round away — the home and budget screens stop saying "0% left" while you still have money, and going over budget now says so plainly',
+        text: 'Percentages no longer round away: the home and budget screens stop saying "0% left" while you still have money, and going over budget now says so plainly',
       },
       {
         type: "fix",
-        text: "The monthly PDF report matches the app — a clearer summary at the top, warmer colours and more legible type",
+        text: "The monthly PDF report matches the app: a clearer summary at the top, warmer colours and more legible type",
       },
       {
         type: "fix",
-        text: "No more getting stuck on a loading screen — if your data can't be reached, KiraPoket now tells you and offers a retry instead of spinning, and it refreshes itself when you come back to the app",
+        text: "No more getting stuck on a loading screen: if your data can't be reached, KiraPoket now tells you and offers a retry instead of spinning, and it refreshes itself when you come back to the app",
       },
       {
         type: "fix",
-        text: "The bars top and bottom behave — the bottom bar switches tabs instantly, responds the moment you touch it and no longer drifts about while you scroll, and on iPhone the status bar at the top now follows your light or dark theme instead of staying black",
+        text: "The bars top and bottom behave: the bottom bar switches tabs instantly, responds the moment you touch it and no longer drifts about while you scroll, and on iPhone the status bar at the top now follows your light or dark theme instead of staying black",
       },
     ],
   },
@@ -167,15 +189,15 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Add a profile photo — upload your own picture (it's cropped square and kept small automatically) or keep your Google photo; change or remove it anytime from Settings → Edit profile, and tap any avatar to view it full-size",
+        text: "Add a profile photo: upload your own picture (it's cropped square and kept small automatically) or keep your Google photo; change or remove it anytime from Settings → Edit profile, and tap any avatar to view it full-size",
       },
       {
         type: "feat",
-        text: "Getting started is quicker — a starter Cash account is now created for you and setting a salary day is optional, so you can log your first expense straight away and fine-tune your pay cycle later",
+        text: "Getting started is quicker: a starter Cash account is now created for you and setting a salary day is optional, so you can log your first expense straight away and fine-tune your pay cycle later",
       },
       {
         type: "feat",
-        text: "Editing a transaction now slides up in the same quick bottom sheet as adding one — no full-page jump — and the form gently blurs behind the confirmation step so it's clear what you're reviewing",
+        text: "Editing a transaction now slides up in the same quick bottom sheet as adding one, no full-page jump, and the form gently blurs behind the confirmation step so it's clear what you're reviewing",
       },
       {
         type: "feat",
@@ -183,7 +205,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Budget page reads clearer — unbudgeted spending stands out in orange, over-budget items in red, and fully-spent items no longer show a redundant 'RM 0.00 left'",
+        text: "Budget page reads clearer: unbudgeted spending stands out in orange, over-budget items in red, and fully-spent items no longer show a redundant 'RM 0.00 left'",
       },
       {
         type: "fix",
@@ -191,7 +213,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: 'Money Lent no longer offers a manual "Add item" — those entries are created for you from the Debts page, so the two can\'t drift apart',
+        text: 'Money Lent no longer offers a manual "Add item": those entries are created for you from the Debts page, so the two can\'t drift apart',
       },
     ],
   },
@@ -202,11 +224,11 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Pull down from the top of any page to refresh your data — especially handy in the installed home-screen app, where the browser's own pull-to-refresh isn't available",
+        text: "Pull down from the top of any page to refresh your data: especially handy in the installed home-screen app, where the browser's own pull-to-refresh isn't available",
       },
       {
         type: "feat",
-        text: "Confirm before saving — adding or editing a transaction now shows a summary, exactly how each account balance will change, and how it affects the category's budget for the cycle before you commit; can be turned off under Settings → Transactions",
+        text: "Confirm before saving: adding or editing a transaction now shows a summary, exactly how each account balance will change, and how it affects the category's budget for the cycle before you commit; can be turned off under Settings → Transactions",
       },
       {
         type: "feat",
@@ -214,7 +236,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "AI Spending Insights is being replaced by a new AI Assistant you'll be able to chat with about your spending and budgets — coming soon",
+        text: "AI Spending Insights is being replaced by a new AI Assistant you'll be able to chat with about your spending and budgets: coming soon",
       },
       {
         type: "fix",
@@ -245,27 +267,27 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Settled debts now grouped by person — same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size",
+        text: "Settled debts now grouped by person: same collapsible person-cards as outstanding debts; group totals show the original pre-settlement amount so the figure stays meaningful, and pagination counts people rather than entries so a single person's long history can't blow past the page size",
       },
       {
         type: "feat",
-        text: "New transaction page: animated skeleton pills now show while Accounts and Categories load — replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived",
+        text: "New transaction page: animated skeleton pills now show while Accounts and Categories load: replaces the empty row and the misleading 'No categories' message that briefly appeared before data arrived",
       },
       {
         type: "feat",
-        text: "Liquid Glass bottom navigation — a cleaner icon-only bar with a central + button; it picks up colour from the content scrolling behind it, the active tab sits under a glass highlight that glides between tabs with a subtle liquid stretch, and the whole bar shrinks toward its centre as you scroll down and expands as you scroll up, with a light haptic tap on supported devices",
+        text: "Liquid Glass bottom navigation: a cleaner icon-only bar with a central + button; it picks up colour from the content scrolling behind it, the active tab sits under a glass highlight that glides between tabs with a subtle liquid stretch, and the whole bar shrinks toward its centre as you scroll down and expands as you scroll up, with a light haptic tap on supported devices",
       },
       {
         type: "feat",
-        text: "Quick-add bottom sheet — the nav's + button and the Add button on the Transactions page now slide the new-transaction form up as a bottom sheet with a sticky Add button, instead of opening a separate page; the nav tucks away while it's open",
+        text: "Quick-add bottom sheet: the nav's + button and the Add button on the Transactions page now slide the new-transaction form up as a bottom sheet with a sticky Add button, instead of opening a separate page; the nav tucks away while it's open",
       },
       {
         type: "feat",
-        text: "Liquid Glass surfaces across dialogs, toasts, dropdown menus, and the quick-add sheet — a consistent translucent material with backdrop blur, saturation, and a lit top edge, matching the iOS 26 / macOS Tahoe design language",
+        text: "Liquid Glass surfaces across dialogs, toasts, dropdown menus, and the quick-add sheet: a consistent translucent material with backdrop blur, saturation, and a lit top edge, matching the iOS 26 / macOS Tahoe design language",
       },
       {
         type: "feat",
-        text: "Collapsible category breakdowns — Spending by Category on Home and By Category on Budget now fold up per top-level group (Needs / Wants / Savings); the largest group opens by default and your expand/collapse choices are remembered",
+        text: "Collapsible category breakdowns: Spending by Category on Home and By Category on Budget now fold up per top-level group (Needs / Wants / Savings); the largest group opens by default and your expand/collapse choices are remembered",
       },
       {
         type: "fix",
@@ -289,15 +311,15 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Bottom navigation polish — wider side margins give the bar more breathing room, the active-tab highlight drops its glassy ring outline for a cleaner fill, and tapping a tab now lets the highlight glide all the way over before the page changes",
+        text: "Bottom navigation polish: wider side margins give the bar more breathing room, the active-tab highlight drops its glassy ring outline for a cleaner fill, and tapping a tab now lets the highlight glide all the way over before the page changes",
       },
       {
         type: "fix",
-        text: "Dialogs now sit above the header instead of slipping behind it — the Edit Item and other modals are no longer clipped by the top bar",
+        text: "Dialogs now sit above the header instead of slipping behind it: the Edit Item and other modals are no longer clipped by the top bar",
       },
       {
         type: "fix",
-        text: "Date pickers fill their box cleanly — the empty area below the calendar grid now matches the picker's background instead of showing a darker band",
+        text: "Date pickers fill their box cleanly: the empty area below the calendar grid now matches the picker's background instead of showing a darker band",
       },
     ],
   },
@@ -308,35 +330,35 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "PDF monthly report — generate a polished, paginated PDF for any salary cycle from the home page; includes income/expenses/remaining summary, a spending split bar, a hierarchical category breakdown with cycle-over-cycle deltas, and a colour-coded transactions table with running header on continuation pages",
+        text: "PDF monthly report: generate a polished, paginated PDF for any salary cycle from the home page; includes income/expenses/remaining summary, a spending split bar, a hierarchical category breakdown with cycle-over-cycle deltas, and a colour-coded transactions table with running header on continuation pages",
       },
       {
         type: "feat",
-        text: "CSV transaction export — export the current filtered list from the transactions page; filename reflects the active date range when one is set, making it easy to tell multiple exports apart",
+        text: "CSV transaction export: export the current filtered list from the transactions page; filename reflects the active date range when one is set, making it easy to tell multiple exports apart",
       },
       {
         type: "feat",
-        text: "Previous-cycle comparison everywhere — the Summary card and every category row (L1, L2, L3) on the home page show the change vs the previous full cycle, colour-coded by direction; the same comparison appears in the PDF report",
+        text: "Previous-cycle comparison everywhere: the Summary card and every category row (L1, L2, L3) on the home page show the change vs the previous full cycle, colour-coded by direction; the same comparison appears in the PDF report",
       },
       {
         type: "feat",
-        text: "Home dashboard refresh — pie chart replaced with a compact horizontal stacked bar (matching the PDF); Spending by Category now shows a 'vs previous full cycle' subtitle; amount and delta lay out as two right-aligned columns on wider screens",
+        text: "Home dashboard refresh: pie chart replaced with a compact horizontal stacked bar (matching the PDF); Spending by Category now shows a 'vs previous full cycle' subtitle; amount and delta lay out as two right-aligned columns on wider screens",
       },
       {
         type: "feat",
-        text: "Download report shortcut — Report button now lives in the cycle navigation row so each cycle can be saved as a PDF in one tap; landing page demo updated to reflect the new design",
+        text: "Download report shortcut: Report button now lives in the cycle navigation row so each cycle can be saved as a PDF in one tap; landing page demo updated to reflect the new design",
       },
       {
         type: "feat",
-        text: "Summary card polish — colour-coded top-bars per metric (green Income / red Expenses / blue Remaining) replace the vertical dividers; delta indicators now render with crisper arrow icons instead of Unicode characters; landing page demo updated to match",
+        text: "Summary card polish: colour-coded top-bars per metric (green Income / red Expenses / blue Remaining) replace the vertical dividers; delta indicators now render with crisper arrow icons instead of Unicode characters; landing page demo updated to match",
       },
       {
         type: "fix",
-        text: "Summary card: Remaining figure turns red when negative (was always blue) — matches the PDF and gives a clear visual flag when a cycle runs into a deficit",
+        text: "Summary card: Remaining figure turns red when negative (was always blue): matches the PDF and gives a clear visual flag when a cycle runs into a deficit",
       },
       {
         type: "fix",
-        text: "Spending by Category amounts now right-align flush across all three levels — fixed a subtle misalignment caused by negative-margin overflow on the row hover backgrounds",
+        text: "Spending by Category amounts now right-align flush across all three levels: fixed a subtle misalignment caused by negative-margin overflow on the row hover backgrounds",
       },
       {
         type: "fix",
@@ -344,7 +366,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Cycle-over-cycle comparison reliability — fixed previous-cycle detection for users with salary day 26 or later (was matching the current cycle, showing 'same as last' on every metric); home page now shows 'new' for categories that didn't exist last cycle (matching the PDF); L3 row deltas in the PDF report keep their red/green colour instead of being rendered in muted grey",
+        text: "Cycle-over-cycle comparison reliability: fixed previous-cycle detection for users with salary day 26 or later (was matching the current cycle, showing 'same as last' on every metric); home page now shows 'new' for categories that didn't exist last cycle (matching the PDF); L3 row deltas in the PDF report keep their red/green colour instead of being rendered in muted grey",
       },
     ],
   },
@@ -355,23 +377,23 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Partner view — invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time",
+        text: "Partner view: invite your partner by email so they can see your finances in read-only mode; accept or decline the invite right from the app; pause and resume the view from Settings at any time",
       },
       {
         type: "feat",
-        text: "Partner invites now show each other's name on both sides — the sender sees who they invited, and the recipient sees who sent the invite",
+        text: "Partner invites now show each other's name on both sides: the sender sees who they invited, and the recipient sees who sent the invite",
       },
       {
         type: "feat",
-        text: "Privacy Policy page — linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used",
+        text: "Privacy Policy page: linked from the landing page footer, sign-in notice, and Settings; explains what data KiraPoket collects and how it's used",
       },
       {
         type: "feat",
-        text: "Edit your display name from Settings — tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly; profile card shows a skeleton while loading",
+        text: "Edit your display name from Settings: tap the pencil icon next to your name to update it; the change syncs to your partner's view instantly; profile card shows a skeleton while loading",
       },
       {
         type: "feat",
-        text: "Recent transactions on the home page and the full transactions list are now grouped by date — today's and yesterday's entries show as 'Today' and 'Yesterday' instead of the full date",
+        text: "Recent transactions on the home page and the full transactions list are now grouped by date: today's and yesterday's entries show as 'Today' and 'Yesterday' instead of the full date",
       },
       {
         type: "feat",
@@ -379,19 +401,19 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Onboarding redesign — the Get Started card now focuses on one step at a time with a progress bar, a description, and a clear action button; completing each step shows a modal pointing you to the next one; finishing all steps shows a completion message",
+        text: "Onboarding redesign: the Get Started card now focuses on one step at a time with a progress bar, a description, and a clear action button; completing each step shows a modal pointing you to the next one; finishing all steps shows a completion message",
       },
       {
         type: "feat",
-        text: "Account balance protection — expenses and transfers are rejected before saving if they would make the account balance negative; the error message tells you exactly which account is short and by how much",
+        text: "Account balance protection: expenses and transfers are rejected before saving if they would make the account balance negative; the error message tells you exactly which account is short and by how much",
       },
       {
         type: "feat",
-        text: "Budget summary redesigned — split into Allocation (budgeted, unbudgeted spending, over-budget spending, unallocated) and Actuals (spent, remaining, progress bar) sections; tapping Unbudgeted or Over-budget rows shows a short explanation inline; removed the copy-as-image and censor toggle",
+        text: "Budget summary redesigned: split into Allocation (budgeted, unbudgeted spending, over-budget spending, unallocated) and Actuals (spent, remaining, progress bar) sections; tapping Unbudgeted or Over-budget rows shows a short explanation inline; removed the copy-as-image and censor toggle",
       },
       {
         type: "feat",
-        text: "Adding or editing a transaction now shows the selected account's balance and the projected balance after the change — the panel turns red and warns you if it would overdraw the account; works for expenses, income, and both accounts in a transfer",
+        text: "Adding or editing a transaction now shows the selected account's balance and the projected balance after the change: the panel turns red and warns you if it would overdraw the account; works for expenses, income, and both accounts in a transfer",
       },
       {
         type: "fix",
@@ -407,7 +429,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content — the app now performs a proper full reload instead of a soft refresh",
+        text: "iOS Add to Home Screen: navigating to other pages after a version update no longer shows stale content: the app now performs a proper full reload instead of a soft refresh",
       },
       {
         type: "fix",
@@ -415,11 +437,11 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Home dashboard summary: renamed 'Savings' to 'Balance' — the figure is income minus expenses for the cycle, not intentional savings",
+        text: "Home dashboard summary: renamed 'Savings' to 'Balance': the figure is income minus expenses for the cycle, not intentional savings",
       },
       {
         type: "fix",
-        text: "Transaction filter state is no longer saved across sessions — filters now only restore when returning directly from the edit page, so visiting the list fresh always starts clean",
+        text: "Transaction filter state is no longer saved across sessions: filters now only restore when returning directly from the edit page, so visiting the list fresh always starts clean",
       },
       {
         type: "fix",
@@ -427,19 +449,19 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Delete account now works reliably — all your data is wiped and you are signed out immediately",
+        text: "Delete account now works reliably: all your data is wiped and you are signed out immediately",
       },
       {
         type: "fix",
-        text: "Account balances are now stored with exactly two decimal places — floating point drift from repeated transactions is eliminated",
+        text: "Account balances are now stored with exactly two decimal places: floating point drift from repeated transactions is eliminated",
       },
       {
         type: "fix",
-        text: "Home and budget pages: tapping anywhere on a category row now navigates to transactions — the entire row is a tap target, not just the label text",
+        text: "Home and budget pages: tapping anywhere on a category row now navigates to transactions: the entire row is a tap target, not just the label text",
       },
       {
         type: "fix",
-        text: "Home dashboard and landing page: renamed 'Balance' to 'Remaining' — the figure is income minus expenses for the cycle",
+        text: "Home dashboard and landing page: renamed 'Balance' to 'Remaining': the figure is income minus expenses for the cycle",
       },
     ],
   },
@@ -450,7 +472,7 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Accounts: added Savings type (piggy bank icon, teal colour) — great for Maybank Tabung, ASB, and other savings pockets",
+        text: "Accounts: added Savings type (piggy bank icon, teal colour): great for Maybank Tabung, ASB, and other savings pockets",
       },
       {
         type: "feat",
@@ -458,15 +480,15 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Budget page: tap an L3 category item to open a detail modal — budget, spent, note, and links shown; Edit opens the full edit form inline; Transactions navigates pre-filtered to that category and cycle",
+        text: "Budget page: tap an L3 category item to open a detail modal: budget, spent, note, and links shown; Edit opens the full edit form inline; Transactions navigates pre-filtered to that category and cycle",
       },
       {
         type: "feat",
-        text: "AI spending insights on the budget page — personalised summary, do's, and don'ts powered by Gemini; factors in transaction notes for specific tips like 'car service' or 'birthday dinner'",
+        text: "AI spending insights on the budget page: personalised summary, do's, and don'ts powered by Gemini; factors in transaction notes for specific tips like 'car service' or 'birthday dinner'",
       },
       {
         type: "feat",
-        text: "Insights are cached as one record per user and rate-limited to once per day — the refresh button shows exactly when it unlocks and stays disabled until your data changes",
+        text: "Insights are cached as one record per user and rate-limited to once per day: the refresh button shows exactly when it unlocks and stays disabled until your data changes",
       },
       {
         type: "feat",
@@ -474,15 +496,15 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Daily budget day-picker now has a Clear all button — deselect all chosen days in one tap",
+        text: "Daily budget day-picker now has a Clear all button: deselect all chosen days in one tap",
       },
       {
         type: "feat",
-        text: "Each salary cycle remembers its own start date — editing one cycle no longer overwrites another; removed the Early arrival buffer setting",
+        text: "Each salary cycle remembers its own start date: editing one cycle no longer overwrites another; removed the Early arrival buffer setting",
       },
       {
         type: "feat",
-        text: "Cycle start banner on all cycles — tap Set date on any past cycle to correct it; cycle end adjusts to the day before the next cycle's start; home page remembers the last cycle you viewed",
+        text: "Cycle start banner on all cycles: tap Set date on any past cycle to correct it; cycle end adjusts to the day before the next cycle's start; home page remembers the last cycle you viewed",
       },
       {
         type: "feat",
@@ -490,19 +512,19 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Install App card in Settings — Android shows a native install button; iOS Safari shows the 3-step Add to Home Screen guide; card hides once the app is already installed",
+        text: "Install App card in Settings: Android shows a native install button; iOS Safari shows the 3-step Add to Home Screen guide; card hides once the app is already installed",
       },
       {
         type: "feat",
-        text: "Accounts: drag-to-reorder — grab the handle to rearrange; order persists and reflects in transaction form dropdowns and the home page list",
+        text: "Accounts: drag-to-reorder: grab the handle to rearrange; order persists and reflects in transaction form dropdowns and the home page list",
       },
       {
         type: "feat",
-        text: "Accounts: colour-coded type icons — bank (blue), cash (green), e-wallet (purple), credit (orange); total balance card shows a proportional type breakdown bar",
+        text: "Accounts: colour-coded type icons: bank (blue), cash (green), e-wallet (purple), credit (orange); total balance card shows a proportional type breakdown bar",
       },
       {
         type: "feat",
-        text: "Accounts: tap a row to see a detail sheet with balance, type, and quick actions — Transactions, Edit, Delete",
+        text: "Accounts: tap a row to see a detail sheet with balance, type, and quick actions: Transactions, Edit, Delete",
       },
       {
         type: "feat",
@@ -510,11 +532,11 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Category item modal redesigned — budget shown in a coloured highlight block, note and links in soft panels, delete button added directly in the modal",
+        text: "Category item modal redesigned: budget shown in a coloured highlight block, note and links in soft panels, delete button added directly in the modal",
       },
       {
         type: "feat",
-        text: "Transaction detail modal redesigned — type icon in coloured header, amount in highlight block, compact Edit + Delete footer matching the account and category modals",
+        text: "Transaction detail modal redesigned: type icon in coloured header, amount in highlight block, compact Edit + Delete footer matching the account and category modals",
       },
       {
         type: "fix",
@@ -526,11 +548,11 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Reduced Firestore reads — transaction fetches are now capped at 500 most recent; profile saves no longer trigger an unnecessary re-read",
+        text: "Reduced Firestore reads: transaction fetches are now capped at 500 most recent; profile saves no longer trigger an unnecessary re-read",
       },
       {
         type: "fix",
-        text: "Debts: settling or paying a debt no longer wipes the note — partial updates now preserve all fields not included in the change",
+        text: "Debts: settling or paying a debt no longer wipes the note: partial updates now preserve all fields not included in the change",
       },
       {
         type: "fix",
@@ -538,11 +560,11 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Debts: editing a fully-paid debt (amount 0) no longer blocked — 0 is now a valid amount when editing",
+        text: "Debts: editing a fully-paid debt (amount 0) no longer blocked: 0 is now a valid amount when editing",
       },
       {
         type: "fix",
-        text: "AI Insights temporarily unavailable until 28 May 2026 — a friendly message is shown with a Buy Me a Coffee button to help keep the feature running; skeleton no longer shows indefinitely when insights can't load",
+        text: "AI Insights temporarily unavailable until 28 May 2026: a friendly message is shown with a Buy Me a Coffee button to help keep the feature running; skeleton no longer shows indefinitely when insights can't load",
       },
     ],
   },
@@ -552,11 +574,11 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Visual revamp — warm coral accent replaces indigo throughout the app",
+        text: "Visual revamp: warm coral accent replaces indigo throughout the app",
       },
       {
         type: "feat",
-        text: "New typeface: Nunito — rounder and friendlier than Inter across all text",
+        text: "New typeface: Nunito: rounder and friendlier than Inter across all text",
       },
       {
         type: "feat",
@@ -576,7 +598,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Warm-tinted dark mode — replaces cold charcoal with brown-tinted dark backgrounds",
+        text: "Warm-tinted dark mode: replaces cold charcoal with brown-tinted dark backgrounds",
       },
     ],
   },
@@ -586,15 +608,15 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Debts: link a transaction when adding a debt — pick an account and an income/expense is recorded automatically",
+        text: "Debts: link a transaction when adding a debt: pick an account and an income/expense is recorded automatically",
       },
       {
         type: "feat",
-        text: 'Debts: Pay button on "I Owe" debts — record partial or full payments that flow to your account and reduce the balance',
+        text: 'Debts: Pay button on "I Owe" debts: record partial or full payments that flow to your account and reduce the balance',
       },
       {
         type: "feat",
-        text: 'Debts: Collect button on "They Owe Me" debts — record money you received back into an account',
+        text: 'Debts: Collect button on "They Owe Me" debts: record money you received back into an account',
       },
       {
         type: "feat",
@@ -606,11 +628,11 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Debts: Record Transaction option in the ··· menu — for existing debts that have no linked transaction yet",
+        text: "Debts: Record Transaction option in the ··· menu: for existing debts that have no linked transaction yet",
       },
       {
         type: "feat",
-        text: "Two new protected default categories: Debt Repayment (under Needs) and Money Lent (under Savings) — auto-added to existing accounts on next login, person names auto-added as items when a debt transaction is recorded",
+        text: "Two new protected default categories: Debt Repayment (under Needs) and Money Lent (under Savings): auto-added to existing accounts on next login, person names auto-added as items when a debt transaction is recorded",
       },
       {
         type: "feat",
@@ -618,19 +640,19 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Categories: tap a category item to see a Transactions button — jump straight to its filtered transaction list",
+        text: "Categories: tap a category item to see a Transactions button: jump straight to its filtered transaction list",
       },
       {
         type: "feat",
-        text: "Accounts: deleting an account is blocked if transactions are linked to it — a link jumps straight to the filtered transaction list",
+        text: "Accounts: deleting an account is blocked if transactions are linked to it: a link jumps straight to the filtered transaction list",
       },
       {
         type: "fix",
-        text: "iOS: signing out then signing in no longer auto-selects the previous Google account — the account picker is always shown",
+        text: "iOS: signing out then signing in no longer auto-selects the previous Google account: the account picker is always shown",
       },
       {
         type: "fix",
-        text: "Give Feedback and Buy Me a Coffee now open reliably on mobile — tapping no longer does nothing",
+        text: "Give Feedback and Buy Me a Coffee now open reliably on mobile: tapping no longer does nothing",
       },
       {
         type: "fix",
@@ -642,22 +664,22 @@ const releases: Release[] = [
     version: "0.4.x",
     dateRange: "2026-03-30 – 2026-04-06",
     changes: [
-      { type: "feat", text: "Changelog page — see what's new in KiraPoket" },
+      { type: "feat", text: "Changelog page: see what's new in KiraPoket" },
       {
         type: "feat",
-        text: '"Add to Home Screen" prompt on the landing page — one tap to install on Android, guided steps for iOS Safari',
+        text: '"Add to Home Screen" prompt on the landing page: one tap to install on Android, guided steps for iOS Safari',
       },
       {
         type: "feat",
-        text: "Transactions: filter by category — tap any L2 or L3 category name on the budget page to jump straight to its transactions",
+        text: "Transactions: filter by category: tap any L2 or L3 category name on the budget page to jump straight to its transactions",
       },
       {
         type: "feat",
-        text: "Transactions: daily net total shown next to each date header — green for net income, red for net expense",
+        text: "Transactions: daily net total shown next to each date header: green for net income, red for net expense",
       },
       {
         type: "feat",
-        text: "Transactions: delete button moved into the detail popup — no more accidental deletes from the list",
+        text: "Transactions: delete button moved into the detail popup: no more accidental deletes from the list",
       },
       {
         type: "feat",
@@ -665,7 +687,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Transactions sort by time within the same day — most recent first",
+        text: "Transactions sort by time within the same day: most recent first",
       },
       {
         type: "feat",
@@ -681,15 +703,15 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Categories: deleting a subcategory is blocked if it still has items inside — clear the items first",
+        text: "Categories: deleting a subcategory is blocked if it still has items inside: clear the items first",
       },
       {
         type: "feat",
-        text: "Categories: deleting an item is blocked if transactions are linked to it — a link jumps straight to the filtered transaction list",
+        text: "Categories: deleting an item is blocked if transactions are linked to it: a link jumps straight to the filtered transaction list",
       },
       {
         type: "feat",
-        text: "Give Feedback and Buy Me a Coffee — accessible from the sidebar and mobile menu",
+        text: "Give Feedback and Buy Me a Coffee: accessible from the sidebar and mobile menu",
       },
       {
         type: "fix",
@@ -701,7 +723,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Transaction list: tapping a row now shows full details (amount, date, account, subcategory, note) in a popup — edit button moved inside",
+        text: "Transaction list: tapping a row now shows full details (amount, date, account, subcategory, note) in a popup: edit button moved inside",
       },
       {
         type: "fix",
@@ -717,7 +739,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "New accounts no longer end up with missing or incomplete default categories — any gaps are automatically filled in on the next login",
+        text: "New accounts no longer end up with missing or incomplete default categories: any gaps are automatically filled in on the next login",
       },
     ],
   },
@@ -747,11 +769,11 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Budget page — set spending targets per category and track progress",
+        text: "Budget page: set spending targets per category and track progress",
       },
       {
         type: "feat",
-        text: "PWA support — install to your home screen, works offline",
+        text: "PWA support: install to your home screen, works offline",
       },
       { type: "feat", text: "New version toast when an update is available" },
       {
@@ -764,7 +786,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Debt tracker — track money you owe and money owed to you, with optional due dates",
+        text: "Debt tracker: track money you owe and money owed to you, with optional due dates",
       },
       {
         type: "feat",
@@ -798,7 +820,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "iOS PWA auth fixes — no more redirect loops or full-page spinner on launch",
+        text: "iOS PWA auth fixes: no more redirect loops or full-page spinner on launch",
       },
       {
         type: "fix",
@@ -829,13 +851,13 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "KiraPoket launched — personal expense tracker for your pocket",
+        text: "KiraPoket launched: personal expense tracker for your pocket",
       },
       { type: "feat", text: "Sign in with Google" },
       { type: "feat", text: "Income and expense transactions" },
       {
         type: "feat",
-        text: "Accounts — bank, cash, e-wallet, credit, and more",
+        text: "Accounts: bank, cash, e-wallet, credit, and more",
       },
       {
         type: "feat",
@@ -844,7 +866,7 @@ const releases: Release[] = [
       { type: "feat", text: "Transfer transactions between accounts" },
       {
         type: "feat",
-        text: "Salary cycle — all stats tied to your pay period",
+        text: "Salary cycle: all stats tied to your pay period",
       },
       { type: "feat", text: "Hide / show balance toggle" },
       { type: "feat", text: "Light and dark mode" },

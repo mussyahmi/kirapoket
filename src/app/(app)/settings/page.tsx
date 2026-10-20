@@ -45,6 +45,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 import { uploadAvatar, removeAvatar } from "@/lib/avatar";
 import { InstallAppCard } from "@/components/common/InstallAppCard";
 import { OnboardingNextModal } from "@/components/common/OnboardingNextModal";
@@ -82,6 +83,8 @@ function SettingsPage() {
 
   const [salaryDay, setSalaryDay] = useState<number | null>(null);
   const [confirmBeforeSaving, setConfirmBeforeSaving] = useState(true);
+  const [assistantNotes, setAssistantNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -106,6 +109,7 @@ function SettingsPage() {
     if (userProfile) {
       setSalaryDay(userProfile.salaryDay ?? null);
       setConfirmBeforeSaving(userProfile.confirmBeforeSaving ?? true);
+      setAssistantNotes(userProfile.assistantNotes ?? "");
     }
   }, [userProfile]);
 
@@ -128,6 +132,18 @@ function SettingsPage() {
       await saveUserProfile({ confirmBeforeSaving: next });
     } catch {
       toast.error("Failed to save preference.");
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      await saveUserProfile({ assistantNotes: assistantNotes.trim() });
+      toast.success("Saved. The assistant will use this from now on.");
+    } catch {
+      toast.error("Failed to save notes.");
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -484,6 +500,49 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* What the assistant should know, the facts transactions can't show:
+          a card reload logged as parking, a spouse who earns separately, a
+          commitment that lives outside the app. Without these an assistant
+          fills the gaps by guessing. */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>What the assistant should know</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Things your transactions can&apos;t tell it. How you commute, who
+            else earns in your household, anything you pay outside the app, or a
+            category that doesn&apos;t mean what its name suggests.
+          </p>
+          <Textarea
+            value={assistantNotes}
+            onChange={(e) => setAssistantNotes(e.target.value)}
+            disabled={isReadOnly}
+            rows={5}
+            maxLength={1500}
+            placeholder={
+              "My RM10 parking entries are card reloads, the real charge is RM4.30 a day.\nMy wife earns separately, so her spending isn't here.\nI'm saving for an emergency fund before investing."
+            }
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              {assistantNotes.length}/1500
+            </p>
+            <Button
+              size="sm"
+              onClick={handleSaveNotes}
+              disabled={
+                isReadOnly ||
+                savingNotes ||
+                assistantNotes.trim() === (userProfile?.assistantNotes ?? "")
+              }
+            >
+              {savingNotes ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Partner Access */}
       <Card>
         <CardHeader className="pb-3">
@@ -610,7 +669,7 @@ function SettingsPage() {
       {/* Install App */}
       <InstallAppCard />
 
-      {/* Other apps — the only place KiraPoket points to another app, mirroring
+      {/* Other apps, the only place KiraPoket points to another app, mirroring
           MariSolat's "Aplikasi lain" on its Tetapan page. Settings is where
           people come to learn about the app itself; a promo on Home or in the
           transaction flow would get between them and their money. Outside the

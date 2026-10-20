@@ -817,28 +817,30 @@ function AccountsPage() {
             >
               Cancel
             </Button>
-            {deleteBlocked
-              ? !deleteTarget?.archived && (
-                  <Button
-                    className="gap-2"
-                    onClick={() => {
-                      const target = deleteTarget;
-                      setDeleteTarget(null);
-                      if (target) setArchiveTarget(target);
-                    }}
-                  >
-                    <ArchiveIcon /> Archive instead
-                  </Button>
-                )
-              : /* Kept mounted (disabled) while the count is still loading,
-                   so the footer doesn't jump once it lands. */
+            {deleteBlocked ? (
+              !deleteTarget?.archived && (
                 <Button
-                  variant="destructive-solid"
-                  onClick={handleDelete}
-                  disabled={deleting || checkingLinked}
+                  className="gap-2"
+                  onClick={() => {
+                    const target = deleteTarget;
+                    setDeleteTarget(null);
+                    if (target) setArchiveTarget(target);
+                  }}
                 >
-                  {deleting ? "Deleting..." : "Delete"}
-                </Button>}
+                  <ArchiveIcon /> Archive instead
+                </Button>
+              )
+            ) : (
+              /* Kept mounted (disabled) while the count is still loading,
+                   so the footer doesn't jump once it lands. */
+              <Button
+                variant="destructive-solid"
+                onClick={handleDelete}
+                disabled={deleting || checkingLinked}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -50,8 +50,8 @@ export default function ErrorPage({
           Something went wrong
         </p>
         <p className="mx-auto max-w-[38ch] text-sm text-muted-foreground">
-          Your data is safe — this is a display error. Try again, and if it
-          keeps happening, reload the app.
+          Your data is safe, this is a display error. Try again, and if it keeps
+          happening, reload the app.
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">

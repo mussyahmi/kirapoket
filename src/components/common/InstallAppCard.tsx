@@ -64,8 +64,8 @@ export function InstallAppCard() {
         {deferredPrompt ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Install KiraPoket on your device for quick access — no browser
-              bar, works offline.
+              Install KiraPoket on your device for quick access, no browser bar,
+              works offline.
             </p>
             <Button
               className="w-full gap-2"
@@ -79,8 +79,8 @@ export function InstallAppCard() {
         ) : isIos ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Install KiraPoket on your iPhone for quick access — no browser
-              bar, works offline.
+              Install KiraPoket on your iPhone for quick access, no browser bar,
+              works offline.
             </p>
             <ol className="space-y-2 text-sm">
               <li className="flex items-center gap-3">

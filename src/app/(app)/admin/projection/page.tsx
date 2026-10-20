@@ -33,7 +33,7 @@ const MILESTONE_DEFS = [
     phase: "Early Adopter Pricing",
     mau: "100+ MAU",
     action:
-      "Open 50 early adopter slots at RM 29/year — price locked forever as long as they keep renewing. No feature restrictions yet, free tier stays unlimited. People pay to support + secure the deal. RM 59/year exists but nobody has a reason to pay it here — don't push it. After 50 slots fill, new subscribers pay RM 59/year or RM 6.90/month.",
+      "Open 50 early adopter slots at RM 29/year, price locked forever as long as they keep renewing. No feature restrictions yet, free tier stays unlimited. People pay to support + secure the deal. RM 59/year exists but nobody has a reason to pay it here, don't push it. After 50 slots fill, new subscribers pay RM 59/year or RM 6.90/month.",
     threshold: 100,
   },
   {
@@ -41,7 +41,7 @@ const MILESTONE_DEFS = [
     phase: "Full Monetize",
     mau: "500+ MAU",
     action:
-      "Flip on the freemium paywall — free tier now has real limits (3 accounts max, AI insights rate-limited, etc). This is when RM 59/year or RM 6.90/month actually has value. Existing free users grandfathered: fully functional but can't create more than 3 accounts. Early adopters keep renewing at RM 29/year — if they cancel and return, they lose the price lock.",
+      "Flip on the freemium paywall, free tier now has real limits (3 accounts max, AI insights rate-limited, etc). This is when RM 59/year or RM 6.90/month actually has value. Existing free users grandfathered: fully functional but can't create more than 3 accounts. Early adopters keep renewing at RM 29/year, if they cancel and return, they lose the price lock.",
     threshold: 500,
   },
 ];
@@ -109,7 +109,7 @@ const MOATS = [
   {
     n: "03",
     title: "Partner Budgeting",
-    desc: "Couples and households are high-LTV users — stickier than solo users.",
+    desc: "Couples and households are high-LTV users, stickier than solo users.",
   },
   {
     n: "04",
@@ -253,7 +253,7 @@ export default function ProjectionPage() {
       {/* Pricing */}
       <section className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Pricing Model — Freemium + Annual Sub
+          Pricing Model, Freemium + Annual Sub
         </p>
 
         <div className="grid grid-cols-2 gap-3">
@@ -316,7 +316,7 @@ export default function ProjectionPage() {
         </div>
 
         <p className="text-xs text-muted-foreground italic leading-relaxed">
-          Why RM 59/year — Malaysian users resist monthly subs but accept annual
+          Why RM 59/year, Malaysian users resist monthly subs but accept annual
           if value is clear. Under the"feels expensive" threshold. Comparable
           local apps: RM 40–80/year.
         </p>
@@ -393,7 +393,7 @@ export default function ProjectionPage() {
           </table>
           <div className="px-4 py-3 bg-muted/30 border-t border-border">
             <p className="text-xs text-muted-foreground">
-              Sweet spot: RM 1,000–2,000/mo at 3k–5k MAU — Firebase costs stay
+              Sweet spot: RM 1,000–2,000/mo at 3k–5k MAU, Firebase costs stay
               low, product sustains itself.
             </p>
           </div>
@@ -427,7 +427,7 @@ export default function ProjectionPage() {
       {/* Growth callout */}
       <section className="rounded-xl bg-primary/8 dark:bg-primary/12 border border-primary/20 p-6 space-y-2">
         <p className="text-base font-bold leading-snug">
-          "The biggest lever isn&apos;t pricing — it&apos;s MAU growth."
+          "The biggest lever isn&apos;t pricing, it&apos;s MAU growth."
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Organic is slow. Fastest paths: Malaysian personal finance Facebook

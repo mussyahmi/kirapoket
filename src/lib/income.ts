@@ -6,8 +6,8 @@ import type { IncomeSource, Transaction } from "./types";
  * counting them together makes a cycle you borrowed your way through look like
  * a cycle you earned your way through.
  *
- * Only "earned" counts towards income. The other three are reported separately
- * so the money is still visible — just not as income.
+ * Only "earned" and "gift" count towards income. The rest are reported
+ * separately so the money is still visible — just not as income.
  */
 export const INCOME_SOURCES: {
   value: IncomeSource;
@@ -23,9 +23,15 @@ export const INCOME_SOURCES: {
     isIncome: true,
   },
   {
+    value: "gift",
+    label: "Gift",
+    hint: "Duit raya, angpau, wedding money, government aid. Counts as income.",
+    isIncome: true,
+  },
+  {
     value: "returned",
     label: "Returned",
-    hint: "Refunds, rebates, cashback. Excluded from your income total.",
+    hint: "Refunds, cashback, work claims, a friend paying you back. Excluded from your income total.",
     isIncome: false,
   },
   {
@@ -40,6 +46,12 @@ export const INCOME_SOURCES: {
     hint: "From your own savings: EPF, Tabung Haji, FD. Excluded from your income total.",
     isIncome: false,
   },
+  {
+    value: "held",
+    label: "Held for others",
+    hint: "Money you're spending for someone else, like a group collection. Excluded from your income total.",
+    isIncome: false,
+  },
 ];
 
 export const DEFAULT_INCOME_SOURCE: IncomeSource = "earned";
@@ -51,7 +63,16 @@ export function incomeSourceOf(tx: Transaction): IncomeSource {
 
 /** True for income that should count towards the income total. */
 export function isEarnedIncome(tx: Transaction): boolean {
-  return tx.type === "income" && incomeSourceOf(tx) === "earned";
+  return tx.type === "income" && incomeSourceMeta(incomeSourceOf(tx)).isIncome;
+}
+
+/**
+ * True for spending that's actually yours. Expenses paid for others (the
+ * hampers bought with the family's money) still move the account balance but
+ * stay out of spending totals and budgets.
+ */
+export function isOwnExpense(tx: Transaction): boolean {
+  return tx.type === "expense" && !tx.forOthers;
 }
 
 /**
@@ -67,7 +88,7 @@ export function isNonIncomeInflow(tx: Transaction): boolean {
 
 const sum = (txs: Transaction[]) => txs.reduce((s, t) => s + t.amount, 0);
 
-/** The income total — earned income only. */
+/** The income total — earned income and gifts. */
 export function sumEarnedIncome(txs: Transaction[]): number {
   return sum(txs.filter(isEarnedIncome));
 }
@@ -90,6 +111,29 @@ export function nonIncomeInflowBreakdown(txs: Transaction[]): {
     txs.filter((t) => t.type === "income" && incomeSourceOf(t) === "withdrawn"),
   );
   return { borrowed, withdrawn, total: borrowed + withdrawn };
+}
+
+/** Gifts this cycle, so the dashboard can say how much of income was given. */
+export function sumGiftIncome(txs: Transaction[]): number {
+  return sum(
+    txs.filter((t) => t.type === "income" && incomeSourceOf(t) === "gift"),
+  );
+}
+
+/**
+ * Money held for others minus what was paid for them. Positive means you're
+ * still holding someone's money; negative means you've topped it up yourself.
+ */
+export function heldForOthersBalance(txs: Transaction[]): {
+  held: number;
+  paid: number;
+  left: number;
+} {
+  const held = sum(
+    txs.filter((t) => t.type === "income" && incomeSourceOf(t) === "held"),
+  );
+  const paid = sum(txs.filter((t) => t.type === "expense" && t.forOthers));
+  return { held, paid, left: held - paid };
 }
 
 export function incomeSourceMeta(source: IncomeSource) {

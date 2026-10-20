@@ -87,8 +87,7 @@ export function PartnerBanner() {
             <DialogTitle>Decline invite?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {inviterName}
-            {" "}will be notified that you declined their invite.
+            {inviterName} will be notified that you declined their invite.
           </p>
           <DialogFooter>
             <Button

@@ -52,15 +52,24 @@ const bottomNavItems = [
 
 // Header menu — less-visited pages
 const menuItems = [
-  { href: "/assistant", label: "AI Assistant", icon: SparklesIcon },
   { href: "/accounts", label: "Accounts", icon: WalletIcon },
   { href: "/categories", label: "Categories", icon: TagIcon },
   { href: "/changelog", label: "Changelog", icon: ScrollTextIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-// Desktop sidebar — all pages
-const allNavItems = [...bottomNavItems, ...menuItems];
+// The assistant: in the header on mobile, in the sidebar on desktop. It is
+// never in the mobile dropdown, because asking about your money shouldn't
+// cost two taps and a menu.
+const assistantItem = {
+  href: "/assistant",
+  label: "AI Assistant",
+  icon: SparklesIcon,
+};
+
+// Desktop sidebar — all pages, with the assistant up with the main nav rather
+// than buried among the settings-ish links.
+const allNavItems = [...bottomNavItems, assistantItem, ...menuItems];
 
 // Light haptic tap on supported devices (Android/Chrome; a no-op on iOS Safari)
 function haptic(ms = 8) {
@@ -251,7 +260,7 @@ export function AppShell({
       <button
         key={href}
         type="button"
-        aria-label={`${label} — add an account first`}
+        aria-label={`${label}, add an account first`}
         onClick={() =>
           toast.info("Add an account first to start logging transactions.", {
             id: "nav-locked",
@@ -302,7 +311,7 @@ export function AppShell({
           }}
           className={pillCls}
         >
-          {/* Active is carried by weight as well as colour — the lens tint is
+          {/* Active is carried by weight as well as colour, the lens tint is
               only primary/20 over glass, so hue alone would leave the two
               states near-identical in sunlight or for a colourblind user. */}
           <span className="relative flex items-center justify-center">
@@ -343,7 +352,7 @@ export function AppShell({
           </Link>
           <ThemeToggle />
         </div>
-        {/* Desktop quick-add — the bottom nav's centre button has no desktop
+        {/* Desktop quick-add, the bottom nav's centre button has no desktop
             counterpart, so logging used to mean navigating first */}
         {showAdd && (
           <div className="px-2 pt-3">
@@ -418,7 +427,7 @@ export function AppShell({
 
       {/* ── Main Content Area ── */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile Header — solid, edge-pinned, always visible */}
+        {/* Mobile Header, solid, edge-pinned, always visible */}
         <header
           className={cn(
             "md:hidden flex items-center justify-between px-4 py-3 sticky top-0 z-[60]",
@@ -433,6 +442,19 @@ export function AppShell({
             </span>
           </Link>
           <div className="flex items-center gap-1">
+            {/* Asking about your money shouldn't cost two taps and a menu. */}
+            <Link
+              href="/assistant"
+              aria-label="AI Assistant"
+              className={cn(
+                "size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg transition-colors",
+                isActive("/assistant")
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              <SparklesIcon className="size-4" />
+            </Link>
             <ThemeToggle />
             {/* Header menu button */}
             <div ref={menuRef} className="relative">
@@ -541,7 +563,7 @@ export function AppShell({
         </main>
       </div>
 
-      {/* ── Mobile Bottom Nav — Liquid Glass; shrinks & drops labels on scroll ── */}
+      {/* ── Mobile Bottom Nav, Liquid Glass; shrinks & drops labels on scroll ── */}
       <nav
         ref={navRef}
         aria-label="Main"
@@ -574,12 +596,12 @@ export function AppShell({
           "shadow-[var(--shadow-e4),var(--shadow-lit)]",
         )}
       >
-        {/* Top-down gloss — specular sheen across the glass surface */}
+        {/* Top-down gloss, specular sheen across the glass surface */}
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-b from-white/30 via-transparent to-white/[0.06] dark:from-white/[0.12] dark:to-white/[0.02]"
         />
-        {/* Sliding Liquid Glass lens — animates between tabs */}
+        {/* Sliding Liquid Glass lens, animates between tabs */}
         {lens.show && (
           <span
             aria-hidden

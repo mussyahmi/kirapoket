@@ -418,12 +418,13 @@ export function generateMonthlyReportPdf(report: CycleReport): void {
         ],
       ],
       body: report.transactions.map((t, i) => {
-        const details =
-          t.note && t.type !== "income"
-            ? `${t.label} · ${t.note}`
-            : t.sourceLabel
-              ? `${t.label} · ${t.sourceLabel}`
-              : t.label;
+        const details = [
+          t.label,
+          t.type !== "income" ? t.note : undefined,
+          t.sourceLabel,
+        ]
+          .filter(Boolean)
+          .join(" · ");
         const account =
           t.type === "transfer" && t.toAccountName
             ? `${t.accountName}\n${t.toAccountName}`

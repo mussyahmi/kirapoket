@@ -706,8 +706,8 @@ export default function DebtsPage() {
         });
         toast.success(
           isIOwe
-            ? "Fully paid — debt settled!"
-            : "Fully collected — debt settled!",
+            ? "Fully paid. Debt settled!"
+            : "Fully collected. Debt settled!",
         );
       } else {
         await editDebt(payTarget.id, { amount: remaining });
@@ -1069,7 +1069,7 @@ export default function DebtsPage() {
               </div>
             </div>
 
-            {/* Account linkage — only on create, not edit */}
+            {/* Account linkage, only on create, not edit */}
             {!editTarget && activeAccounts.length > 0 && (
               <div className="space-y-2">
                 <Label>

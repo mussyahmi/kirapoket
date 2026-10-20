@@ -96,7 +96,7 @@ export function LoadError({
           Couldn&apos;t load your {what}
         </p>
         <p className="text-muted-foreground mx-auto max-w-[34ch] text-sm">
-          Your data is safe — this is a connection problem. Check your network
+          Your data is safe, this is a connection problem. Check your network
           and try again.
         </p>
       </div>

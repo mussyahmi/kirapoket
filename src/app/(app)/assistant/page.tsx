@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { SparklesIcon, SendIcon } from "lucide-react";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildAssistantContext } from "@/lib/aiContext";
+import { ChatMarkdown } from "@/components/common/ChatMarkdown";
+import type { AiUsageSummary } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -15,20 +18,31 @@ function getInitials(name?: string | null) {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "U";
 }
 
-type ChatMessage = { role: "user" | "assistant"; text: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  text: string;
+  /** A durable fact the model offered to remember. Never saved without a tap. */
+  suggestedNote?: string;
+  noteState?: "offered" | "saved" | "dismissed";
+};
+
+/** Settings keeps the same ceiling; appending must respect it. */
+const NOTES_MAX = 1500;
 
 const SUGGESTIONS = [
-  "How am I doing this cycle?",
-  "Where am I overspending?",
-  "How much can I still spend?",
-  "Summarise my debts",
+  // Forward-looking and decision-shaped. "How am I doing" describes the past;
+  // the questions people actually need answered are about what happens next.
+  "What's free to spend right now?",
+  "What's due before payday?",
+  "Will I make it to payday?",
+  "Where is my money leaking?",
 ];
 
-// Flip to false to enable the live chat experience below.
-const COMING_SOON = true;
-
 export default function AssistantPage() {
-  if (COMING_SOON) return <ComingSoon />;
+  // Admin-only while the assistant is still being finished; everyone else
+  // keeps seeing the coming-soon page.
+  const { user } = useAuth();
+  if (user?.uid !== ADMIN_UID) return <ComingSoon />;
   return <AssistantChat />;
 }
 
@@ -45,7 +59,7 @@ function ComingSoon() {
         Coming soon
       </span>
       <p className="mt-4 max-w-sm text-sm text-muted-foreground leading-relaxed">
-        Chat with an AI that knows your accounts and spending — ask things like
+        Chat with an AI that knows your accounts and spending, ask things like
         &ldquo;where am I overspending?&rdquo; or &ldquo;how much can I still
         spend this cycle?&rdquo; We&apos;re putting the finishing touches on it.
       </p>
@@ -62,6 +76,7 @@ function AssistantChat() {
     debts,
     isViewingPartner,
     isImpersonating,
+    saveUserProfile,
   } = useApp();
   const { user } = useAuth();
   const readOnly = isViewingPartner || isImpersonating;
@@ -69,7 +84,62 @@ function AssistantChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [usage, setUsage] = useState<AiUsageSummary | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isAdmin = user?.uid === ADMIN_UID;
+
+  /**
+   * Appends a proposed fact to the user's notes. Nothing is ever written
+   * without this tap, and the result stays visible and editable in Settings.
+   */
+  const rememberNote = async (index: number, note: string) => {
+    const existing = (userProfile?.assistantNotes ?? "").trim();
+    if (existing.includes(note)) {
+      setMessages((m) =>
+        m.map((x, i) => (i === index ? { ...x, noteState: "saved" } : x)),
+      );
+      return;
+    }
+    const next = existing ? `${existing}\n${note}` : note;
+    if (next.length > NOTES_MAX) {
+      toast.error("Your notes are full. Trim them in Settings and try again.");
+      return;
+    }
+    setSavingNote(true);
+    try {
+      await saveUserProfile({ assistantNotes: next });
+      setMessages((m) =>
+        m.map((x, i) => (i === index ? { ...x, noteState: "saved" } : x)),
+      );
+      toast.success("Saved. You can edit it in Settings.");
+    } catch {
+      toast.error("Couldn't save that.");
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  // Usage is admin-only, so the line stays hidden once the assistant opens up
+  // to everyone. Loaded up front so it shows before the first message.
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/chat", {
+          headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+        });
+        const data = await res.json();
+        if (!cancelled && data.usage) setUsage(data.usage);
+      } catch {
+        /* the line just stays hidden */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAdmin]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,7 +171,12 @@ function AssistantChat() {
         },
         body: JSON.stringify({ messages: next, context }),
       });
-      const data = await res.json();
+      // A missing route answers with an HTML 404 page, not JSON. Don't let
+      // that fall through to the "check your connection" catch below.
+      const data = await res.json().catch(() => ({
+        error: "The assistant isn't available right now.",
+      }));
+      if (data.usage) setUsage(data.usage);
       if (!res.ok) {
         setMessages((m) => [
           ...m,
@@ -113,7 +188,12 @@ function AssistantChat() {
       } else {
         setMessages((m) => [
           ...m,
-          { role: "assistant", text: data.reply ?? "" },
+          {
+            role: "assistant",
+            text: data.reply ?? "",
+            suggestedNote: data.suggestedNote || undefined,
+            noteState: data.suggestedNote ? "offered" : undefined,
+          },
         ]);
       }
     } catch {
@@ -141,7 +221,14 @@ function AssistantChat() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 flex flex-col min-h-[calc(100dvh-3.5rem)] md:min-h-[calc(100dvh-1px)]">
+    <div
+      // Fills the screen under the mobile header (61px, or 69px with the
+      // larger touch targets). The shell's pb-32 nav gutter is cancelled
+      // with -mb-32: it's sized for scrolling content, and left in place it
+      // parks the composer a whole nav-height above the nav. The composer
+      // clears the nav itself.
+      className="max-w-2xl mx-auto px-4 flex flex-col min-h-[calc(100dvh-61px)] pointer-coarse:min-h-[calc(100dvh-69px)] -mb-32 md:mb-0 md:min-h-[calc(100dvh-2rem)]"
+    >
       {/* Header */}
       <div className="flex items-center gap-3 py-4 shrink-0">
         <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -182,6 +269,38 @@ function AssistantChat() {
           </div>
         )}
 
+        {/* Admin-only: the exact snapshot sent with every message. Worth being
+            able to read, because a wrong answer is usually a wrong context
+            rather than a wrong model. */}
+        {user?.uid === ADMIN_UID && messages.length === 0 && (
+          <details className="rounded-2xl border border-border bg-muted/20 p-4">
+            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+              Context sent with each message
+            </summary>
+            {(() => {
+              const ctx = buildAssistantContext({
+                userProfile,
+                accounts: activeAccounts,
+                categories,
+                transactions,
+                debts,
+              });
+              return (
+                <>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {ctx.length.toLocaleString()} characters, roughly{" "}
+                    {Math.round(ctx.length / 4).toLocaleString()} tokens, paid
+                    on every message
+                  </p>
+                  <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-background p-3 text-[11px] leading-relaxed whitespace-pre-wrap">
+                    {ctx}
+                  </pre>
+                </>
+              );
+            })()}
+          </details>
+        )}
+
         {messages.map((m, i) => (
           <div
             key={i}
@@ -203,7 +322,48 @@ function AssistantChat() {
                   : "bg-muted text-foreground rounded-bl-lg",
               )}
             >
-              {m.text}
+              {m.role === "assistant" ? <ChatMarkdown text={m.text} /> : m.text}
+              {/* An offer, never an action. Nothing reaches the user's notes
+                  without this tap, and whatever is saved stays visible and
+                  editable in Settings. */}
+              {m.suggestedNote && m.noteState !== "dismissed" && (
+                <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {m.noteState === "saved"
+                      ? "Saved to your notes"
+                      : "Remember this?"}
+                  </p>
+                  <p className="mt-1 text-xs text-foreground/90">
+                    {m.suggestedNote}
+                  </p>
+                  {m.noteState === "offered" && !readOnly && (
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 px-3 text-xs"
+                        disabled={savingNote}
+                        onClick={() => rememberNote(i, m.suggestedNote!)}
+                      >
+                        Remember
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-3 text-xs"
+                        onClick={() =>
+                          setMessages((prev) =>
+                            prev.map((x, xi) =>
+                              xi === i ? { ...x, noteState: "dismissed" } : x,
+                            ),
+                          )
+                        }
+                      >
+                        No thanks
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {m.role === "user" && (
               <Avatar className="size-7 shrink-0 mt-0.5">
@@ -246,7 +406,12 @@ function AssistantChat() {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-24 md:bottom-4 z-20 pb-2 bg-background">
+      {/* Not sticky on mobile: the shell's <main> is the nearest scroll
+          container but never scrolls itself (the document does), and its
+          pb-32 shifts any sticky bottom up by 8rem. Bottom padding = the
+          nav's bottom offset (same max() as AppShell) + its 4rem height + a
+          0.75rem gap, so the composer sits just above the nav. */}
+      <div className="z-20 shrink-0 bg-background pb-[calc(max(1.25rem,_env(safe-area-inset-bottom)_+_0.5rem)_+_4.75rem)] md:sticky md:bottom-4 md:pb-2">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -277,8 +442,15 @@ function AssistantChat() {
           </Button>
         </form>
         <p className="mt-2 text-center text-xs text-muted-foreground/70">
-          AI can make mistakes — double-check important numbers.
+          AI can make mistakes. Double-check important numbers.
         </p>
+        {isAdmin && usage && (
+          <p className="mt-1 text-center text-xs tabular-nums text-muted-foreground/70">
+            {usage.messagesLeft} of {usage.dailyLimit} messages left today ·{" "}
+            {usage.tokensToday.toLocaleString("en-MY")} tokens today ·{" "}
+            {usage.tokensMonth.toLocaleString("en-MY")} this month
+          </p>
+        )}
       </div>
     </div>
   );

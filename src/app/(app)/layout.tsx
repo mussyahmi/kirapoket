@@ -61,7 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="flex items-center gap-2">
             <HeartHandshakeIcon className="size-3.5" />
             Viewing {userProfile?.displayName ?? userProfile?.email ?? "user"}
-            &apos;s finances — read only
+            &apos;s finances, read only
           </span>
           <button
             type="button"
@@ -83,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {partnership.inviterUid === user?.uid
               ? (partnership.inviteeName ?? partnership.inviteeEmail)
               : (partnership.inviterName ?? partnership.inviterEmail)}
-            &apos;s finances — read only
+            &apos;s finances, read only
           </span>
           <button
             type="button"
