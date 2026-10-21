@@ -1,0 +1,19 @@
+{
+  "name": "kirapoket-functions",
+  "description": "Standalone Cloud Functions for KiraPoket",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": { "node": "20" },
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "firebase-admin": "^13.8.0",
+    "firebase-functions": "^6.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -18,8 +18,17 @@
         {
           "source": "**",
           "headers": [
-            { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" }
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin-allow-popups"
+            }
           ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/api/chat",
+          "function": "chat"
         }
       ]
     },
@@ -37,6 +46,21 @@
           "destination": "https://kirapoket.web.app",
           "type": 301
         }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.local",
+        "*.log"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
   ]
