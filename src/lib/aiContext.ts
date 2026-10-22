@@ -244,17 +244,29 @@ export function buildAssistantContext({
       (a, b) => (typeOrder[a.type ?? ""] ?? 9) - (typeOrder[b.type ?? ""] ?? 9),
     );
 
-  const budgetLabel = (c: Category): string => {
-    if (!c.budget || c.budget <= 0) return "";
+  /**
+   * States whether a budget is breached rather than leaving the model to
+   * compare two numbers. It got this wrong with both figures on the same
+   * line, calling RM374.75 against RM500 "over its budget". Everything
+   * computed here has been right; everything left to the model to derive has
+   * been wrong at least once.
+   */
+  const budgetLabel = (c: Category, spent: number): string => {
+    if (!c.budget || c.budget <= 0) return " [no budget set]";
     if (c.budgetType === "daily") return ` [budget ${rm(c.budget)}/day]`;
-    return ` [budget ${rm(c.budget)}/cycle]`;
+    const diff = spent - c.budget;
+    const verdict =
+      Math.abs(diff) < 0.01
+        ? "exactly on budget"
+        : diff > 0
+          ? `OVER by ${rm(diff)}`
+          : `under by ${rm(-diff)}`;
+    return ` [budget ${rm(c.budget)}/cycle, ${verdict}]`;
   };
 
   lines.push("SPENDING BY CATEGORY (this cycle):");
-  // Without this the model reads a missing budget as a breached one and says
-  // a category is "over budget" when no budget was ever set.
   lines.push(
-    "Only categories showing [budget ...] have a budget set. Every other category has NO budget: never call it over or under budget, because there is nothing to be over or under.",
+    "Each category states its budget and whether it is over or under, or says [no budget set]. Use the stated verdict; never work it out yourself. A category marked [no budget set] cannot be over or under budget, so describe its spending without any budget comparison.",
   );
   for (const l1 of l1s) {
     const spent = l1Spend[l1.id] ?? 0;
@@ -275,7 +287,7 @@ export function buildAssistantContext({
       // The count matters as much as the total: twenty RM25 coffees and one
       // RM500 bill look identical as a sum, and only one of them is a habit.
       lines.push(
-        `    - ${c.name}: ${rm(l3Spend[c.id] ?? 0)}${n ? ` across ${n} transaction${n === 1 ? "" : "s"}` : ""}${budgetLabel(c)}`,
+        `    - ${c.name}: ${rm(l3Spend[c.id] ?? 0)}${n ? ` across ${n} transaction${n === 1 ? "" : "s"}` : ""}${budgetLabel(c, l3Spend[c.id] ?? 0)}`,
       );
     }
     if (sortedL3.length > shownL3.length) {
@@ -321,7 +333,10 @@ export function buildAssistantContext({
   // here rather than by sending raw rows, because the model would have to add
   // up ninety numbers itself and would sometimes get it wrong. Counting in
   // code is exact and costs a fraction of the tokens.
-  const byNote = new Map<string, { label: string; n: number; total: number }>();
+  const byNote = new Map<
+    string,
+    { label: string; n: number; total: number; cats: Set<string> }
+  >();
   for (const t of cycleTx) {
     if (!isOwnExpense(t)) continue;
     const note = t.note?.trim();
@@ -346,8 +361,19 @@ export function buildAssistantContext({
       // Shortest wins: "Zus coffee" names the habit; "Zus coffee for wife"
       // describes only one instance of it.
       if (note.length < seen.label.length) seen.label = note;
+      if (t.categoryId && catMap[t.categoryId])
+        seen.cats.add(catMap[t.categoryId].name);
     } else {
-      byNote.set(key, { label: note, n: 1, total: t.amount });
+      byNote.set(key, {
+        label: note,
+        n: 1,
+        total: t.amount,
+        cats: new Set(
+          t.categoryId && catMap[t.categoryId]
+            ? [catMap[t.categoryId].name]
+            : [],
+        ),
+      });
     }
   }
   const repeats = [...byNote.values()]
@@ -359,7 +385,11 @@ export function buildAssistantContext({
       "REPEAT SPENDING THIS CYCLE (same note more than once, biggest first):",
     );
     for (const r of repeats) {
-      lines.push(`- "${r.label}": ${r.n} times, ${rm(r.total)}`);
+      // The category matters: asked which snacks to cut, the model listed a
+      // McDonald's that lives under Food Delivery, because this line used to
+      // carry no category at all.
+      const where = r.cats.size ? ` [${[...r.cats].join(", ")}]` : "";
+      lines.push(`- "${r.label}": ${r.n} times, ${rm(r.total)}${where}`);
     }
     lines.push(
       "This is the clearest evidence of a habit. Prefer it over category totals when asked where money is going or leaking.",
@@ -427,6 +457,9 @@ export function buildAssistantContext({
   );
   lines.push(
     "- Commitments the user never entered. Absence of a debt here does not mean there is none.",
+  );
+  lines.push(
+    "- Any breakdown of a past cycle. Last cycle appears above as three totals only: there is no category, merchant or transaction detail for it, so never answer or suggest a question about what was spent on something last cycle.",
   );
 
   const out = lines.join("\n");
