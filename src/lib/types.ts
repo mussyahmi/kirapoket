@@ -172,6 +172,30 @@ export interface Partnership {
 export type IncomeSource =
   "earned" | "gift" | "returned" | "borrowed" | "withdrawn" | "held";
 
+/** One turn in an assistant conversation, as stored. */
+export interface StoredChatMessage {
+  role: "user" | "assistant";
+  text: string;
+  /** A fact the model offered to remember, and what the user did about it. */
+  suggestedNote?: string;
+  noteState?: "offered" | "saved" | "dismissed";
+}
+
+/**
+ * A saved assistant conversation. Messages are embedded rather than kept in a
+ * subcollection: a chat is read and written whole, and even a long one sits
+ * far inside Firestore's document limit.
+ */
+export interface Conversation {
+  id: string;
+  userId: string;
+  /** Taken from the first thing the user said, so the list is scannable. */
+  title: string;
+  messages: StoredChatMessage[];
+  createdAt: Timestamp | string;
+  updatedAt: Timestamp | string;
+}
+
 export interface Transaction {
   id: string;
   userId: string;

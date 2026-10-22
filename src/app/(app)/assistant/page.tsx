@@ -8,7 +8,23 @@ import {
   ArrowLeftIcon,
   CopyIcon,
   SquarePenIcon,
+  HistoryIcon,
+  TrashIcon,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import {
+  createConversation,
+  updateConversation,
+  getConversations,
+  deleteConversation,
+} from "@/lib/firestore";
+import type { Conversation } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -103,9 +119,105 @@ function AssistantChat() {
   const [loading, setLoading] = useState(false);
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
   const [savingNote, setSavingNote] = useState(false);
+  // null until the first exchange is saved; "New chat" clears it so the next
+  // exchange starts a fresh document instead of overwriting the old one.
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<Conversation[] | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // What was last written, so a re-render or the id arriving doesn't re-save
+  // an identical conversation.
+  const savedRef = useRef<string>("");
   const isAdmin = user?.uid === ADMIN_UID;
+
+  const openHistory = async () => {
+    setHistoryOpen(true);
+    setHistory(null);
+    if (!user) return;
+    try {
+      setHistory(await getConversations(user.uid));
+    } catch {
+      setHistory([]);
+      toast.error("Couldn't load your chats.");
+    }
+  };
+
+  const openConversation = (c: Conversation) => {
+    setMessages(
+      c.messages.map((m) => ({
+        role: m.role,
+        text: m.text,
+        suggestedNote: m.suggestedNote,
+        noteState: m.noteState,
+      })),
+    );
+    setConversationId(c.id);
+    // Mark as already saved so reopening doesn't rewrite an identical thread.
+    savedRef.current = JSON.stringify(
+      c.messages.map((m) => ({
+        role: m.role,
+        text: m.text,
+        suggestedNote: m.suggestedNote,
+        noteState: m.noteState,
+      })),
+    );
+    setHistoryOpen(false);
+  };
+
+  const removeConversation = async (id: string) => {
+    try {
+      await deleteConversation(id);
+      setHistory((h) => h?.filter((c) => c.id !== id) ?? null);
+      // Deleting the one you're reading clears the screen too. Leaving the
+      // messages up would mean the next thing you typed re-saved the whole
+      // "deleted" thread under a new id, so it came back.
+      if (id === conversationId) {
+        setMessages([]);
+        setConversationId(null);
+        savedRef.current = "";
+        setHistoryOpen(false);
+      }
+      toast.success("Chat deleted.");
+    } catch {
+      toast.error("Couldn't delete that chat.");
+    }
+  };
+
+  /**
+   * Persist whenever the conversation settles. Driven by an effect rather than
+   * the send handler so it also catches error replies and the user tapping
+   * Remember, both of which change the thread without going through a send.
+   */
+  useEffect(() => {
+    if (!user || readOnly || loading || messages.length === 0) return;
+    const stored = messages.map((m) => ({
+      role: m.role,
+      text: m.text,
+      suggestedNote: m.suggestedNote,
+      noteState: m.noteState,
+    }));
+    const signature = JSON.stringify(stored);
+    if (signature === savedRef.current) return;
+    savedRef.current = signature;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (conversationId) {
+          await updateConversation(conversationId, stored);
+        } else {
+          const id = await createConversation(user.uid, stored);
+          if (!cancelled) setConversationId(id);
+        }
+      } catch {
+        // Saving is best effort: never interrupt a conversation over it.
+        savedRef.current = "";
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, loading, user, conversationId, readOnly]);
 
   /**
    * True if the user has effectively saved this already. Compared loosely,
@@ -300,21 +412,39 @@ function AssistantChat() {
             appears once there is a conversation. No confirmation: the chat is
             already lost on a refresh, so this takes nothing that was being
             kept. */}
-        {messages.length > 0 && (
+        {/* The group owns the alignment, not whichever button happens to be
+            first: New chat only exists once there's something to clear, so
+            putting ml-auto on it left History stranded beside the title. */}
+        <div className="ml-auto flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                // The saved conversation stays in Firestore; dropping the id
+                // just means the next exchange starts a new document.
+                setMessages([]);
+                setConversationId(null);
+                savedRef.current = "";
+                setInput("");
+                inputRef.current?.focus();
+              }}
+              aria-label="New chat"
+              title="New chat"
+              className="size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <SquarePenIcon className="size-4" />
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => {
-              setMessages([]);
-              setInput("");
-              inputRef.current?.focus();
-            }}
-            aria-label="New chat"
-            title="New chat"
-            className="ml-auto size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            onClick={openHistory}
+            aria-label="Previous chats"
+            title="Previous chats"
+            className="size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <SquarePenIcon className="size-4" />
+            <HistoryIcon className="size-4" />
           </button>
-        )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -543,6 +673,60 @@ function AssistantChat() {
       </div>
 
       {/* Input */}
+      {/* Previous chats */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Previous chats</DialogTitle>
+          </DialogHeader>
+          {history === null ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Loading&hellip;
+            </p>
+          ) : history.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Nothing saved yet. Ask something and it&apos;ll appear here.
+            </p>
+          ) : (
+            <div className="-mx-1 max-h-80 overflow-y-auto px-1">
+              {history.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-start gap-2 border-b border-border/60 py-2 last:border-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openConversation(c)}
+                    className="min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
+                  >
+                    <p className="truncate text-sm">{c.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.messages.length} message
+                      {c.messages.length === 1 ? "" : "s"}
+                      {c.updatedAt &&
+                      typeof c.updatedAt === "object" &&
+                      "toDate" in c.updatedAt
+                        ? ` \u00b7 ${formatDistanceToNow(c.updatedAt.toDate(), {
+                            addSuffix: true,
+                          })}`
+                        : ""}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeConversation(c.id)}
+                    aria-label={`Delete ${c.title}`}
+                    className="mt-1 size-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <TrashIcon className="size-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Pinned to the bottom of the conversation. With the nav gone there is
           nothing to clear but the home indicator. */}
       <div className="z-20 shrink-0 bg-background pb-[max(0.5rem,env(safe-area-inset-bottom))] md:sticky md:bottom-4 md:pb-2">

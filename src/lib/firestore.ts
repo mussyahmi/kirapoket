@@ -26,6 +26,8 @@ import type {
   UserProfile,
   Debt,
   Feedback,
+  Conversation,
+  StoredChatMessage,
 } from "./types";
 import {
   format,
@@ -480,6 +482,67 @@ export async function updateTransaction(
     payload[k] = v === undefined ? deleteField() : v;
   }
   await updateDoc(doc(db, "transactions", id), payload);
+}
+
+// ─── Assistant conversations ──────────────────────────────────────────────────
+
+/** Trimmed to a scannable length; the full question is still the first message. */
+function conversationTitle(messages: StoredChatMessage[]): string {
+  const first = messages.find((m) => m.role === "user")?.text.trim();
+  if (!first) return "New chat";
+  return first.length > 60 ? `${first.slice(0, 60)}\u2026` : first;
+}
+
+/** Firestore rejects undefined, and optional fields are often absent. */
+function cleanMessage(m: StoredChatMessage): Record<string, unknown> {
+  const out: Record<string, unknown> = { role: m.role, text: m.text };
+  if (m.suggestedNote) out.suggestedNote = m.suggestedNote;
+  if (m.noteState) out.noteState = m.noteState;
+  return out;
+}
+
+export async function createConversation(
+  userId: string,
+  messages: StoredChatMessage[],
+): Promise<string> {
+  const now = Timestamp.now();
+  const ref = await addDoc(collection(db, "conversations"), {
+    userId,
+    title: conversationTitle(messages),
+    messages: messages.map(cleanMessage),
+    createdAt: now,
+    updatedAt: now,
+  });
+  return ref.id;
+}
+
+export async function updateConversation(
+  id: string,
+  messages: StoredChatMessage[],
+): Promise<void> {
+  await updateDoc(doc(db, "conversations", id), {
+    title: conversationTitle(messages),
+    messages: messages.map(cleanMessage),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function getConversations(
+  userId: string,
+  max = 30,
+): Promise<Conversation[]> {
+  const q = query(
+    collection(db, "conversations"),
+    where("userId", "==", userId),
+    orderBy("updatedAt", "desc"),
+    limit(max),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Conversation);
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await deleteDoc(doc(db, "conversations", id));
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
