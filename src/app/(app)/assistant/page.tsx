@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { SparklesIcon, SendIcon, ArrowLeftIcon } from "lucide-react";
+import {
+  SparklesIcon,
+  SendIcon,
+  ArrowLeftIcon,
+  CopyIcon,
+  SquarePenIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,18 +31,27 @@ type ChatMessage = {
   /** A durable fact the model offered to remember. Never saved without a tap. */
   suggestedNote?: string;
   noteState?: "offered" | "saved" | "dismissed";
+  /** Up to two questions worth asking next. Shown under the latest reply only. */
+  followUps?: string[];
 };
 
 /** Settings keeps the same ceiling; appending must respect it. */
 const NOTES_MAX = 1500;
 
-const SUGGESTIONS = [
-  // Forward-looking and decision-shaped. "How am I doing" describes the past;
-  // the questions people actually need answered are about what happens next.
-  "What's free to spend right now?",
-  "What's due before payday?",
-  "Will I make it to payday?",
-  "Where is my money leaking?",
+/**
+ * Forward-looking and decision-shaped. "How am I doing" describes the past;
+ * the questions people actually need answered are about what happens next.
+ *
+ * "Can I afford" needs a number only the user has, so it fills the box and
+ * waits instead of sending. Dropped: "What's due before payday?" — it answers
+ * "nothing" for anyone who hasn't entered a debt with a due date, and both
+ * questions below already subtract what's committed.
+ */
+const SUGGESTIONS: { label: string; prefill?: boolean }[] = [
+  { label: "What's free to spend right now?" },
+  { label: "Will I make it to payday?" },
+  { label: "Where is my money leaking?" },
+  { label: "Can I afford", prefill: true },
 ];
 
 export default function AssistantPage() {
@@ -89,6 +104,7 @@ function AssistantChat() {
   const [usage, setUsage] = useState<AiUsageSummary | null>(null);
   const [savingNote, setSavingNote] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const isAdmin = user?.uid === ADMIN_UID;
 
   /**
@@ -219,6 +235,9 @@ function AssistantChat() {
             // Don't offer something already in their notes. The save path
             // catches duplicates too, but being re-asked for a fact you
             // already saved reads as the app not listening.
+            followUps: Array.isArray(data.followUps)
+              ? data.followUps
+              : undefined,
             suggestedNote: alreadyKnown(data.suggestedNote)
               ? undefined
               : data.suggestedNote || undefined,
@@ -271,15 +290,31 @@ function AssistantChat() {
         >
           <ArrowLeftIcon className="size-5" />
         </button>
-        <div className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 md:flex">
-          <SparklesIcon className="size-5 text-primary" />
-        </div>
         <div>
           <h1 className="text-xl font-semibold leading-tight">AI Assistant</h1>
           <p className="text-xs text-muted-foreground">
             Ask about your spending this cycle
           </p>
         </div>
+        {/* Nothing to clear until something has been said, so the button only
+            appears once there is a conversation. No confirmation: the chat is
+            already lost on a refresh, so this takes nothing that was being
+            kept. */}
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setMessages([]);
+              setInput("");
+              inputRef.current?.focus();
+            }}
+            aria-label="New chat"
+            title="New chat"
+            className="ml-auto size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <SquarePenIcon className="size-4" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -291,18 +326,29 @@ function AssistantChat() {
               {userProfile?.displayName
                 ? `, ${userProfile.displayName.split(" ")[0]}`
                 : ""}
-              ! I can see your accounts and this salary cycle&apos;s spending.
-              Ask me anything, or try:
+              ! I can see your accounts, this cycle&apos;s spending and pace,
+              what&apos;s committed before payday, last cycle for comparison,
+              and anything you&apos;ve told me to remember. Ask me anything, or
+              try:
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
+              {SUGGESTIONS.map(({ label, prefill }) => (
                 <button
-                  key={s}
+                  key={label}
                   type="button"
-                  onClick={() => send(s)}
+                  onClick={() => {
+                    if (!prefill) {
+                      send(label);
+                      return;
+                    }
+                    // Hand them the sentence and the cursor; the amount is
+                    // theirs to type.
+                    setInput(`${label} `);
+                    inputRef.current?.focus();
+                  }}
                   className="rounded-full border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
                 >
-                  {s}
+                  {prefill ? `${label}\u2026` : label}
                 </button>
               ))}
             </div>
@@ -327,11 +373,30 @@ function AssistantChat() {
               });
               return (
                 <>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {ctx.length.toLocaleString()} characters, roughly{" "}
-                    {Math.round(ctx.length / 4).toLocaleString()} tokens, paid
-                    on every message
-                  </p>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      {ctx.length.toLocaleString()} characters, roughly{" "}
+                      {Math.round(ctx.length / 4).toLocaleString()} tokens, paid
+                      on every message
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 shrink-0 gap-1.5 px-2 text-xs"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(ctx);
+                          toast.success("Context copied.");
+                        } catch {
+                          toast.error("Couldn't copy.");
+                        }
+                      }}
+                    >
+                      <CopyIcon className="size-3.5" />
+                      Copy
+                    </Button>
+                  </div>
                   <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-background p-3 text-[11px] leading-relaxed whitespace-pre-wrap">
                     {ctx}
                   </pre>
@@ -362,10 +427,42 @@ function AssistantChat() {
                   : "bg-muted text-foreground rounded-bl-lg",
               )}
             >
-              {m.role === "assistant" ? <ChatMarkdown text={m.text} /> : m.text}
+              {m.role === "assistant" ? (
+                // A reply can be empty when the model answered with nothing
+                // but a REMEMBER marker, which gets stripped before display.
+                // The card below still has something to say, so show that
+                // rather than a bubble of blank space.
+                m.text.trim() ? (
+                  <ChatMarkdown text={m.text} />
+                ) : null
+              ) : (
+                m.text
+              )}
               {/* An offer, never an action. Nothing reaches the user's notes
                   without this tap, and whatever is saved stays visible and
                   editable in Settings. */}
+              {/* Only under the latest reply. Leaving them on older messages
+                  turns the whole conversation into a wall of buttons, and a
+                  follow-up to something three answers ago is rarely what the
+                  user wants now. */}
+              {m.role === "assistant" &&
+                i === messages.length - 1 &&
+                !loading &&
+                m.followUps &&
+                m.followUps.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {m.followUps.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => send(q)}
+                        className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
               {m.suggestedNote && m.noteState !== "dismissed" && (
                 <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
                   <p className="text-xs text-muted-foreground">
@@ -457,6 +554,7 @@ function AssistantChat() {
           className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-e1 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
         >
           <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

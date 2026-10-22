@@ -98,6 +98,12 @@ export interface Account {
   // Archived accounts stay in Firestore (their past transactions still point at
   // them) but drop out of pickers, lists and balance totals. Absent = active.
   archived?: boolean;
+  /**
+   * Money already spoken for: an envelope funded on payday for fuel, groceries
+   * or a weekly lunch. The balance is real but it is not free to spend, and
+   * anything that reports "what can I spend" has to exclude it. Absent = free.
+   */
+  earmarked?: boolean;
 }
 
 export interface Category {

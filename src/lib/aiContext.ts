@@ -26,6 +26,7 @@ const rm = (n: number) =>
 // times larger than a normal one, on every single message.
 const MAX_ACCOUNTS_LISTED = 25;
 const MAX_L3_PER_PARENT = 12;
+const MAX_REPEATS_LISTED = 10;
 // Hard backstop measured in characters, roughly four per token.
 const MAX_CONTEXT_CHARS = 12_000;
 
@@ -96,7 +97,7 @@ export function buildAssistantContext({
     .slice(0, MAX_ACCOUNTS_LISTED);
   for (const a of listed) {
     lines.push(
-      `- ${a.name} (${ACCOUNT_TYPE_LABEL[a.type] ?? a.type}): ${rm(a.balance)}`,
+      `- ${a.name} (${ACCOUNT_TYPE_LABEL[a.type] ?? a.type}): ${rm(a.balance)}${a.earmarked ? " [EARMARKED: already set aside, not free to spend]" : ""}`,
     );
   }
   if (accounts.length > listed.length) {
@@ -106,11 +107,25 @@ export function buildAssistantContext({
   }
   lines.push(`Total across accounts: ${rm(totalBalance)}`);
 
-  // Money sitting in an account that isn't the user's to spend.
+  // What is genuinely free, computed rather than asserted. An earlier version
+  // of this said "spendable total" while ignoring earmarked envelopes, which
+  // overstated it by whatever was set aside, and the model believed the
+  // computed line over the user's own note saying otherwise.
   const held = heldForOthersBalance(cycleTx);
-  if (held.left > 0) {
+  const earmarkedTotal = accounts
+    .filter((a) => a.earmarked)
+    .reduce((sum, a) => sum + a.balance, 0);
+  const free = totalBalance - held.left - earmarkedTotal;
+  if (held.left > 0 || earmarkedTotal > 0) {
+    const parts: string[] = [];
+    if (held.left > 0)
+      parts.push(`${rm(held.left)} is being held for other people`);
+    if (earmarkedTotal > 0)
+      parts.push(
+        `${rm(earmarkedTotal)} sits in earmarked envelopes already set aside for fuel, groceries and similar`,
+      );
     lines.push(
-      `IMPORTANT: ${rm(held.left)} of that is money being held for other people, not available to spend. Spendable total is ${rm(totalBalance - held.left)}.`,
+      `IMPORTANT: of that total, ${parts.join(" and ")}. FREE TO SPEND: ${rm(free)}. Use this figure, not the total, when asked what can be spent.`,
     );
   }
   lines.push("");
@@ -236,6 +251,11 @@ export function buildAssistantContext({
   };
 
   lines.push("SPENDING BY CATEGORY (this cycle):");
+  // Without this the model reads a missing budget as a breached one and says
+  // a category is "over budget" when no budget was ever set.
+  lines.push(
+    "Only categories showing [budget ...] have a budget set. Every other category has NO budget: never call it over or under budget, because there is nothing to be over or under.",
+  );
   for (const l1 of l1s) {
     const spent = l1Spend[l1.id] ?? 0;
     const l3Children = categories.filter(
@@ -282,10 +302,68 @@ export function buildAssistantContext({
       const cat = t.categoryId
         ? (catMap[t.categoryId]?.name ?? "Uncategorised")
         : "Uncategorised";
+      // Notes can run to a dozen lines (a whole trip itemised in one entry).
+      // Unabridged, a single note can cost more tokens than the rest of this
+      // list put together.
+      const note = t.note?.replace(/\s+/g, " ").trim();
+      const short =
+        note && note.length > 80 ? `${note.slice(0, 80)}\u2026` : note;
       lines.push(
-        `- ${t.date} | ${rm(t.amount)} | ${cat}${t.note ? ` | "${t.note}"` : ""}`,
+        `- ${t.date} | ${rm(t.amount)} | ${cat}${short ? ` | "${short}"` : ""}`,
       );
     }
+    lines.push("");
+  }
+
+  // ---- Repeat spending ----
+  // A category total hides the thing that matters: "Snacks & Drinks RM300"
+  // says nothing, "Zus coffee 8 times" says everything. The grouping is done
+  // here rather than by sending raw rows, because the model would have to add
+  // up ninety numbers itself and would sometimes get it wrong. Counting in
+  // code is exact and costs a fraction of the tokens.
+  const byNote = new Map<string, { label: string; n: number; total: number }>();
+  for (const t of cycleTx) {
+    if (!isOwnExpense(t)) continue;
+    const note = t.note?.trim();
+    if (!note) continue;
+    // Case- and punctuation-insensitive, so "Zus coffee" and "zus coffee."
+    // are one habit rather than two. Keyed on the first two words as well,
+    // because "Zus coffee" and "Zus coffee for wife" are the same habit and
+    // splitting them left the total a third short. Two words still keeps
+    // genuinely different things apart, like the Saga and the Aruz at the
+    // same petrol station.
+    const norm = note
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!norm) continue;
+    const key = norm.split(" ").slice(0, 2).join(" ");
+    const seen = byNote.get(key);
+    if (seen) {
+      seen.n += 1;
+      seen.total += t.amount;
+      // Shortest wins: "Zus coffee" names the habit; "Zus coffee for wife"
+      // describes only one instance of it.
+      if (note.length < seen.label.length) seen.label = note;
+    } else {
+      byNote.set(key, { label: note, n: 1, total: t.amount });
+    }
+  }
+  const repeats = [...byNote.values()]
+    .filter((r) => r.n > 1)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, MAX_REPEATS_LISTED);
+  if (repeats.length) {
+    lines.push(
+      "REPEAT SPENDING THIS CYCLE (same note more than once, biggest first):",
+    );
+    for (const r of repeats) {
+      lines.push(`- "${r.label}": ${r.n} times, ${rm(r.total)}`);
+    }
+    lines.push(
+      "This is the clearest evidence of a habit. Prefer it over category totals when asked where money is going or leaking.",
+    );
     lines.push("");
   }
 
@@ -345,7 +423,7 @@ export function buildAssistantContext({
     "- Income or spending belonging to a partner or spouse, unless it runs through these accounts.",
   );
   lines.push(
-    "- Whether an account balance is earmarked for something. A balance is not the same as money that is free to spend.",
+    "- Anything about an account beyond its balance and whether it is marked as set aside.",
   );
   lines.push(
     "- Commitments the user never entered. Absence of a debt here does not mean there is none.",

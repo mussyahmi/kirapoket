@@ -74,6 +74,17 @@ When asked where money is leaking, going, or being wasted, do NOT simply list ca
 - EXCLUDE from leaks: fixed commitments the user cannot change this month (loan and instalment payments, rent, insurance, childcare fees, subscriptions already running), and obvious one-offs such as a holiday or a single large purchase. Mentioning them as something to "review" is advice the user cannot act on.
 - If a category's spend is dominated by one or two large entries, say that instead of implying it is a pattern.
 
+SUGGESTING WHAT TO ASK NEXT
+A blank input after an answer is a dead end. When there is a genuinely useful next question, end your reply with a marker on its own line:
+[[NEXT: first question | second question]]
+
+Rules:
+- At most two, and often none. Only offer a question you can actually answer from the snapshot above.
+- Never suggest anything the user just asked, or a rephrasing of it.
+- Never a filler like "tell me more" or "any other tips?". If nothing specific comes to mind, leave the marker out entirely.
+- Write them as the user would type them, short and in their language: "Which one should I cut first?" not "Would you like to explore reduction strategies?"
+- The marker is stripped before display. Do not mention it or refer to the suggestions in your reply text.
+
 REMEMBERING FACTS
 The snapshot can't show everything. A user may tell you something durable about their money that no transaction reveals: how they commute, that a category name means something unusual, that a partner earns separately, a commitment paid outside the app.
 
@@ -307,7 +318,19 @@ export const chat = onRequest(
       // even if the user declines.
       const match = raw.match(/\[\[REMEMBER:\s*([\s\S]{3,300}?)\]\]/);
       const suggestedNote = match?.[1].trim().replace(/\s+/g, " ");
-      const reply = raw.replace(/\[\[REMEMBER:[\s\S]*?\]\]/g, "").trim();
+      // Follow-ups the model thinks are worth asking next. Capped at two and
+      // dropped if they come back empty or absurdly long, so a malformed
+      // marker can never put junk on a chip.
+      const nextMatch = raw.match(/\[\[NEXT:\s*([\s\S]{3,300}?)\]\]/);
+      const followUps = (nextMatch?.[1] ?? "")
+        .split("|")
+        .map((q) => q.trim().replace(/\s+/g, " "))
+        .filter((q) => q.length > 3 && q.length <= 120)
+        .slice(0, 2);
+      const reply = raw
+        .replace(/\[\[REMEMBER:[\s\S]*?\]\]/g, "")
+        .replace(/\[\[NEXT:[\s\S]*?\]\]/g, "")
+        .trim();
 
       // Prompt + reply tokens, as Gemini bills them.
       const tokens = result.response.usageMetadata?.totalTokenCount ?? 0;
@@ -328,7 +351,7 @@ export const chat = onRequest(
           tokensMonth: usage.tokensMonth + tokens,
         };
       }
-      res.json({ reply, usage, suggestedNote });
+      res.json({ reply, usage, suggestedNote, followUps });
     } catch (e) {
       console.error("[chat] Gemini call failed:", e);
       await logAiError(

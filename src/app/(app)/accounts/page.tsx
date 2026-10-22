@@ -76,12 +76,14 @@ interface AccountFormData {
   name: string;
   type: AccountType;
   balance: string;
+  earmarked: boolean;
 }
 
 const DEFAULT_FORM: AccountFormData = {
   name: "",
   type: "bank",
   balance: "0",
+  earmarked: false,
 };
 
 function SortableAccountRow({
@@ -190,6 +192,15 @@ function SortableAccountRow({
                 {ACCOUNT_TYPE_LABELS[account.type]}
               </span>
             </div>
+            {/* Shown only when set. A "Set aside: No" row would be noise on
+                every ordinary account; the presence of the line is the
+                information. */}
+            {account.earmarked && (
+              <p className="rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+                Set aside. Counted in your balance, but never counted as money
+                that&apos;s free to spend.
+              </p>
+            )}
             {account.archived && (
               <p className="rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
                 Archived. Hidden from pickers and left out of your total
@@ -360,6 +371,7 @@ function AccountsPage() {
       name: account.name,
       type: account.type,
       balance: account.balance.toFixed(2),
+      earmarked: account.earmarked ?? false,
     });
     setDialogOpen(true);
   };
@@ -382,6 +394,7 @@ function AccountsPage() {
           name: form.name.trim(),
           type: form.type,
           balance,
+          earmarked: form.earmarked,
         });
         toast.success("Account updated.");
       } else {
@@ -389,6 +402,7 @@ function AccountsPage() {
           name: form.name.trim(),
           type: form.type,
           balance,
+          earmarked: form.earmarked,
         });
         if (
           activeAccounts.length === 0 &&
@@ -706,6 +720,36 @@ function AccountsPage() {
                 required
               />
             </div>
+            {/* An envelope's balance is real but spoken for. Without this the
+                assistant counts fuel and grocery money as free to spend. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.earmarked}
+              onClick={() => setForm({ ...form, earmarked: !form.earmarked })}
+              className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+            >
+              <div className="pr-3">
+                <p className="text-sm font-medium">Money already set aside</p>
+                <p className="text-xs text-muted-foreground">
+                  An envelope you fund on payday, like fuel or groceries. Still
+                  counted in your balance, never counted as free to spend.
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                  form.earmarked ? "bg-primary" : "bg-muted",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-1 size-4 rounded-full bg-background transition-transform",
+                    form.earmarked ? "translate-x-6" : "translate-x-1",
+                  )}
+                />
+              </span>
+            </button>
             <DialogFooter>
               <Button
                 type="button"

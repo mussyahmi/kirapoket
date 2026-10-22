@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "20 October 2026";
+const LAST_UPDATED = "22 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,19 @@ const LAST_UPDATED = "20 October 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.17.x",
-    dateRange: "2026-10-20 – present",
+    version: "0.18.x",
+    dateRange: "2026-10-22 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "Accounts can now be marked as money already set aside. Tick it on an envelope you fund each payday, like fuel or groceries, and the balance still counts towards your total but never counts as money that's free to spend",
+      },
+    ],
+  },
+  {
+    version: "0.17.x",
+    dateRange: "2026-10-20 – 2026-10-21",
     changes: [
       {
         type: "feat",
