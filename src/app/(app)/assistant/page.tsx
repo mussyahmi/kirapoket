@@ -131,9 +131,12 @@ function AssistantChat() {
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const [clearing, setClearing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  // The chat a trash tap is asking about. Holds the whole record, so the
-  // dialog can name it rather than saying "this chat".
-  const [confirmDelete, setConfirmDelete] = useState<Conversation | null>(null);
+  // The chat a trash tap is asking about, id and title only, so the header
+  // can ask about the open thread as easily as a history row can.
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -500,6 +503,27 @@ function AssistantChat() {
               <SquarePenIcon className="size-4" />
             </button>
           )}
+          {/* Deleting the thread you're reading shouldn't mean hunting for it
+              in the history list. Only once it has been saved: before that
+              there is nothing in Firestore and New chat already clears it. */}
+          {conversationId && messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                setConfirmDelete({
+                  id: conversationId,
+                  title:
+                    messages.find((m) => m.role === "user")?.text ??
+                    "This chat",
+                })
+              }
+              aria-label="Delete this chat"
+              title="Delete this chat"
+              className="size-9 pointer-coarse:size-11 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <TrashIcon className="size-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={openHistory}
@@ -789,7 +813,7 @@ function AssistantChat() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmDelete(c)}
+                    onClick={() => setConfirmDelete({ id: c.id, title: c.title })}
                     aria-label={`Delete ${c.title}`}
                     className="mt-1 size-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -822,9 +846,9 @@ function AssistantChat() {
             <DialogTitle>Delete this chat?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            <strong className="font-semibold text-foreground">
+            <strong className="line-clamp-2 font-semibold text-foreground">
               {confirmDelete?.title}
-            </strong>{" "}
+            </strong>
             will be deleted. This cannot be undone.
           </p>
           <DialogFooter>
