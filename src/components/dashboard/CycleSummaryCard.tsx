@@ -90,8 +90,14 @@ export interface CycleSummaryProps {
   borrowedLabel?: string;
   /** Gifts within `income`, so a Raya month doesn't read as a raise. */
   gifts?: number;
-  /** Money held for others not yet spent on them. Hidden unless positive. */
-  heldForOthers?: number;
+  /**
+   * Money collected on someone else's behalf, and what's been paid out of it.
+   * Shown whenever anything was held, including once it's all spent — a
+   * balance that silently disappears at zero looks like a bug, and going
+   * past zero means own money went out as spending-for-others and so never
+   * reached the expenses figure above.
+   */
+  heldForOthers?: { held: number; paid: number; left: number };
 }
 
 export function CycleSummaryCard({
@@ -105,8 +111,17 @@ export function CycleSummaryCard({
   borrowed = 0,
   borrowedLabel = "Borrowed or withdrawn this cycle",
   gifts = 0,
-  heldForOthers = 0,
+  heldForOthers,
 }: CycleSummaryProps) {
+  const held = heldForOthers;
+  const overpaid = held ? held.left < -0.005 : false;
+  const heldLabel = !held
+    ? ""
+    : held.left > 0.005
+      ? "Still holding for others"
+      : overpaid
+        ? "Paid for others beyond what you held"
+        : "All of what you held has been paid out";
   const spentPct = income > 0 ? (expenses / income) * 100 : null;
   const heroDiff = prevRemaining === undefined ? 0 : remaining - prevRemaining;
   const heroUp = heroDiff > 0;
@@ -241,14 +256,33 @@ export function CycleSummaryCard({
             </p>
           </div>
         )}
-        {heldForOthers > 0 && (
-          <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">
-            <UsersIcon className="size-4 shrink-0 text-muted-foreground" />
-            <p className="flex-1 text-xs text-muted-foreground">
-              Still holding for others
+        {held && held.held > 0 && (
+          <div
+            className={cn(
+              "flex items-center gap-2 border-t border-border px-4 py-2.5",
+              overpaid && "bg-warning-soft",
+            )}
+          >
+            {overpaid ? (
+              <TriangleAlertIcon className="size-4 shrink-0 text-warning-strong" />
+            ) : (
+              <UsersIcon className="size-4 shrink-0 text-muted-foreground" />
+            )}
+            <p
+              className={cn(
+                "flex-1 text-xs",
+                overpaid ? "text-warning-strong" : "text-muted-foreground",
+              )}
+            >
+              {heldLabel}
             </p>
-            <p className="text-xs font-semibold tabular-nums text-muted-foreground">
-              {money(heldForOthers)}
+            <p
+              className={cn(
+                "text-xs font-semibold tabular-nums",
+                overpaid ? "text-warning-strong" : "text-muted-foreground",
+              )}
+            >
+              {money(Math.abs(held.left))}
             </p>
           </div>
         )}

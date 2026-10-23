@@ -6,6 +6,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  writeBatch,
   query,
   where,
   orderBy,
@@ -543,6 +544,26 @@ export async function getConversations(
 
 export async function deleteConversation(id: string): Promise<void> {
   await deleteDoc(doc(db, "conversations", id));
+}
+
+/**
+ * Every saved chat, in one batch. Capped at the same 30 the history list
+ * shows, so clearing what you can see never silently leaves older threads
+ * behind: it returns how many went, and the caller can run it again.
+ */
+export async function deleteAllConversations(userId: string): Promise<number> {
+  const snap = await getDocs(
+    query(
+      collection(db, "conversations"),
+      where("userId", "==", userId),
+      limit(30),
+    ),
+  );
+  if (snap.empty) return 0;
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+  return snap.size;
 }
 
 export async function deleteTransaction(id: string): Promise<void> {

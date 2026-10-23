@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -55,6 +55,7 @@ export function AddTransactionProvider({
   // True while the form's confirm dialog is up — recede & lock the sheet chrome
   const [confirmOpen, setConfirmOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Safety net: never leave the sheet open across a navigation
   useEffect(() => {
@@ -111,12 +112,19 @@ export function AddTransactionProvider({
           if (v) return;
           const id = pendingSavedId.current;
           pendingSavedId.current = null;
-          // Next frame: Base UI runs this inside its own flushSync, and a
-          // listener may need to flushSync a render (e.g. revealing more rows).
-          if (id)
+          if (!id) return;
+          // Saving always lands on the list, wherever the sheet was opened
+          // from. The id rides in the URL rather than a live broadcast: the
+          // list may not be mounted yet, and a listener that isn't there when
+          // the event fires never hears it.
+          if (pathname === "/transactions") {
+            // Already here, so nothing remounts and the listener is live.
             requestAnimationFrame(() =>
               savedListeners.current.forEach((fn) => fn(id)),
             );
+          } else {
+            router.push(`/transactions?saved=${encodeURIComponent(id)}`);
+          }
         }}
       >
         <SheetContent

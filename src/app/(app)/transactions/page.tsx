@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { flushSync } from "react-dom";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { format, parseISO, isToday, isYesterday, subDays } from "date-fns";
 import {
@@ -71,6 +71,7 @@ function TransactionsPage() {
   const { openAdd, openEdit, subscribeSaved } = useAddTransaction();
 
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // No transactions at all is a different situation from no results for the
   // current filters — the toolbar is hidden entirely in the first case.
@@ -379,6 +380,20 @@ function TransactionsPage() {
       );
     };
   });
+  // Arriving from elsewhere: the id comes in the URL because this page wasn't
+  // mounted when the save happened. Waits for the rows to exist rather than
+  // firing on mount, since the list is usually still loading at that point.
+  const savedParam = searchParams.get("saved");
+  const handledSaved = useRef<string | null>(null);
+  useEffect(() => {
+    if (!savedParam || handledSaved.current === savedParam) return;
+    if (loadingTransactions || grouped.length === 0) return;
+    handledSaved.current = savedParam;
+    onSavedRef.current(savedParam);
+    // Drop the param so a refresh or a back-navigation doesn't re-scroll.
+    router.replace("/transactions", { scroll: false });
+  }, [savedParam, loadingTransactions, grouped, router]);
+
   useEffect(
     () => subscribeSaved((id) => onSavedRef.current(id)),
     [subscribeSaved],

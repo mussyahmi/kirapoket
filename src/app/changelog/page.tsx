@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "22 October 2026";
+const LAST_UPDATED = "23 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -31,6 +31,22 @@ const releases: Release[] = [
       {
         type: "feat",
         text: "Accounts can now be marked as money already set aside. Tick it on an envelope you fund each payday, like fuel or groceries, and the balance still counts towards your total but never counts as money that's free to spend",
+      },
+      {
+        type: "fix",
+        text: "Adding or editing a transaction now always takes you back to your transaction list, with the one you just saved highlighted",
+      },
+      {
+        type: "fix",
+        text: "The time field has moved into the date row as a single tap, which opens your phone's time picker straight away. The calendar and the time picker also close on their own once you move on",
+      },
+      {
+        type: "fix",
+        text: "Expenses now ask whose money you spent, with Mine or Someone else's side by side and a line explaining what each one does to your budgets",
+      },
+      {
+        type: "fix",
+        text: "Money you're holding for other people now stays on your home screen even after you've spent it all, and warns you when you've paid out more than you were given",
       },
     ],
   },

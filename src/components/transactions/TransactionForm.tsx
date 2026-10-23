@@ -7,6 +7,7 @@ import {
   ArrowLeftIcon,
   TriangleAlertIcon,
   CalendarIcon,
+  ClockIcon,
   InfoIcon,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
@@ -85,6 +86,31 @@ export function TransactionForm({
   // The calendar stays closed unless the date isn't today/yesterday
   const [showCalendar, setShowCalendar] = useState(false);
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
+  const [showTime, setShowTime] = useState(false);
+  const timeInputRef = useRef<HTMLInputElement>(null);
+  // Revealing the field isn't enough on a phone: the native wheel only opens
+  // once the input itself is tapped, so the pill would cost two taps. The
+  // click's transient activation is still live inside this effect, so
+  // showPicker() is allowed. Where it isn't supported, the focused field is
+  // the fallback and the user taps it as before.
+  useEffect(() => {
+    if (!showTime) return;
+    const el = timeInputRef.current;
+    if (!el) return;
+    el.focus();
+    try {
+      el.showPicker();
+    } catch {}
+  }, [showTime]);
+  // "14:30" → "2:30 PM" for the pill label. Parsed against today because only
+  // the clock part matters; the day comes from selectedDate.
+  const timeLabel = (() => {
+    const [h, m] = time.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return time;
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return format(d, "h:mm a");
+  })();
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
   const [note, setNote] = useState("");
@@ -912,7 +938,16 @@ export function TransactionForm({
         {/* Date & Time, §3: the date is "today" the overwhelming majority of
             the time, so a permanently-open 450px calendar was taking the most
             vertical space in the form for the least-changed field. */}
-        <div className="space-y-2">
+        <div
+          className="space-y-2"
+          onBlur={(e) => {
+            // Moving between the pills and the calendar keeps focus inside the
+            // group, so only a departure closes the panels.
+            if (e.currentTarget.contains(e.relatedTarget)) return;
+            setShowCalendar(false);
+            setShowTime(false);
+          }}
+        >
           <Label>Date</Label>
           <div className="flex flex-wrap gap-2">
             {[
@@ -941,7 +976,10 @@ export function TransactionForm({
             })}
             <button
               type="button"
-              onClick={() => setShowCalendar((v) => !v)}
+              onClick={() => {
+                setShowCalendar((v) => !v);
+                setShowTime(false);
+              }}
               aria-expanded={showCalendar}
               className={cn(
                 "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
@@ -955,15 +993,48 @@ export function TransactionForm({
                 ? "Pick a date"
                 : format(selectedDate, "d MMM yyyy")}
             </button>
+            {/* Time rides in the same row: it answers the same question and,
+                prefilled with now, is the least-edited field in the form. */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowTime((v) => !v);
+                setShowCalendar(false);
+              }}
+              aria-expanded={showTime}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                showTime
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-background hover:bg-muted",
+              )}
+            >
+              <ClockIcon className="size-4" />
+              {timeLabel}
+            </button>
           </div>
+          {showTime && (
+            <Input
+              ref={timeInputRef}
+              id="time"
+              aria-label="Time"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+            />
+          )}
           {showCalendar && (
             <div className="overflow-hidden rounded-xl border border-border bg-background">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={(d) => {
-                  if (!d) return;
-                  setSelectedDate(d);
+                  // Single mode deselects when the selected day is tapped
+                  // again, handing back undefined. Tapping the day you already
+                  // chose is a confirmation, not a clear: keep the date and
+                  // close either way.
+                  if (d) setSelectedDate(d);
                   setShowCalendar(false);
                 }}
                 disabled={{ after: new Date() }}
@@ -971,16 +1042,6 @@ export function TransactionForm({
               />
             </div>
           )}
-          <div className="mt-6 space-y-2">
-            <Label htmlFor="time">Time</Label>
-            <Input
-              id="time"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              required
-            />
-          </div>
         </div>
 
         {/* Account */}
@@ -1047,33 +1108,42 @@ export function TransactionForm({
         {/* Category (Expense only) */}
         {txType === "expense" && <CategoryDrillDown />}
 
-        {/* Paid for others (Expense only), the other half of "Held for
-            others". The balance still moves; spending and budgets don't. */}
+        {/* Whose money (Expense only), the other half of "Held for others".
+            The balance still moves; spending and budgets don't. Same Label +
+            pills + hint shape as Source above, because it is the same kind of
+            choice: one pill on its own read as a selection missing its
+            siblings. */}
         {txType === "expense" && (
           <div className="space-y-2">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={forOthers}
-              onClick={() => setForOthers((v) => !v)}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm border transition-colors",
-                forOthers
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background hover:bg-muted",
-              )}
-            >
-              Paid for others
-            </button>
-            {forOthers && (
-              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                <InfoIcon className="size-3.5 shrink-0 mt-px" />
-                <span>
-                  Bought with someone else&apos;s money. Excluded from your
-                  spending and budgets.
-                </span>
-              </p>
-            )}
+            <Label>Whose money?</Label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: false, label: "Mine" },
+                { value: true, label: "Someone else's" },
+              ].map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => setForOthers(opt.value)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-sm border transition-colors",
+                    forOthers === opt.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              {forOthers && <InfoIcon className="size-3.5 shrink-0 mt-px" />}
+              <span>
+                {forOthers
+                  ? "Bought with money you're holding for someone else. Excluded from your spending and budgets."
+                  : "Counts towards your spending and budgets."}
+              </span>
+            </p>
           </div>
         )}
 

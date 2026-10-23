@@ -249,7 +249,7 @@ function DashboardPage() {
   );
 
   const heldForOthers = useMemo(
-    () => heldForOthersBalance(cycleTransactions).left,
+    () => heldForOthersBalance(cycleTransactions),
     [cycleTransactions],
   );
 

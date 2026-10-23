@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   SparklesIcon,
+  RotateCcwIcon,
   SendIcon,
   ArrowLeftIcon,
   CopyIcon,
@@ -17,6 +18,7 @@ import {
   updateConversation,
   getConversations,
   deleteConversation,
+  deleteAllConversations,
 } from "@/lib/firestore";
 import type { Conversation } from "@/lib/types";
 import {
@@ -24,6 +26,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
@@ -49,6 +52,8 @@ type ChatMessage = {
   noteState?: "offered" | "saved" | "dismissed";
   /** Up to two questions worth asking next. Shown under the latest reply only. */
   followUps?: string[];
+  /** A failure, not an answer. Carries a Try again button and is never saved. */
+  failed?: boolean;
 };
 
 /** Settings keeps the same ceiling; appending must respect it. */
@@ -124,6 +129,12 @@ function AssistantChat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<Conversation[] | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  // The chat a trash tap is asking about. Holds the whole record, so the
+  // dialog can name it rather than saying "this chat".
+  const [confirmDelete, setConfirmDelete] = useState<Conversation | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // What was last written, so a re-render or the id arriving doesn't re-save
@@ -165,7 +176,35 @@ function AssistantChat() {
     setHistoryOpen(false);
   };
 
+  /**
+   * Everything at once. Confirmed first because it is the one action here
+   * that cannot be undone and takes threads the user cannot see on screen.
+   */
+  const clearHistory = async () => {
+    if (!user || clearing) return;
+    setClearing(true);
+    try {
+      await deleteAllConversations(user.uid);
+      setHistory([]);
+      // Whatever is on screen is now orphaned: keep the messages readable but
+      // detach the id, so the next reply starts a new document rather than
+      // resurrecting a thread that was just deleted.
+      setConversationId(null);
+      savedRef.current = "";
+      setMessages([]);
+      setConfirmClear(false);
+      setHistoryOpen(false);
+      toast.success("All chats deleted.");
+    } catch {
+      toast.error("Couldn't clear your chats.");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const removeConversation = async (id: string) => {
+    if (deleting) return;
+    setDeleting(true);
     try {
       await deleteConversation(id);
       setHistory((h) => h?.filter((c) => c.id !== id) ?? null);
@@ -178,9 +217,12 @@ function AssistantChat() {
         savedRef.current = "";
         setHistoryOpen(false);
       }
+      setConfirmDelete(null);
       toast.success("Chat deleted.");
     } catch {
       toast.error("Couldn't delete that chat.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -191,6 +233,9 @@ function AssistantChat() {
    */
   useEffect(() => {
     if (!user || readOnly || loading || messages.length === 0) return;
+    // An error isn't an answer. Saving it would put "having trouble" in the
+    // history list, and a retry rewrites the same thread a moment later.
+    if (messages[messages.length - 1].failed) return;
     const stored = messages.map((m) => ({
       role: m.role,
       text: m.text,
@@ -298,13 +343,13 @@ function AssistantChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const send = async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || loading || !user) return;
-
-    const next: ChatMessage[] = [...messages, { role: "user", text: trimmed }];
-    setMessages(next);
-    setInput("");
+  /**
+   * Sends a thread that already ends with the user's message. Split out from
+   * send() so a failure can be retried without the user retyping: the error
+   * bubble is dropped and the same thread goes back up.
+   */
+  const run = async (next: ChatMessage[]) => {
+    if (!user) return;
     setLoading(true);
 
     try {
@@ -336,6 +381,7 @@ function AssistantChat() {
           {
             role: "assistant",
             text: data.error ?? "Something went wrong. Please try again.",
+            failed: true,
           },
         ]);
       } else {
@@ -365,12 +411,31 @@ function AssistantChat() {
         ...m,
         {
           role: "assistant",
-          text: "Couldn't reach the assistant. Check your connection and try again.",
+          text: "Couldn't reach the assistant. Check your connection.",
+          failed: true,
         },
       ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const send = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || loading || !user) return;
+    const next: ChatMessage[] = [...messages, { role: "user", text: trimmed }];
+    setMessages(next);
+    setInput("");
+    run(next);
+  };
+
+  /** Drops the error bubble and resends the question that produced it. */
+  const retry = () => {
+    if (loading) return;
+    const next = messages.filter((m) => !m.failed);
+    if (next.length === 0) return;
+    setMessages(next);
+    run(next);
   };
 
   if (readOnly) {
@@ -568,6 +633,16 @@ function AssistantChat() {
               ) : (
                 m.text
               )}
+              {m.failed && i === messages.length - 1 && !loading && (
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                >
+                  <RotateCcwIcon className="size-3.5" />
+                  Try again
+                </button>
+              )}
               {/* An offer, never an action. Nothing reaches the user's notes
                   without this tap, and whatever is saved stays visible and
                   editable in Settings. */}
@@ -714,7 +789,7 @@ function AssistantChat() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeConversation(c.id)}
+                    onClick={() => setConfirmDelete(c)}
                     aria-label={`Delete ${c.title}`}
                     className="mt-1 size-8 shrink-0 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
@@ -724,6 +799,84 @@ function AssistantChat() {
               ))}
             </div>
           )}
+          {history !== null && history.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setConfirmClear(true)}
+              className="w-full rounded-lg py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            >
+              Clear all chats
+            </button>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* One mis-tap on a trash icon sitting beside a row you meant to open
+          would otherwise be permanent, with no undo in the toast. */}
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete this chat?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            <strong className="font-semibold text-foreground">
+              {confirmDelete?.title}
+            </strong>{" "}
+            will be deleted. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDelete(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive-solid"
+              onClick={() =>
+                confirmDelete && removeConversation(confirmDelete.id)
+              }
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clearing everything deserves the app's own dialog rather than the
+          browser's: a native confirm is titled with the hostname and looks
+          like it belongs to something other than KiraPoket. Same shape as
+          Delete Account. */}
+      <Dialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Clear all chats?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Every saved conversation will be deleted. This cannot be undone.
+            Anything you asked the assistant to remember stays in your notes.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmClear(false)}
+              disabled={clearing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive-solid"
+              onClick={clearHistory}
+              disabled={clearing}
+            >
+              {clearing ? "Clearing..." : "Clear all"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

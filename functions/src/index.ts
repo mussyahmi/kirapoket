@@ -326,6 +326,11 @@ export const chat = onRequest(
         .split("|")
         .map((q) => q.trim().replace(/\s+/g, " "))
         .filter((q) => q.length > 3 && q.length <= 120)
+        // The context carries three totals for last cycle and no detail
+        // beneath them, so a chip offering to break it down is a dead end the
+        // user can only discover by spending a message on it. Telling the
+        // model not to suggest these didn't hold; dropping them here does.
+        .filter((q) => !/\b(last|previous|past)\s+(cycle|month)\b/i.test(q))
         .slice(0, 2);
       const reply = raw
         .replace(/\[\[REMEMBER:[\s\S]*?\]\]/g, "")
