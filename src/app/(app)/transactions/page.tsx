@@ -290,15 +290,22 @@ function TransactionsPage() {
     if (filterCategory === "all") return null;
     const cat = categoryMap[filterCategory];
     if (!cat) return new Set<string>();
-    if (cat.level === 2) {
-      // Include the L2 itself and all its L3 children
-      const ids = new Set<string>([cat.id]);
+    // Every descendant, at any depth. Transactions are tagged on a leaf, so a
+    // filter that only matched the chosen category found nothing whenever a
+    // parent was picked: selecting the Needs root used to come back empty
+    // even though most of the cycle sits under it.
+    const ids = new Set<string>([cat.id]);
+    let added = true;
+    while (added) {
+      added = false;
       for (const c of categories) {
-        if (c.level === 3 && c.parentId === cat.id) ids.add(c.id);
+        if (c.parentId && ids.has(c.parentId) && !ids.has(c.id)) {
+          ids.add(c.id);
+          added = true;
+        }
       }
-      return ids;
     }
-    return new Set([cat.id]);
+    return ids;
   }, [filterCategory, categoryMap, categories]);
 
   const filtered = useMemo(() => {

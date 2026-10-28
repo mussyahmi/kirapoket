@@ -14,6 +14,7 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { sumEarnedIncome, isOwnExpense, heldForOthersBalance } from "./income";
+import { dueThisCycle, outstandingBeforePayday } from "./dueDates";
 
 const rm = (n: number) =>
   `RM${new Intl.NumberFormat("en-MY", {
@@ -132,34 +133,85 @@ export function buildAssistantContext({
 
   // ---- What is already committed before payday ----
   // A balance means nothing if a loan instalment lands before the next salary.
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  // Overdue is kept, not filtered out. An earlier version only looked forward
+  // from today, so a payment missed last week vanished from the one block
+  // whose job is to say what is owed.
   const dueSoon = debts
     .filter((d) => !d.settled && d.direction === "i_owe" && d.dueDate)
-    .filter((d) => d.dueDate! >= todayStr && d.dueDate! <= endStr)
+    .filter((d) => d.dueDate! <= endStr)
     .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
+  // Recurring bills carried on categories, worked out from this cycle's
+  // spending rather than any stored flag.
+  const bills = dueThisCycle(categories, cycleTx, start, end).filter(
+    (b) => b.state !== "paid",
+  );
+
+  const whenLabel = (days: number) =>
+    days === 0
+      ? "today"
+      : days === 1
+        ? "tomorrow"
+        : days > 0
+          ? `in ${days} days`
+          : `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} OVERDUE`;
+
   lines.push("COMMITTED BEFORE PAYDAY:");
-  if (dueSoon.length) {
-    for (const d of dueSoon) {
-      const days = differenceInCalendarDays(parseISO(d.dueDate!), new Date());
-      const when =
-        days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
+  const billTotal = outstandingBeforePayday(bills);
+  const debtTotal = dueSoon.reduce((s, d) => s + d.amount, 0);
+  if (dueSoon.length || bills.length) {
+    for (const b of bills) {
+      const amount =
+        b.outstanding !== undefined && b.paid > 0
+          ? `${rm(b.outstanding)} still to pay of ${rm(b.expected!)}`
+          : b.outstanding !== undefined
+            ? rm(b.outstanding)
+            : "amount unknown, no budget set";
       lines.push(
-        `- ${d.personName}: ${rm(d.amount)} due ${format(parseISO(d.dueDate!), "d MMM")} (${when})`,
+        `- ${b.category.name}: ${amount}, due ${format(b.date, "d MMM")} (${whenLabel(b.daysAway)})`,
       );
     }
-    const committed = dueSoon.reduce((s, d) => s + d.amount, 0);
-    const spendable = totalBalance - held.left;
-    lines.push(`- Total committed: ${rm(committed)}`);
-    lines.push(
-      `- Spendable ${rm(spendable)} minus committed ${rm(committed)} = ${rm(spendable - committed)} genuinely free before payday`,
-    );
-    if (spendable - committed < 0) {
+    // Same grouping as the debt list below: one line per person, carrying the
+    // soonest due date among their entries.
+    const owingByPerson = new Map<
+      string,
+      { total: number; n: number; due: string }
+    >();
+    for (const d of dueSoon) {
+      const seen = owingByPerson.get(d.personName);
+      if (seen) {
+        seen.total += d.amount;
+        seen.n += 1;
+        if (d.dueDate! < seen.due) seen.due = d.dueDate!;
+      } else {
+        owingByPerson.set(d.personName, {
+          total: d.amount,
+          n: 1,
+          due: d.dueDate!,
+        });
+      }
+    }
+    for (const [name, v] of owingByPerson) {
+      const days = differenceInCalendarDays(parseISO(v.due), new Date());
+      const count = v.n > 1 ? ` across ${v.n} entries` : "";
       lines.push(
-        `- WARNING: there is not enough to cover what is already due. Short by ${rm(Math.abs(spendable - committed))}.`,
+        `- ${name}: ${rm(v.total)}${count}, earliest due ${format(parseISO(v.due), "d MMM")} (${whenLabel(days)})`,
+      );
+    }
+    const committed = billTotal + debtTotal;
+    lines.push(`- Total still committed: ${rm(committed)}`);
+    lines.push(
+      `- Free to spend ${rm(free)} minus committed ${rm(committed)} = ${rm(free - committed)} genuinely free before payday`,
+    );
+    if (free - committed < 0) {
+      lines.push(
+        `- WARNING: there is not enough to cover what is already due. Short by ${rm(Math.abs(free - committed))}.`,
       );
     }
   } else {
     lines.push("- Nothing with a due date before payday.");
+    lines.push(
+      "- This means nothing is recorded, not that nothing is owed. Bills are only listed here if the user set a due day on the category or entered the debt.",
+    );
   }
   lines.push("");
 
@@ -357,7 +409,14 @@ export function buildAssistantContext({
   // code is exact and costs a fraction of the tokens.
   const byNote = new Map<
     string,
-    { label: string; n: number; total: number; cats: Set<string> }
+    {
+      label: string;
+      n: number;
+      total: number;
+      cats: Set<string>;
+      /** ISO date of the most recent one, for "when did I last go there". */
+      last: string;
+    }
   >();
   for (const t of cycleTx) {
     if (!isOwnExpense(t)) continue;
@@ -385,11 +444,13 @@ export function buildAssistantContext({
       if (note.length < seen.label.length) seen.label = note;
       if (t.categoryId && catMap[t.categoryId])
         seen.cats.add(catMap[t.categoryId].name);
+      if (t.date > seen.last) seen.last = t.date;
     } else {
       byNote.set(key, {
         label: note,
         n: 1,
         total: t.amount,
+        last: t.date,
         cats: new Set(
           t.categoryId && catMap[t.categoryId]
             ? [catMap[t.categoryId].name]
@@ -411,7 +472,12 @@ export function buildAssistantContext({
       // McDonald's that lives under Food Delivery, because this line used to
       // carry no category at all.
       const where = r.cats.size ? ` [${[...r.cats].join(", ")}]` : "";
-      lines.push(`- "${r.label}": ${r.n} times, ${rm(r.total)}${where}`);
+      // Without a date, "when did I last go to Econsave?" had no answer here
+      // and got one invented. The last visit is the only date the user ever
+      // asks for, and it costs ten characters.
+      lines.push(
+        `- "${r.label}": ${r.n} times, ${rm(r.total)}, last on ${r.last}${where}`,
+      );
     }
     lines.push(
       "This is the clearest evidence of a habit. Prefer it over category totals when asked where money is going or leaking.",
@@ -425,16 +491,37 @@ export function buildAssistantContext({
     const iOwe = outstanding.filter((d) => d.direction === "i_owe");
     const theyOwe = outstanding.filter((d) => d.direction === "they_owe");
     const sum = (arr: Debt[]) => arr.reduce((s, d) => s + d.amount, 0);
+    // One line per person, not per entry. Four separate "you owe Wife" lines
+    // read as four debts rather than one running tab, and invite the model to
+    // quote whichever it happened to latch onto.
+    const byPerson = (arr: Debt[], phrase: (n: string, t: string) => string) => {
+      const totals = new Map<string, { total: number; n: number }>();
+      for (const d of arr) {
+        const seen = totals.get(d.personName) ?? { total: 0, n: 0 };
+        seen.total += d.amount;
+        seen.n += 1;
+        totals.set(d.personName, seen);
+      }
+      return (
+        [...totals.entries()]
+          .sort((a, b) => b[1].total - a[1].total)
+          .map(
+            ([name, v]) =>
+              `${phrase(name, rm(v.total))}${v.n > 1 ? ` (${v.n} entries)` : ""}`,
+          )
+          .join("; ") || "none"
+      );
+    };
     // Two separate lists, never one total: money you owe and money owed to
     // you point in opposite directions, and the model will happily add them.
     lines.push(
       "OUTSTANDING DEBTS (two opposite directions, never add them together):",
     );
     lines.push(
-      `- YOU OWE OTHER PEOPLE (your debt, total ${rm(sum(iOwe))}): ${iOwe.map((d) => `you owe ${d.personName} ${rm(d.amount)}`).join("; ") || "none"}`,
+      `- YOU OWE OTHER PEOPLE (your debt, total ${rm(sum(iOwe))}): ${byPerson(iOwe, (n, t) => `you owe ${n} ${t}`)}`,
     );
     lines.push(
-      `- OTHER PEOPLE OWE YOU (not your debt, money coming back to you, total ${rm(sum(theyOwe))}): ${theyOwe.map((d) => `${d.personName} owes you ${rm(d.amount)}`).join("; ") || "none"}`,
+      `- OTHER PEOPLE OWE YOU (not your debt, money coming back to you, total ${rm(sum(theyOwe))}): ${byPerson(theyOwe, (n, t) => `${n} owes you ${t}`)}`,
     );
   } else {
     lines.push("OUTSTANDING DEBTS: none");
@@ -471,6 +558,9 @@ export function buildAssistantContext({
   lines.push("");
   lines.push("WHAT YOU CANNOT SEE (never guess at these, ask instead):");
   lines.push("- Any cash spent without being logged here.");
+  lines.push(
+    "- The date of any individual transaction, apart from the largest expenses and the last visit shown in repeat spending. If asked when something happened and no date is printed above, say you cannot see it and point them at the transaction list. Never estimate a date.",
+  );
   lines.push(
     "- Income or spending belonging to a partner or spouse, unless it runs through these accounts.",
   );

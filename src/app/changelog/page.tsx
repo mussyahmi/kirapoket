@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "23 October 2026";
+const LAST_UPDATED = "28 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -24,9 +24,43 @@ const LAST_UPDATED = "23 October 2026";
 // • NEVER include admin panel features — the changelog is public.
 const releases: Release[] = [
   {
-    version: "0.18.x",
-    dateRange: "2026-10-22 – present",
+    version: "0.19.x",
+    dateRange: "2026-10-28 – present",
     latest: true,
+    changes: [
+      {
+        type: "feat",
+        text: "Categories can now carry a due day for bills that come round every month, like a loan or a utility. KiraPoket works out whether each one is paid, part paid or still owing from what you actually spend, so there is nothing to tick off",
+      },
+      {
+        type: "feat",
+        text: "A new Due before payday card on your home screen lists everything still owing, with overdue items in red. It only appears when something is actually due",
+      },
+      {
+        type: "feat",
+        text: "Debts repaid in fixed monthly amounts now show the instalment and how many payments are left, and the due date moves on a month each time you pay",
+      },
+      {
+        type: "feat",
+        text: "Owe one person for several things? Pay all of them at once and it records a single transaction instead of one per entry",
+      },
+      {
+        type: "feat",
+        text: "Logging income you borrowed or withdrew from savings can now record the debt at the same time, so money you have to put back doesn't get forgotten",
+      },
+      {
+        type: "fix",
+        text: "Filtering transactions by a top-level category like Needs now returns everything underneath it, instead of coming back empty",
+      },
+      {
+        type: "fix",
+        text: "The date picker in the transaction form no longer stretches past the edge of the screen on a phone, which was cutting off the last week of the month",
+      },
+    ],
+  },
+  {
+    version: "0.18.x",
+    dateRange: "2026-10-22 – 2026-10-27",
     changes: [
       {
         type: "feat",

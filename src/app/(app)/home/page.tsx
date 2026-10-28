@@ -7,6 +7,8 @@ import {
   format,
   addMonths,
   differenceInDays,
+  differenceInCalendarDays,
+  startOfDay,
   parseISO,
   isToday,
   isYesterday,
@@ -26,6 +28,7 @@ import {
   CheckIcon,
   XIcon,
   WalletIcon,
+  CalendarClockIcon,
   ChevronDownIcon,
   FileDownIcon,
   Loader2Icon,
@@ -38,6 +41,7 @@ import {
   sumGiftIncome,
   heldForOthersBalance,
 } from "@/lib/income";
+import { dueThisCycle } from "@/lib/dueDates";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
 import {
@@ -69,6 +73,7 @@ function DashboardPage() {
     activeAccounts,
     categories,
     transactions,
+    debts,
     loadingTransactions,
     loadingAccounts,
     loadingProfile,
@@ -252,6 +257,73 @@ function DashboardPage() {
     () => heldForOthersBalance(cycleTransactions),
     [cycleTransactions],
   );
+
+  // Bills with a due day on their category, worked out from this cycle's
+  // spending. Past cycles are excluded: "overdue" has no meaning once the
+  // cycle has closed and payday has already been and gone.
+  const dueBills = useMemo(() => {
+    if (cycleOffset < 0) return [];
+    const endStr = format(end, "yyyy-MM-dd");
+    const todayStart = startOfDay(new Date());
+
+    const bills = dueThisCycle(categories, cycleTransactions, start, end)
+      .filter((b) => b.state !== "paid")
+      .map((b) => ({
+        key: b.category.id,
+        name: b.category.name,
+        amount: b.outstanding,
+        date: b.date,
+        daysAway: b.daysAway,
+        overdue: b.state === "overdue",
+        progress:
+          b.state === "partial" && b.expected
+            ? `${formatMoney(b.paid)} of ${formatMoney(b.expected)} paid`
+            : null,
+        href: "/categories",
+      }));
+
+    // Money owed to a person sits in Debts, not on a category, but it is due
+    // before payday just the same. Overdue is kept rather than filtered out.
+    // One row per person, mirroring the Debts page, which already groups this
+    // way. Four rows all reading "Wife" with nothing to tell them apart is a
+    // list you stop reading.
+    const owingByPerson = new Map<
+      string,
+      { total: number; n: number; date: Date }
+    >();
+    for (const d of debts) {
+      if (
+        d.settled ||
+        d.direction !== "i_owe" ||
+        !d.dueDate ||
+        d.dueDate > endStr
+      )
+        continue;
+      const date = parseISO(d.dueDate);
+      const seen = owingByPerson.get(d.personName);
+      if (seen) {
+        seen.total += d.amount;
+        seen.n += 1;
+        if (date < seen.date) seen.date = date;
+      } else {
+        owingByPerson.set(d.personName, { total: d.amount, n: 1, date });
+      }
+    }
+    const owing = [...owingByPerson.entries()].map(([name, v]) => ({
+      key: `debt:${name}`,
+      name,
+      amount: v.total,
+      date: v.date,
+      daysAway: differenceInCalendarDays(v.date, todayStart),
+      overdue: differenceInCalendarDays(v.date, todayStart) < 0,
+      progress: v.n > 1 ? `${v.n} items` : null,
+      href: "/debts",
+    }));
+
+    return [...bills, ...owing].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
+  }, [categories, cycleTransactions, debts, start, end, cycleOffset]);
 
   const nonIncomeLabel =
     nonIncome.borrowed > 0 && nonIncome.withdrawn > 0
@@ -770,6 +842,69 @@ function DashboardPage() {
           gifts={gifts}
           heldForOthers={heldForOthers}
         />
+      )}
+
+      {/* Due before payday. Only when something is actually outstanding: a
+          card that says "nothing due" every day earns no attention on the day
+          it matters. */}
+      {dueBills.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Due before payday</CardTitle>
+            {/* No header link: this card draws from both categories and
+                debts, so a single destination would be wrong half the time.
+                Each row links to wherever that item actually lives. */}
+            <CardAction>
+              <CalendarClockIcon className="size-4 text-muted-foreground" />
+            </CardAction>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {dueBills.map((b) => (
+              <Link
+                key={b.key}
+                href={b.href}
+                className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-muted"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm">{b.name}</p>
+                  <p
+                    className={cn(
+                      "text-xs",
+                      b.overdue
+                        ? "font-medium text-danger"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {b.overdue
+                      ? `${Math.abs(b.daysAway)} day${Math.abs(b.daysAway) === 1 ? "" : "s"} overdue`
+                      : b.daysAway === 0
+                        ? "Due today"
+                        : b.daysAway === 1
+                          ? "Due tomorrow"
+                          : `Due in ${b.daysAway} days`}
+                    {b.progress ? ` \u00b7 ${b.progress}` : ""}
+                  </p>
+                </div>
+                {/* No budget means no expected amount, so there is nothing
+                    honest to show. Say what would fix it instead of a dash. */}
+                {b.amount !== undefined ? (
+                  <p
+                    className={cn(
+                      "shrink-0 text-sm font-semibold tabular-nums",
+                      b.overdue ? "text-danger" : "",
+                    )}
+                  >
+                    {formatMoney(b.amount)}
+                  </p>
+                ) : (
+                  <p className="shrink-0 text-xs text-muted-foreground">
+                    Set a budget
+                  </p>
+                )}
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {!isReadOnly && <FeedbackPulse />}

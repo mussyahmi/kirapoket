@@ -118,6 +118,12 @@ export function TransactionForm({
     DEFAULT_INCOME_SOURCE,
   );
   const [forOthers, setForOthers] = useState(false);
+  // Borrowed and withdrawn money usually has to go back. Off by default,
+  // because not every withdrawal is replaced and nothing should quietly
+  // create an obligation the user did not ask for.
+  const [alsoDebt, setAlsoDebt] = useState(false);
+  const [debtPerson, setDebtPerson] = useState("");
+  const [debtDueDate, setDebtDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Snapshot of the account impacts taken when the confirm dialog opens. The
@@ -910,7 +916,15 @@ export function TransactionForm({
                 <button
                   key={src.value}
                   type="button"
-                  onClick={() => setIncomeSource(src.value)}
+                  onClick={() => {
+                    setIncomeSource(src.value);
+                    if (src.value !== "borrowed" && src.value !== "withdrawn")
+                      setAlsoDebt(false);
+                    // Taking from your own tabung is money owed to yourself,
+                    // which is how the Debts page already models it.
+                    if (src.value === "withdrawn" && !debtPerson.trim())
+                      setDebtPerson("Me");
+                  }}
                   className={cn(
                     "px-3 py-2 rounded-lg text-sm border transition-colors",
                     incomeSource === src.value
@@ -932,6 +946,70 @@ export function TransactionForm({
               )}
               <span>{sourceMeta.hint}</span>
             </p>
+
+            {/* Money in that has to go back out again. Recording the debt here
+                saves logging the same event twice, in two places. */}
+            {!isEdit &&
+              (incomeSource === "borrowed" ||
+                incomeSource === "withdrawn") && (
+                <div className="space-y-2 rounded-xl border border-border p-3">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={alsoDebt}
+                    onClick={() => setAlsoDebt((v) => !v)}
+                    className="flex w-full items-center justify-between gap-3 text-left"
+                  >
+                    <span className="text-sm">
+                      {incomeSource === "withdrawn"
+                        ? "I intend to put this back"
+                        : "I have to pay this back"}
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-lg border px-3 py-1 text-xs font-medium transition-colors",
+                        alsoDebt
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background",
+                      )}
+                    >
+                      {alsoDebt ? "Yes" : "No"}
+                    </span>
+                  </button>
+                  {alsoDebt && (
+                    <div className="space-y-3 pt-1">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="debt-person" className="text-xs">
+                          Owed to
+                        </Label>
+                        <Input
+                          id="debt-person"
+                          placeholder={
+                            incomeSource === "withdrawn" ? "Me" : "Name"
+                          }
+                          value={debtPerson}
+                          onChange={(e) => setDebtPerson(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="debt-due" className="text-xs">
+                          Due date (optional)
+                        </Label>
+                        <Input
+                          id="debt-due"
+                          type="date"
+                          value={debtDueDate}
+                          onChange={(e) => setDebtDueDate(e.target.value)}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        A debt for the same amount is added to your Debts page.
+                        The transaction itself is unaffected.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
         )}
 
@@ -1025,7 +1103,13 @@ export function TransactionForm({
             />
           )}
           {showCalendar && (
-            <div className="overflow-hidden rounded-xl border border-border bg-background">
+            // Capped, not stretched and not shrunk. Day cells are
+            // aspect-square, so full width made each day a seventh of the
+            // sheet wide and just as tall, over 700px of calendar with the
+            // last week clipped off. Natural size went the other way and left
+            // a 252px grid adrift in a full-width box. A ceiling gives ~50px
+            // days: a comfortable tap target at a calendar's usual shape.
+            <div className="flex justify-center overflow-hidden rounded-xl border border-border bg-background p-1">
               <Calendar
                 mode="single"
                 selected={selectedDate}
@@ -1038,7 +1122,7 @@ export function TransactionForm({
                   setShowCalendar(false);
                 }}
                 disabled={{ after: new Date() }}
-                className="w-full"
+                className="w-full max-w-[22rem]"
               />
             </div>
           )}

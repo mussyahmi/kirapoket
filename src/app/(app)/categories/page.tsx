@@ -80,6 +80,7 @@ interface CategoryFormData {
   budgetType: "cycle" | "daily";
   budget: string;
   budgetWeekdays: number[];
+  dueDay: string;
   note: string;
   links: string[];
   color: string;
@@ -91,6 +92,7 @@ const DEFAULT_FORM: CategoryFormData = {
   budget: "",
   // Per day defaults to every day; the picker's presets narrow it
   budgetWeekdays: [0, 1, 2, 3, 4, 5, 6],
+  dueDay: "",
   note: "",
   links: [],
   color: "",
@@ -134,6 +136,7 @@ function L3Item({
 
   const hasDetails =
     item.budget !== undefined ||
+    item.dueDay !== undefined ||
     item.note ||
     (item.links && item.links.length > 0);
 
@@ -225,6 +228,16 @@ function L3Item({
                     </p>
                   )}
                 </div>
+              </div>
+            )}
+            {item.dueDay !== undefined && (
+              <div className="flex items-center justify-between rounded-lg px-4 py-3 bg-muted/50">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Due
+                </span>
+                <p className="text-sm font-semibold tabular-nums">
+                  Day {item.dueDay} each month
+                </p>
               </div>
             )}
             {item.note && (
@@ -574,6 +587,7 @@ export default function CategoriesPage() {
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
       budgetWeekdays: initialWeekdays(cat),
+      dueDay: cat.dueDay !== undefined ? String(cat.dueDay) : "",
       note: cat.note ?? "",
       links: cat.links ?? [],
       color: cat.color ?? "",
@@ -597,6 +611,17 @@ export default function CategoriesPage() {
     const budget = form.budget.trim() ? parseFloat(form.budget) : undefined;
     if (form.budget.trim() && (isNaN(budget!) || budget! < 0)) {
       toast.error("Please enter a valid budget amount.");
+      return;
+    }
+
+    const dueDay = form.dueDay.trim()
+      ? parseInt(form.dueDay, 10)
+      : undefined;
+    if (
+      form.dueDay.trim() &&
+      (isNaN(dueDay!) || dueDay! < 1 || dueDay! > 31)
+    ) {
+      toast.error("Due day must be a day of the month, 1 to 31.");
       return;
     }
 
@@ -628,6 +653,7 @@ export default function CategoriesPage() {
         budgetType: effectiveBudgetType,
         budgetDays: effectiveBudgetDays,
         budgetWeekdays: effectiveWeekdays,
+        dueDay,
         note: form.note.trim() || undefined,
         links:
           form.links.filter((l) => l.trim()).length > 0
@@ -653,6 +679,7 @@ export default function CategoriesPage() {
           budgetWeekdays: payload.budgetWeekdays,
           // Legacy picked dates are superseded by weekdays; clear them on save
           budgetSelectedDates: undefined,
+          dueDay: payload.dueDay,
           note: payload.note,
           links: payload.links,
           color: payload.color,
@@ -986,6 +1013,33 @@ export default function CategoriesPage() {
                     />
                   </div>
                 )}
+
+                {/* A bill, not an allowance. Sits with the budget because the
+                    two work together: the budget is the amount expected, and
+                    this is when it is expected by. */}
+                <div className="space-y-2">
+                  <Label htmlFor="cat-due-day">Due day (optional)</Label>
+                  <Input
+                    id="cat-due-day"
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    max="31"
+                    placeholder="e.g. 15"
+                    value={form.dueDay}
+                    onChange={(e) =>
+                      setForm({ ...form, dueDay: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For bills that come round every month, like a loan or a
+                    utility. KiraPoket works out whether it has been paid from
+                    what you spend in this category
+                    {form.budget.trim() && form.budgetType === "cycle"
+                      ? ", counting it settled once the budget amount is reached."
+                      : ". Set a budget too and it can tell part paid from paid."}
+                  </p>
+                </div>
               </div>
             )}
             {dialogContext?.level === 3 && (

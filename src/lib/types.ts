@@ -124,6 +124,16 @@ export interface Category {
   budgetDays?: number;
   budgetWeekdays?: number[];
   budgetSelectedDates?: string[];
+  /**
+   * Day of the month this category's bill falls due, 1-31. Present only on
+   * categories that are a recurring commitment (a loan, a utility, a
+   * subscription) rather than ordinary spending.
+   *
+   * Whether it has been paid is never stored: it is worked out from this
+   * cycle's transactions against `budget`, so it cannot drift out of step
+   * with the ledger. See `src/lib/dueDates.ts`.
+   */
+  dueDay?: number;
   note?: string;
   links?: string[];
   color?: string;
@@ -142,6 +152,16 @@ export interface Debt {
   direction: "i_owe" | "they_owe";
   date: string;
   dueDate?: string;
+  /**
+   * What one instalment costs, on a debt repaid in fixed monthly amounts:
+   * RM707 a month against a RM2,121 TNG loan.
+   *
+   * Payments remaining is never stored, only derived from what is left:
+   * `Math.ceil(amount / installmentAmount)`. Recording a payment already
+   * reduces `amount`, so a separate counter could only ever drift out of
+   * step with it. `dueDate` rolls forward a month with each payment.
+   */
+  installmentAmount?: number;
   settled: boolean;
   settledDate?: string;
   createdAt: Timestamp | string;

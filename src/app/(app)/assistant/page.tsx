@@ -458,6 +458,10 @@ function AssistantChat() {
       // the conversation owns the viewport and the composer can sit on the
       // keyboard. On desktop the sidebar stays and only the top padding differs.
       className="max-w-2xl mx-auto px-4 flex flex-col h-[100dvh] md:h-auto md:min-h-[calc(100dvh-2rem)]"
+      // The window never scrolls here, so pull-to-refresh would arm on every
+      // touch and swallow the upward drag that scrolls the conversation back
+      // through its history. There is nothing to refresh on this page anyway.
+      data-no-ptr
     >
       {/* Header. The back button only exists on mobile, where the shell's
           chrome is hidden and this is the only way out. */}
@@ -537,7 +541,7 @@ function AssistantChat() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pb-4 md:overflow-visible">
+      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto overscroll-contain pb-4 md:overflow-visible">
         {messages.length === 0 && !loading && (
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-sm text-foreground/80">

@@ -47,6 +47,13 @@ export default function PullToRefresh({
       // Don't hijack scrolling inside dialogs / bottom sheets
       const target = e.target as Element | null;
       if (target?.closest('[role="dialog"], [data-no-ptr]')) return;
+      // A page that owns the viewport scrolls an inner element, not the
+      // window, so window.scrollY stays 0 and every downward drag looks like
+      // a pull. Walk up and bail if something between here and the body is
+      // itself scrolled: that drag belongs to it.
+      for (let el = target; el && el !== document.body; el = el.parentElement) {
+        if (el.scrollTop > 0) return;
+      }
       startY.current = e.touches[0].clientY;
       active.current = true;
     };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addMonths } from "date-fns";
 import { toast } from "sonner";
 import {
   PlusIcon,
@@ -46,6 +46,7 @@ interface DebtForm {
   direction: Direction;
   date: string;
   dueDate: string;
+  installmentAmount: string;
   accountId: string;
 }
 
@@ -56,8 +57,18 @@ const DEFAULT_FORM: DebtForm = {
   direction: "i_owe",
   date: format(new Date(), "yyyy-MM-dd"),
   dueDate: "",
+  installmentAmount: "",
   accountId: "",
 };
+
+/**
+ * Payments left on an instalment debt, derived from what is still owing so it
+ * can never disagree with the balance. RM2,121 at RM707 a month reads 3.
+ */
+const paymentsLeft = (debt: Debt) =>
+  debt.installmentAmount && debt.installmentAmount > 0
+    ? Math.ceil(debt.amount / debt.installmentAmount - 0.005)
+    : null;
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("ms-MY", {
@@ -165,6 +176,12 @@ function DebtCard({
               {format(parseISO(debt.dueDate), "d MMM yyyy")}
             </span>
           )}
+          {/* Derived from the balance, never counted down separately. */}
+          {!debt.settled && paymentsLeft(debt) !== null && (
+            <span className="text-xs text-muted-foreground">
+              {fmt(debt.installmentAmount!)}/month · {paymentsLeft(debt)} left
+            </span>
+          )}
           {debt.settled && debt.settledDate && (
             <span className="text-xs text-muted-foreground">
               Settled · {format(parseISO(debt.settledDate), "d MMM yyyy")}
@@ -257,6 +274,7 @@ interface DebtGroupCardProps {
   onPay?: (debt: Debt) => void;
   onCollect?: (debt: Debt) => void;
   onRecord?: (debt: Debt) => void;
+  onPayAll?: (debts: Debt[]) => void;
 }
 
 function DebtGroupCard({
@@ -269,6 +287,7 @@ function DebtGroupCard({
   onPay,
   onCollect,
   onRecord,
+  onPayAll,
 }: DebtGroupCardProps) {
   const isExpanded = expandedGroups.has(group.key);
   const sumAmount = (d: Debt) =>
@@ -282,6 +301,9 @@ function DebtGroupCard({
   const allIOwe = iOweTotal > 0 && theyOweTotal === 0;
   const allTheyOwe = theyOweTotal > 0 && iOweTotal === 0;
   const allSettled = group.debts.every((d) => d.settled);
+  const unsettledIOwe = group.debts.filter(
+    (d) => !d.settled && d.direction === "i_owe",
+  );
   return (
     <div
       className={cn(
@@ -327,6 +349,11 @@ function DebtGroupCard({
           )}
         />
       </button>
+
+      {/* Settling four small debts to one person meant four payments and four
+          transactions, when the money left the account once. Only inside the
+          expanded group: a collapsed row is a summary, and an action bar
+          under it offers to pay something you cannot currently see. */}
       {isExpanded && (
         <div className="border-t border-border divide-y divide-border">
           {group.debts.map((d) => (
@@ -344,6 +371,17 @@ function DebtGroupCard({
               />
             </div>
           ))}
+          {onPayAll && allIOwe && unsettledIOwe.length > 1 && (
+            <div className="flex justify-end p-3">
+              <button
+                type="button"
+                onClick={() => onPayAll(unsettledIOwe)}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+              >
+                Pay all {fmt(iOweTotal)}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -382,6 +420,8 @@ export default function DebtsPage() {
   // Pay / Collect dialog
   const [payTarget, setPayTarget] = useState<Debt | null>(null);
   const [payAmount, setPayAmount] = useState("");
+  // Several of one person's debts, cleared by a single payment.
+  const [payAllTarget, setPayAllTarget] = useState<Debt[] | null>(null);
   const [payAccountId, setPayAccountId] = useState("");
   const [paying, setPaying] = useState(false);
 
@@ -491,6 +531,10 @@ export default function DebtsPage() {
       direction: debt.direction,
       date: debt.date,
       dueDate: debt.dueDate ?? "",
+      installmentAmount:
+        debt.installmentAmount !== undefined
+          ? String(debt.installmentAmount)
+          : "",
       accountId: debt.accountId ?? "",
     });
     setDialogOpen(true);
@@ -508,6 +552,17 @@ export default function DebtsPage() {
       return;
     }
 
+    const instalment = form.installmentAmount.trim()
+      ? parseFloat(form.installmentAmount)
+      : undefined;
+    if (
+      form.installmentAmount.trim() &&
+      (isNaN(instalment!) || instalment! <= 0)
+    ) {
+      toast.error("Enter a valid monthly instalment.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -518,6 +573,7 @@ export default function DebtsPage() {
         direction: form.direction,
         date: form.date,
         dueDate: form.dueDate || undefined,
+        installmentAmount: instalment,
         accountId: form.accountId || undefined,
         settled: editTarget?.settled ?? false,
         settledDate: editTarget?.settledDate,
@@ -628,6 +684,76 @@ export default function DebtsPage() {
     });
   };
 
+  const openPayAll = (ds: Debt[]) => {
+    setPayAllTarget(ds);
+    setPayAccountId(ds.find((d) => d.accountId)?.accountId ?? "");
+  };
+
+  /**
+   * One transaction, every debt in the group settled. The money left the
+   * account once, so recording it four times would overstate spending and
+   * put four rows in the ledger for a single transfer.
+   */
+  const handlePayAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payAllTarget || payAllTarget.length === 0) return;
+    if (!payAccountId) {
+      toast.error("Please select an account.");
+      return;
+    }
+    const total = parseFloat(
+      payAllTarget.reduce((s, d) => s + d.amount, 0).toFixed(2),
+    );
+    const personName = payAllTarget[0].personName;
+
+    setPaying(true);
+    try {
+      let categoryId: string | undefined;
+      const debtRepaymentL2 = categories.find(
+        (c) => c.level === 2 && c.name === "Debt Repayment",
+      );
+      if (debtRepaymentL2) {
+        let personItem = categories.find(
+          (c) =>
+            c.level === 3 &&
+            c.parentId === debtRepaymentL2.id &&
+            c.name === personName,
+        );
+        if (!personItem) {
+          personItem = await createCategory({
+            name: personName,
+            level: 3,
+            parentId: debtRepaymentL2.id,
+            type: "needs",
+            sortOrder: 99,
+          });
+        }
+        categoryId = personItem.id;
+      }
+
+      await createTransaction({
+        type: "expense",
+        amount: total,
+        date: format(new Date(), "yyyy-MM-dd"),
+        time: format(new Date(), "HH:mm"),
+        accountId: payAccountId,
+        categoryId,
+        note: `Paid ${personName} for ${payAllTarget.length} items`,
+      });
+
+      const settledDate = format(new Date(), "yyyy-MM-dd");
+      for (const d of payAllTarget) {
+        await editDebt(d.id, { amount: 0, settled: true, settledDate });
+      }
+      toast.success(`Paid ${fmt(total)} to ${personName}. All settled!`);
+      setPayAllTarget(null);
+    } catch {
+      toast.error("Failed to record payment.");
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const openPay = (debt: Debt) => {
     setPayTarget(debt);
     setPayAmount(String(debt.amount));
@@ -710,10 +836,23 @@ export default function DebtsPage() {
             : "Fully collected. Debt settled!",
         );
       } else {
-        await editDebt(payTarget.id, { amount: remaining });
+        // An instalment debt's due date is the NEXT payment, so it moves on
+        // once this one is made. Without this it would sit in the past and
+        // read as permanently overdue from the first payment onwards.
+        const rolledDueDate =
+          payTarget.installmentAmount && payTarget.dueDate
+            ? format(addMonths(parseISO(payTarget.dueDate), 1), "yyyy-MM-dd")
+            : undefined;
+        await editDebt(payTarget.id, {
+          amount: remaining,
+          ...(rolledDueDate ? { dueDate: rolledDueDate } : {}),
+        });
+        const left = payTarget.installmentAmount
+          ? Math.ceil(remaining / payTarget.installmentAmount - 0.005)
+          : null;
         toast.success(
           isIOwe
-            ? `Payment recorded. Remaining: ${fmt(remaining)}`
+            ? `Payment recorded. Remaining: ${fmt(remaining)}${left ? ` (${left} to go)` : ""}`
             : `Receipt recorded. Remaining: ${fmt(remaining)}`,
         );
       }
@@ -873,6 +1012,7 @@ export default function DebtsPage() {
                 onDelete={isReadOnly ? undefined : setDeleteTarget}
                 onPay={isReadOnly ? undefined : openPay}
                 onCollect={isReadOnly ? undefined : openPay}
+                onPayAll={isReadOnly ? undefined : openPayAll}
                 onRecord={
                   isReadOnly
                     ? undefined
@@ -1069,6 +1209,37 @@ export default function DebtsPage() {
               </div>
             </div>
 
+            {/* Instalments. Only meaningful on money you owe, and only with a
+                due date to roll forward from. */}
+            {form.direction === "i_owe" && (
+              <div className="space-y-2">
+                <Label htmlFor="debt-instalment">
+                  Monthly instalment (optional)
+                </Label>
+                <Input
+                  id="debt-instalment"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={form.installmentAmount}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      installmentAmount: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  For a debt repaid in fixed amounts, like RM707 a month
+                  against RM2,121. KiraPoket works out how many payments are
+                  left from what you still owe, and moves the due date on a
+                  month each time you pay.
+                </p>
+              </div>
+            )}
+
             {/* Account linkage, only on create, not edit */}
             {!editTarget && activeAccounts.length > 0 && (
               <div className="space-y-2">
@@ -1137,6 +1308,66 @@ export default function DebtsPage() {
       </Dialog>
 
       {/* Pay / Collect Dialog */}
+      {/* Pay all. A fixed total, because partial payment of one entry already
+          has its own dialog; this one exists for the lump sum. */}
+      <Dialog
+        open={!!payAllTarget}
+        onOpenChange={(open) => !open && setPayAllTarget(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Pay {payAllTarget?.[0]?.personName} in full
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePayAll} className="space-y-4">
+            <div className="rounded-lg bg-muted/50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Total
+              </p>
+              <p className="text-2xl font-bold tabular-nums">
+                {fmt(
+                  (payAllTarget ?? []).reduce((sum, d) => sum + d.amount, 0),
+                )}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Settles {payAllTarget?.length} entries as one transaction.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payall-account">Paid from</Label>
+              <select
+                id="payall-account"
+                value={payAccountId}
+                onChange={(e) => setPayAccountId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                required
+              >
+                <option value="">Select account</option>
+                {activeAccounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPayAllTarget(null)}
+                disabled={paying}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={paying || !payAccountId}>
+                {paying ? "Paying..." : "Pay all"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog
         open={!!payTarget}
         onOpenChange={(open) => !open && setPayTarget(null)}
