@@ -30,15 +30,11 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Categories can now carry a due day for bills that come round every month, like a loan or a utility. KiraPoket works out whether each one is paid, part paid or still owing from what you actually spend, so there is nothing to tick off",
+        text: "Categories can now carry a due day for bills that come round every month, like a loan or a utility, and a new Due before payday card on your home screen lists everything still owing, with overdue items in red. KiraPoket works out whether each bill is paid, part paid or still owing from what you actually spend, so there is nothing to tick off",
       },
       {
         type: "feat",
-        text: "A new Due before payday card on your home screen lists everything still owing, with overdue items in red. It only appears when something is actually due",
-      },
-      {
-        type: "feat",
-        text: "Debts repaid in fixed monthly amounts now show the instalment and how many payments are left, and the due date moves on a month each time you pay",
+        text: "Debts repaid in fixed monthly amounts now show the instalment and how many payments are left, the due date moves on a month each time you pay, and the Pay button starts at the instalment rather than the whole balance",
       },
       {
         type: "feat",
@@ -54,39 +50,11 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Filtering transactions by a top-level category like Needs now returns everything underneath it, instead of coming back empty",
-      },
-      {
-        type: "fix",
-        text: "The date picker in the transaction form no longer stretches past the edge of the screen on a phone, which was cutting off the last week of the month",
-      },
-      {
-        type: "fix",
-        text: "Due before payday now reads one row per due date. A debt repaid monthly shows the instalment that is actually due rather than the whole balance, and money due later in the cycle is no longer flagged as overdue",
+        text: "Filtering transactions by a top-level category like Needs now returns everything underneath it, instead of coming back empty, and the date picker no longer stretches past the edge of the screen on a phone",
       },
       {
         type: "fix",
         text: "Deleting your account now also deletes your saved assistant conversations, which were being left behind. The privacy policy has been rewritten to spell out exactly what the assistant sends to Google and what it does not",
-      },
-      {
-        type: "fix",
-        text: "The assistant now counts shop visits by day rather than by entry, so a receipt you split across several categories reads as one trip instead of several, and it adds up spending at a shop even when you wrote the shop name at the end of the note",
-      },
-      {
-        type: "fix",
-        text: "Asking the assistant the same question twice now gets a fresh answer from your current figures, instead of it repeating what it told you earlier in the chat",
-      },
-      {
-        type: "fix",
-        text: "The assistant no longer guesses how much you'll spend before payday in the first few days of a cycle, when your fixed bills have just landed and the daily rate is nowhere near typical",
-      },
-      {
-        type: "fix",
-        text: "The assistant no longer works out its own totals, which is where its wrong numbers came from, and it now answers a question like \"should I cook or eat out\" with an actual answer before the figures",
-      },
-      {
-        type: "fix",
-        text: "Budgets now tell the assistant whether you are spending faster than the cycle is passing, not just how much is left, so its advice has a reason behind it instead of a healthy-looking balance that argues the other way",
       },
     ],
   },
