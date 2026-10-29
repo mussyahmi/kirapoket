@@ -644,7 +644,8 @@ export default function CategoriesPage() {
         toast.success("Category created.");
       }
       setDialogOpen(false);
-    } catch {
+    } catch (err) {
+      console.error("Failed to save category", err);
       toast.error("Failed to save category.");
     } finally {
       setSaving(false);

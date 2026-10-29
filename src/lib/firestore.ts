@@ -447,19 +447,14 @@ export async function updateCategory(
   id: string,
   data: Partial<Omit<Category, "id" | "userId">>,
 ): Promise<void> {
-  // Replace undefined optional fields with deleteField() so Firestore doesn't reject them
-  const payload: Record<string, unknown> = { ...data };
-  for (const key of [
-    "budget",
-    "budgetType",
-    "budgetDays",
-    "budgetWeekdays",
-    "budgetSelectedDates",
-    "note",
-    "links",
-    "color",
-  ] as const) {
-    if (payload[key] === undefined) payload[key] = deleteField();
+  // Firestore rejects undefined outright, so an optional field the caller
+  // cleared has to be sent as deleteField(). Derived from the payload rather
+  // than a hand-written field list: the list fell behind when dueDay was added
+  // and every edit that left Due day empty failed. To leave a field untouched,
+  // omit the key instead of passing undefined.
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    payload[k] = v === undefined ? deleteField() : v;
   }
   await updateDoc(doc(db, "categories", id), payload);
 }

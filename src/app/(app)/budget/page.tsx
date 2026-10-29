@@ -321,7 +321,8 @@ export default function BudgetPage() {
       });
       toast.success("Category updated.");
       setL3EditOpen(false);
-    } catch {
+    } catch (err) {
+      console.error("Failed to save category", err);
       toast.error("Failed to save.");
     } finally {
       setL3EditSaving(false);

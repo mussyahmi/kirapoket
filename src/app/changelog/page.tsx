@@ -56,6 +56,10 @@ const releases: Release[] = [
         type: "fix",
         text: "Deleting your account now also deletes your saved assistant conversations, which were being left behind. The privacy policy has been rewritten to spell out exactly what the assistant sends to Google and what it does not",
       },
+      {
+        type: "fix",
+        text: "Editing a category no longer fails when you leave the due day blank",
+      },
     ],
   },
   {
