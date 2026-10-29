@@ -212,7 +212,13 @@ export const chat = onRequest(
       context?: string;
     };
     const messages = (body.messages ?? []).slice(-MAX_MESSAGES);
-    const context = (body.context ?? "").slice(0, 8000);
+    // Matches MAX_CONTEXT_CHARS in src/lib/aiContext.ts. The client already
+    // trims to its own budget and appends a notice saying what went missing;
+    // a tighter cap here cut that notice off along with the debts, the user's
+    // own notes and the blind-spot list that sit at the end of the snapshot,
+    // leaving the model quietly less careful with no sign anything was lost.
+    // This is a backstop against a malformed request, not the real budget.
+    const context = (body.context ?? "").slice(0, 12_000);
     if (!messages.length || messages[messages.length - 1].role !== "user") {
       res.status(400).json({ error: "No message to answer." });
       return;

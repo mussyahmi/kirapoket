@@ -436,6 +436,10 @@ export function buildAssistantContext({
     {
       label: string;
       n: number;
+      /** Transaction ids already counted, so the merchant pass can't double. */
+      ids: Set<string>;
+      /** Distinct dates. One receipt split across categories is one visit. */
+      days: Set<string>;
       total: number;
       cats: Set<string>;
       /** ISO date of the most recent one, for "when did I last go there". */
@@ -462,6 +466,8 @@ export function buildAssistantContext({
     const seen = byNote.get(key);
     if (seen) {
       seen.n += 1;
+      seen.ids.add(t.id);
+      seen.days.add(t.date);
       seen.total += t.amount;
       // Shortest wins: "Zus coffee" names the habit; "Zus coffee for wife"
       // describes only one instance of it.
@@ -473,6 +479,8 @@ export function buildAssistantContext({
       byNote.set(key, {
         label: note,
         n: 1,
+        ids: new Set([t.id]),
+        days: new Set([t.date]),
         total: t.amount,
         last: t.date,
         cats: new Set(
@@ -483,6 +491,39 @@ export function buildAssistantContext({
       });
     }
   }
+  // Second pass: the key is the first two words, so "Econsave" and "Drypers
+  // xxl x3 @ econsave" land in different buckets and the supermarket total
+  // comes up short by whatever was written merchant-last. Fold in any note
+  // that mentions the label anywhere, keyed on transaction id so nothing is
+  // counted twice. Four characters minimum, or "zus" would swallow half the
+  // ledger.
+  for (const r of byNote.values()) {
+    const labelNorm = r.label
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (labelNorm.length < 4) continue;
+    for (const t of cycleTx) {
+      if (!isOwnExpense(t) || r.ids.has(t.id)) continue;
+      const note = t.note?.trim();
+      if (!note) continue;
+      const norm = note
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!norm.includes(labelNorm)) continue;
+      r.ids.add(t.id);
+      r.n += 1;
+      r.days.add(t.date);
+      r.total += t.amount;
+      if (t.categoryId && catMap[t.categoryId])
+        r.cats.add(catMap[t.categoryId].name);
+      if (t.date > r.last) r.last = t.date;
+    }
+  }
+
   const repeats = [...byNote.values()]
     .filter((r) => r.n > 1)
     .sort((a, b) => b.total - a.total)
@@ -499,8 +540,16 @@ export function buildAssistantContext({
       // Without a date, "when did I last go to Econsave?" had no answer here
       // and got one invented. The last visit is the only date the user ever
       // asks for, and it costs ten characters.
+      // Entries and visits are different numbers. A supermarket run split
+      // into Groceries, Baby Wipes and Diapers is three entries on one day,
+      // and calling that "3 times" invents two trips that never happened.
+      const visits = r.days.size;
+      const how =
+        r.n === visits
+          ? `${visits} time${visits === 1 ? "" : "s"}`
+          : `${r.n} entries on ${visits} day${visits === 1 ? "" : "s"} (one trip can be split across categories)`;
       lines.push(
-        `- "${r.label}": ${r.n} times, ${rm(r.total)}, last on ${r.last}${where}`,
+        `- "${r.label}": ${how}, ${rm(r.total)}, last on ${r.last}${where}`,
       );
     }
     lines.push(
