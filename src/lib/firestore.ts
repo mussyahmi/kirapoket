@@ -347,6 +347,32 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   return snap.docs.map((d) => d.data() as UserProfile);
 }
 
+/**
+ * Assistant usage per user, keyed by uid. Admin-only (see firestore.rules).
+ * Counters only, never a question or an answer: enough to see whether someone
+ * is actually using the assistant without reading what they asked it.
+ */
+export interface AiUsageDoc {
+  uid: string;
+  /** Day the count belongs to, YYYY-MM-DD. Absent until first use. */
+  date?: string;
+  count?: number;
+  tokensToday?: number;
+  month?: string;
+  tokensMonth?: number;
+}
+
+export async function getAllAiUsage(): Promise<Record<string, AiUsageDoc>> {
+  const snap = await getDocs(collection(db, "aiUsage"));
+  const out: Record<string, AiUsageDoc> = {};
+  for (const d of snap.docs) {
+    // The project-wide counter shares this collection but belongs to no user.
+    if (d.id.startsWith("_")) continue;
+    out[d.id] = { uid: d.id, ...d.data() } as AiUsageDoc;
+  }
+  return out;
+}
+
 // ─── Accounts ────────────────────────────────────────────────────────────────
 
 export async function getAccounts(userId: string): Promise<Account[]> {

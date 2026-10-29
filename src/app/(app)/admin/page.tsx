@@ -11,6 +11,8 @@ import {
   clearAndSeedDemoData,
   DEMO_UID,
   getRecentFeedback,
+  getAllAiUsage,
+  type AiUsageDoc,
   type UserStats,
 } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
@@ -90,6 +92,9 @@ export default function AdminPage() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loadingFeedback, setLoadingFeedback] = useState(true);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Assistant usage, counters only. Shows who is actually using it without
+  // opening anyone's conversations.
+  const [aiUsage, setAiUsage] = useState<Record<string, AiUsageDoc>>({});
 
   const isAdmin = user?.uid === ADMIN_UID;
 
@@ -101,6 +106,9 @@ export default function AdminPage() {
     getRecentFeedback(100)
       .then(setFeedback)
       .finally(() => setLoadingFeedback(false));
+    getAllAiUsage()
+      .then(setAiUsage)
+      .catch(() => setAiUsage({}));
   }, [isAdmin]);
 
   const mau = useMemo(
@@ -597,6 +605,28 @@ export default function AdminPage() {
                             {u.lastAppVersion && `v${u.lastAppVersion}`}
                           </p>
                         )}
+                        {/* Counters, never content. Says someone has been
+                            talking to the assistant, not what about. */}
+                        {(() => {
+                          const usage = aiUsage[u.uid];
+                          const tokens = usage?.tokensMonth ?? 0;
+                          if (!usage?.date && tokens === 0) return null;
+                          return (
+                            <p className="text-xs text-primary mt-0.5">
+                              Assistant
+                              {usage?.date
+                                ? ` · last used ${usage.date}${
+                                    usage.count
+                                      ? `, ${usage.count} message${usage.count === 1 ? "" : "s"} that day`
+                                      : ""
+                                  }`
+                                : ""}
+                              {tokens > 0
+                                ? ` · ${tokens.toLocaleString()} tokens this month`
+                                : ""}
+                            </p>
+                          );
+                        })()}
                       </div>
 
                       {/* Actions */}
