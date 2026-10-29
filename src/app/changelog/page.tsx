@@ -76,6 +76,10 @@ const releases: Release[] = [
         type: "fix",
         text: "Asking the assistant the same question twice now gets a fresh answer from your current figures, instead of it repeating what it told you earlier in the chat",
       },
+      {
+        type: "fix",
+        text: "The assistant no longer guesses how much you'll spend before payday in the first few days of a cycle, when your fixed bills have just landed and the daily rate is nowhere near typical",
+      },
     ],
   },
   {

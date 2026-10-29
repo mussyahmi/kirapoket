@@ -32,6 +32,11 @@ const rm = (n: number) =>
 const MAX_ACCOUNTS_LISTED = 25;
 const MAX_L3_PER_PARENT = 12;
 const MAX_REPEATS_LISTED = 10;
+// A recent-pace window shorter than this is not a habit, it is the start of a
+// cycle. Salary lands and every fixed bill lands with it, so the first days
+// run at several times the real rate and multiplying them out predicts more
+// spending than the user owns.
+const MIN_PROJECTION_DAYS = 5;
 // Hard backstop measured in characters, roughly four per token.
 const MAX_CONTEXT_CHARS = 12_000;
 
@@ -293,9 +298,17 @@ export function buildAssistantContext({
   lines.push(
     `- Recent pace, last ${recentDays} day${recentDays === 1 ? "" : "s"}: ${rm(recentRate)} per day across ${recentTx.length} transaction${recentTx.length === 1 ? "" : "s"}`,
   );
-  lines.push(
-    `- At that recent pace, roughly ${rm(recentRate * daysLeft)} more will be spent before payday. Use THIS figure for projections, never the whole-cycle average.`,
-  );
+  if (recentDays >= MIN_PROJECTION_DAYS) {
+    lines.push(
+      `- At that recent pace, roughly ${rm(recentRate * daysLeft)} more will be spent before payday. Use THIS figure for projections, never the whole-cycle average.`,
+    );
+  } else {
+    // The figure is deliberately not printed. Stating a number and calling it
+    // unreliable still hands the model a number, and it will quote it.
+    lines.push(
+      `- NO PROJECTION AVAILABLE. Only ${recentDays} day${recentDays === 1 ? "" : "s"} into this cycle, and the first days carry the fixed bills that land with the salary, so this rate is far above what the rest of the cycle will look like. Do not multiply it out and do not estimate total spending before payday. If asked, say it is too early in the cycle to project, and point at COMMITTED BEFORE PAYDAY for what is actually known to be owed.`,
+    );
+  }
   // The pace line alone invites a question it can't answer: "how much on
   // snacks in the last week?" The whole-cycle totals are no help, since they
   // are dominated by fixed bills that landed on day one. Five lines make the
