@@ -1,4 +1,4 @@
-import type { Category, Transaction } from "./types";
+import type { Category, Debt, Transaction } from "./types";
 import { isOwnExpense } from "./income";
 
 /**
@@ -119,4 +119,18 @@ export function outstandingBeforePayday(due: DueStatus[]): number {
   return due
     .filter((d) => d.state !== "paid")
     .reduce((s, d) => s + (d.outstanding ?? 0), 0);
+}
+
+/**
+ * What a debt asks for at its next due date. On a debt repaid in fixed
+ * monthly amounts that is one instalment, not the whole balance: a car loan
+ * of RM12,000 does not fall due before payday, RM400 of it does. The final
+ * instalment is capped at whatever is actually left.
+ */
+export function amountDueNow(
+  d: Pick<Debt, "amount" | "installmentAmount">,
+): number {
+  if (d.installmentAmount && d.installmentAmount > 0)
+    return Math.min(d.installmentAmount, d.amount);
+  return d.amount;
 }

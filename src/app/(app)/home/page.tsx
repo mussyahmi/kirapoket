@@ -41,7 +41,7 @@ import {
   sumGiftIncome,
   heldForOthersBalance,
 } from "@/lib/income";
-import { dueThisCycle } from "@/lib/dueDates";
+import { amountDueNow, dueThisCycle } from "@/lib/dueDates";
 import { toast } from "sonner";
 import { getSalaryCycleRange, deleteCycleStart } from "@/lib/firestore";
 import {
@@ -63,6 +63,18 @@ import { cn } from "@/lib/utils";
 import { l1Color, tint } from "@/lib/palette";
 
 const ACCOUNTS_COLLAPSE = 4;
+
+// Module scope, not inside the component: it closes over nothing, and as a
+// `const` in the body it was unreachable from the memos that run before it.
+const formatMoney = (n: number) => {
+  const v = parseFloat(n.toFixed(2));
+  return new Intl.NumberFormat("ms-MY", {
+    style: "currency",
+    currency: "MYR",
+    minimumFractionDigits: 2,
+  }).format(v === 0 ? 0 : v);
+};
+
 
 function DashboardPage() {
   const router = useRouter();
@@ -275,6 +287,7 @@ function DashboardPage() {
         date: b.date,
         daysAway: b.daysAway,
         overdue: b.state === "overdue",
+        prefix: null,
         progress:
           b.state === "partial" && b.expected
             ? `${formatMoney(b.paid)} of ${formatMoney(b.expected)} paid`
@@ -284,12 +297,22 @@ function DashboardPage() {
 
     // Money owed to a person sits in Debts, not on a category, but it is due
     // before payday just the same. Overdue is kept rather than filtered out.
-    // One row per person, mirroring the Debts page, which already groups this
-    // way. Four rows all reading "Wife" with nothing to tell them apart is a
-    // list you stop reading.
-    const owingByPerson = new Map<
+    //
+    // Grouped by person AND due date, never by person alone. Three debts to
+    // the same person falling on three different days are three different
+    // facts: collapsing them takes the earliest date for all of them, which
+    // reports money as overdue that is not yet due. Sharing a date is the
+    // only case where one row can honestly speak for several debts.
+    const owingByDue = new Map<
       string,
-      { total: number; n: number; date: Date }
+      {
+        person: string;
+        total: number;
+        balance: number;
+        count: number;
+        note?: string;
+        date: Date;
+      }
     >();
     for (const d of debts) {
       if (
@@ -299,26 +322,50 @@ function DashboardPage() {
         d.dueDate > endStr
       )
         continue;
-      const date = parseISO(d.dueDate);
-      const seen = owingByPerson.get(d.personName);
+      const key = `${d.personName}|${d.dueDate}`;
+      const seen = owingByDue.get(key);
+      // What falls due is one instalment, not the balance behind it.
+      const due = amountDueNow(d);
       if (seen) {
-        seen.total += d.amount;
-        seen.n += 1;
-        if (date < seen.date) seen.date = date;
+        seen.total += due;
+        seen.balance += d.amount;
+        seen.count += 1;
       } else {
-        owingByPerson.set(d.personName, { total: d.amount, n: 1, date });
+        owingByDue.set(key, {
+          person: d.personName,
+          total: due,
+          balance: d.amount,
+          count: 1,
+          note: d.note,
+          date: parseISO(d.dueDate),
+        });
       }
     }
-    const owing = [...owingByPerson.entries()].map(([name, v]) => ({
-      key: `debt:${name}`,
-      name,
-      amount: v.total,
-      date: v.date,
-      daysAway: differenceInCalendarDays(v.date, todayStart),
-      overdue: differenceInCalendarDays(v.date, todayStart) < 0,
-      progress: v.n > 1 ? `${v.n} items` : null,
-      href: "/debts",
-    }));
+    const owing = [...owingByDue.entries()].map(([key, v], i) => {
+      // "Me" names a row no better than a blank does. When one debt stands
+      // alone its note is what the person is actually looking for, so it
+      // takes the title and the name drops to the line below. A bucket of
+      // several can only be named by the person they are all owed to.
+      const alone = v.count === 1 && !!v.note;
+      return {
+        key: `debt:${key}:${i}`,
+        name: alone ? v.note! : v.person,
+        amount: v.total,
+        date: v.date,
+        daysAway: differenceInCalendarDays(v.date, todayStart),
+        overdue: differenceInCalendarDays(v.date, todayStart) < 0,
+        prefix: alone ? v.person : null,
+        // An instalment shown alone reads like the whole debt, so the balance
+        // it is chipping away at goes beside it.
+        progress:
+          v.count > 1
+            ? `${v.count} items`
+            : v.balance > v.total + 0.005
+              ? `${formatMoney(v.balance)} left in total`
+              : null,
+        href: "/debts",
+      };
+    });
 
     return [...bills, ...owing].sort(
       (a, b) => a.date.getTime() - b.date.getTime(),
@@ -507,15 +554,6 @@ function DashboardPage() {
     () => [...transactions].slice(0, 5),
     [transactions],
   );
-
-  const formatMoney = (n: number) => {
-    const v = parseFloat(n.toFixed(2));
-    return new Intl.NumberFormat("ms-MY", {
-      style: "currency",
-      currency: "MYR",
-      minimumFractionDigits: 2,
-    }).format(v === 0 ? 0 : v);
-  };
 
   const renderDelta = (
     current: number,
@@ -841,6 +879,16 @@ function DashboardPage() {
           borrowedLabel={nonIncomeLabel}
           gifts={gifts}
           heldForOthers={heldForOthers}
+          hrefs={(() => {
+            // Scoped to the cycle on screen, so tapping a line on a past
+            // cycle opens that cycle's transactions, not this one's.
+            const range = `from=${format(start, "yyyy-MM-dd")}&to=${format(end, "yyyy-MM-dd")}`;
+            return {
+              borrowed: `/transactions?source=borrowed,withdrawn&${range}`,
+              gifts: `/transactions?source=gift&${range}`,
+              held: `/transactions?source=held&${range}`,
+            };
+          })()}
         />
       )}
 
@@ -875,6 +923,7 @@ function DashboardPage() {
                         : "text-muted-foreground",
                     )}
                   >
+                    {b.prefix ? `${b.prefix} \u00b7 ` : ""}
                     {b.overdue
                       ? `${Math.abs(b.daysAway)} day${Math.abs(b.daysAway) === 1 ? "" : "s"} overdue`
                       : b.daysAway === 0

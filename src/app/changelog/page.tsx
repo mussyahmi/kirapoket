@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "28 October 2026";
+const LAST_UPDATED = "29 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -49,12 +49,24 @@ const releases: Release[] = [
         text: "Logging income you borrowed or withdrew from savings can now record the debt at the same time, so money you have to put back doesn't get forgotten",
       },
       {
+        type: "feat",
+        text: "Adding a transaction now shows what it does to that category's budget, both as you type and on the confirmation step, the same way it already showed your account balance",
+      },
+      {
         type: "fix",
         text: "Filtering transactions by a top-level category like Needs now returns everything underneath it, instead of coming back empty",
       },
       {
         type: "fix",
         text: "The date picker in the transaction form no longer stretches past the edge of the screen on a phone, which was cutting off the last week of the month",
+      },
+      {
+        type: "fix",
+        text: "Due before payday now reads one row per due date. A debt repaid monthly shows the instalment that is actually due rather than the whole balance, and money due later in the cycle is no longer flagged as overdue",
+      },
+      {
+        type: "fix",
+        text: "Deleting your account now also deletes your saved assistant conversations, which were being left behind. The privacy policy has been rewritten to spell out exactly what the assistant sends to Google and what it does not",
       },
     ],
   },

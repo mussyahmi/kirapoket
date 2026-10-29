@@ -7,6 +7,7 @@ import {
   GiftIcon,
   UsersIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { SpendMeter } from "@/components/common/SpendMeter";
@@ -72,6 +73,30 @@ export function Delta({
   );
 }
 
+/**
+ * A footer line that becomes a link when it has somewhere to go. Keeping the
+ * decision here means the three rows share one hover treatment rather than
+ * each growing its own.
+ */
+function FooterRow({
+  href,
+  className,
+  children,
+}: {
+  href?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const inner = cn("flex items-center gap-2", className);
+  return href ? (
+    <Link href={href} className={cn(inner, "transition-colors hover:brightness-125")}>
+      {children}
+    </Link>
+  ) : (
+    <div className={inner}>{children}</div>
+  );
+}
+
 export interface CycleSummaryProps {
   remaining: number;
   income: number;
@@ -98,6 +123,12 @@ export interface CycleSummaryProps {
    * reached the expenses figure above.
    */
   heldForOthers?: { held: number; paid: number; left: number };
+  /**
+   * Where each footer line leads. Omitted on the landing-page mock, which is
+   * a picture of the product rather than the product, so the rows stay inert
+   * there and become links in the app.
+   */
+  hrefs?: { borrowed?: string; gifts?: string; held?: string };
 }
 
 export function CycleSummaryCard({
@@ -112,6 +143,7 @@ export function CycleSummaryCard({
   borrowedLabel = "Borrowed or withdrawn this cycle",
   gifts = 0,
   heldForOthers,
+  hrefs,
 }: CycleSummaryProps) {
   const held = heldForOthers;
   const overpaid = held ? held.left < -0.005 : false;
@@ -235,7 +267,9 @@ export function CycleSummaryCard({
           )}
         </div>
         {borrowed > 0 && (
-          <div className="flex items-center gap-2 border-t border-border bg-warning-soft px-4 py-2.5">
+          <FooterRow
+            href={hrefs?.borrowed}
+            className="border-t border-border bg-warning-soft px-4 py-2.5">
             <TriangleAlertIcon className="size-4 shrink-0 text-warning-strong" />
             <p className="flex-1 text-xs text-warning-strong">
               {borrowedLabel}
@@ -243,10 +277,12 @@ export function CycleSummaryCard({
             <p className="text-xs font-semibold tabular-nums text-warning-strong">
               {money(borrowed)}
             </p>
-          </div>
+          </FooterRow>
         )}
         {gifts > 0 && (
-          <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">
+          <FooterRow
+            href={hrefs?.gifts}
+            className="border-t border-border px-4 py-2.5">
             <GiftIcon className="size-4 shrink-0 text-muted-foreground" />
             <p className="flex-1 text-xs text-muted-foreground">
               Income includes gifts
@@ -254,12 +290,13 @@ export function CycleSummaryCard({
             <p className="text-xs font-semibold tabular-nums text-muted-foreground">
               {money(gifts)}
             </p>
-          </div>
+          </FooterRow>
         )}
         {held && held.held > 0 && (
-          <div
+          <FooterRow
+            href={hrefs?.held}
             className={cn(
-              "flex items-center gap-2 border-t border-border px-4 py-2.5",
+              "border-t border-border px-4 py-2.5",
               overpaid && "bg-warning-soft",
             )}
           >
@@ -284,7 +321,7 @@ export function CycleSummaryCard({
             >
               {money(Math.abs(held.left))}
             </p>
-          </div>
+          </FooterRow>
         )}
       </CardContent>
     </Card>

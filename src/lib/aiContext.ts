@@ -14,7 +14,11 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { sumEarnedIncome, isOwnExpense, heldForOthersBalance } from "./income";
-import { dueThisCycle, outstandingBeforePayday } from "./dueDates";
+import {
+  amountDueNow,
+  dueThisCycle,
+  outstandingBeforePayday,
+} from "./dueDates";
 
 const rm = (n: number) =>
   `RM${new Intl.NumberFormat("en-MY", {
@@ -157,7 +161,8 @@ export function buildAssistantContext({
 
   lines.push("COMMITTED BEFORE PAYDAY:");
   const billTotal = outstandingBeforePayday(bills);
-  const debtTotal = dueSoon.reduce((s, d) => s + d.amount, 0);
+  // One instalment is what is committed before payday, not the balance.
+  const debtTotal = dueSoon.reduce((s, d) => s + amountDueNow(d), 0);
   if (dueSoon.length || bills.length) {
     for (const b of bills) {
       const amount =
@@ -170,31 +175,50 @@ export function buildAssistantContext({
         `- ${b.category.name}: ${amount}, due ${format(b.date, "d MMM")} (${whenLabel(b.daysAway)})`,
       );
     }
-    // Same grouping as the debt list below: one line per person, carrying the
-    // soonest due date among their entries.
-    const owingByPerson = new Map<
+    // Grouped by person AND due date. Folding several due dates into one line
+    // forces a single date to stand for all of them, and the model then reads
+    // the whole total as overdue when only part of it is. Debts to one person
+    // sharing a date are the only ones that can share a line.
+    const owingByDue = new Map<
       string,
-      { total: number; n: number; due: string }
+      {
+        person: string;
+        total: number;
+        balance: number;
+        n: number;
+        due: string;
+      }
     >();
     for (const d of dueSoon) {
-      const seen = owingByPerson.get(d.personName);
+      const key = `${d.personName}|${d.dueDate!}`;
+      const seen = owingByDue.get(key);
       if (seen) {
-        seen.total += d.amount;
+        seen.total += amountDueNow(d);
+        seen.balance += d.amount;
         seen.n += 1;
-        if (d.dueDate! < seen.due) seen.due = d.dueDate!;
       } else {
-        owingByPerson.set(d.personName, {
-          total: d.amount,
+        owingByDue.set(key, {
+          person: d.personName,
+          total: amountDueNow(d),
+          balance: d.amount,
           n: 1,
           due: d.dueDate!,
         });
       }
     }
-    for (const [name, v] of owingByPerson) {
+    for (const v of [...owingByDue.values()].sort((a, b) =>
+      a.due.localeCompare(b.due),
+    )) {
       const days = differenceInCalendarDays(parseISO(v.due), new Date());
       const count = v.n > 1 ? ` across ${v.n} entries` : "";
+      // Say the instalment and the balance separately, or the model treats
+      // whichever number it sees as the amount owed in full.
+      const ofBalance =
+        v.balance > v.total + 0.005
+          ? `, an instalment of ${rm(v.balance)} still owed overall`
+          : "";
       lines.push(
-        `- ${name}: ${rm(v.total)}${count}, earliest due ${format(parseISO(v.due), "d MMM")} (${whenLabel(days)})`,
+        `- ${v.person}: ${rm(v.total)}${count} due ${format(parseISO(v.due), "d MMM")} (${whenLabel(days)})${ofBalance}`,
       );
     }
     const committed = billTotal + debtTotal;

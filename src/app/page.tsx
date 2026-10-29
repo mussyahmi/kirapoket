@@ -34,6 +34,7 @@ import {
   HandCoins,
   Target,
   Users,
+  CalendarClock,
 } from "lucide-react";
 
 // ─── Google logo SVG ─────────────────────────────────────────────────────────
@@ -222,6 +223,23 @@ const MOCK_RECENT = [
   },
 ];
 
+const MOCK_DUE = [
+  {
+    name: "Internet bill",
+    when: "2 days overdue",
+    amount: "RM 120.00",
+    overdue: true,
+    sub: null as string | null,
+  },
+  {
+    name: "Car insurance",
+    when: "Aiman \u00b7 Due tomorrow",
+    amount: "RM 300.00",
+    overdue: false,
+    sub: "RM 900.00 left in total",
+  },
+];
+
 function MockCard({
   children,
   title,
@@ -282,7 +300,7 @@ function MockDashboard() {
             <div className="flex items-center justify-between px-1">
               <ChevronLeft className="size-4 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
-                25 Mar – 24 Apr 2026
+                25 Sep – 24 Oct 2026
               </p>
               <span className="inline-flex h-7 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium">
                 <Download className="size-3.5" /> Report
@@ -300,6 +318,47 @@ function MockDashboard() {
               prevIncome={4300}
               prevExpenses={2455}
             />
+
+            {/* due before payday, the card 0.19 added. Figures invented:
+              nothing in this shot comes from a real ledger. */}
+            <MockCard
+              title="Due before payday"
+              action={
+                <CalendarClock className="size-4 shrink-0 text-muted-foreground" />
+              }
+            >
+              <div className="space-y-3">
+                {MOCK_DUE.map(({ name, when, amount, overdue, sub }) => (
+                  <div
+                    key={name}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-foreground">{name}</p>
+                      <p
+                        className={
+                          overdue
+                            ? "text-xs font-medium text-danger"
+                            : "text-xs text-muted-foreground"
+                        }
+                      >
+                        {when}
+                        {sub ? ` \u00b7 ${sub}` : ""}
+                      </p>
+                    </div>
+                    <p
+                      className={
+                        overdue
+                          ? "shrink-0 text-sm font-semibold tabular-nums text-danger"
+                          : "shrink-0 text-sm font-semibold tabular-nums"
+                      }
+                    >
+                      {amount}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </MockCard>
 
             {/* accounts */}
             <MockCard
@@ -535,7 +594,7 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="flex gap-3 items-start p-4 rounded-xl border border-border bg-card/60">
+    <div className="flex h-full gap-3 items-start p-4 rounded-xl border border-border bg-card/60">
       <div className="shrink-0 size-9 rounded-lg bg-primary/10 flex items-center justify-center">
         <Icon className="size-4 text-primary" />
       </div>
@@ -913,7 +972,7 @@ export default function LandingPage() {
                 >
                   Track spending by your salary cycle, not the calendar.
                   Organise every cent into Needs, Wants, and Savings, with
-                  budgets, an AI assistant, and a shared partner view.
+                  budgets, bill due dates, and a shared partner view.
                 </p>
               </div>
 
@@ -990,12 +1049,22 @@ export default function LandingPage() {
                   <FeatureCard
                     icon={HandCoins}
                     title="Debt Tracker"
-                    desc="Track what you owe and what's owed to you, with Pay and Collect flows."
+                    desc="What you owe and what's owed to you. Set a monthly instalment and it counts the payments down."
                   />
                 </div>
                 <div
                   className="anim-fade-up"
                   style={{ animationDelay: "700ms" }}
+                >
+                  <FeatureCard
+                    icon={CalendarClock}
+                    title="Bills and due dates"
+                    desc="Give a bill its due day and see what is still unpaid before payday. Read from your spending, nothing to tick off."
+                  />
+                </div>
+                <div
+                  className="anim-fade-up"
+                  style={{ animationDelay: "760ms" }}
                 >
                   <FeatureCard
                     icon={Wallet}
@@ -1004,8 +1073,8 @@ export default function LandingPage() {
                   />
                 </div>
                 <div
-                  className="anim-fade-up"
-                  style={{ animationDelay: "760ms" }}
+                  className="anim-fade-up sm:col-span-2"
+                  style={{ animationDelay: "820ms" }}
                 >
                   <FeatureCard
                     icon={Users}

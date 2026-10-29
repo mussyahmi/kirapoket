@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Debt } from "@/lib/types";
+import { amountDueNow } from "@/lib/dueDates";
 
 type Direction = "i_owe" | "they_owe";
 
@@ -756,7 +757,10 @@ export default function DebtsPage() {
 
   const openPay = (debt: Debt) => {
     setPayTarget(debt);
-    setPayAmount(String(debt.amount));
+    // On an instalment debt the usual payment is one instalment, not the
+    // whole balance. Capped at what is left, so the final payment defaults
+    // to the remainder rather than overshooting.
+    setPayAmount(String(amountDueNow(debt)));
     setPayAccountId(debt.accountId ?? "");
   };
 
@@ -1232,10 +1236,9 @@ export default function DebtsPage() {
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  For a debt repaid in fixed amounts, like RM707 a month
-                  against RM2,121. KiraPoket works out how many payments are
-                  left from what you still owe, and moves the due date on a
-                  month each time you pay.
+                  For a debt repaid in fixed monthly amounts. KiraPoket counts
+                  the payments left and moves the due date on each time you
+                  pay.
                 </p>
               </div>
             )}
@@ -1412,6 +1415,14 @@ export default function DebtsPage() {
                   onChange={(e) => setPayAmount(e.target.value)}
                   required
                 />
+                {payTarget.installmentAmount ? (
+                  <p className="text-xs text-muted-foreground">
+                    One instalment of {fmt(payTarget.installmentAmount)}.{" "}
+                    {paymentsLeft(payTarget)} payment
+                    {paymentsLeft(payTarget) === 1 ? "" : "s"} left, including
+                    this one.
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">

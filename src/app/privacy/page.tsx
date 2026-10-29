@@ -11,7 +11,7 @@ const SECTIONS = [
   },
   {
     title: "2. What We Collect",
-    body: `When you sign in with Google, we receive your name, email address, and profile photo from your Google account. As you use the app, we store the financial data you enter: accounts, transactions, categories, budgets, debts, and salary cycle settings. We also maintain an activity log of significant actions (e.g. creating a transaction, inviting a partner) for debugging and audit purposes.
+    body: `When you sign in with Google, we receive your name, email address, and profile photo from your Google account. As you use the app, we store the financial data you enter: accounts, transactions, categories, budgets, debts, and salary cycle settings. If you use the AI assistant, your conversations with it are saved to your account so you can return to them, until you delete them. We also maintain an activity log of significant actions (e.g. creating a transaction, inviting a partner) for debugging and audit purposes.
 
 We do not collect payment card details, identity documents, or any sensitive personal data beyond what you voluntarily enter.`,
   },
@@ -19,7 +19,7 @@ We do not collect payment card details, identity documents, or any sensitive per
     title: "3. How We Use Your Data",
     body: `Your data is used solely to provide the KiraPoket service, displaying your spending summaries, budgets, and insights. We do not sell, rent, or share your data with third parties for marketing or advertising.
 
-AI-powered spending insights use your aggregated category totals (not raw transaction details) as context for Gemini, Google's AI service.`,
+The AI assistant sends a summary of your finances to Gemini, Google's AI service, so it can answer questions about them. That summary is more than category totals: it includes your account names and balances, your salary cycle, your largest transactions for the current cycle with their dates, amounts, categories and any notes you wrote on them, the merchant or description text you enter often, the names of people recorded in your debts and what is owed, and any notes you have written for the assistant. It is sent only when you send a message. KiraPoket currently uses the free tier of the Gemini API, under which Google may use what is sent to improve their services, so treat the assistant as less private than the rest of the app. If you would rather none of this leave the app, do not use the assistant: every other part of KiraPoket works without it.`,
   },
   {
     title: "4. Who Can See Your Data",
@@ -35,7 +35,7 @@ AI-powered spending insights use your aggregated category totals (not raw transa
   },
   {
     title: "6. Data Retention",
-    body: `We retain your data for as long as your account is active. If you delete your account via Settings → Delete Account, all your data (accounts, transactions, categories, budgets, debts, activity logs, and profile) is permanently deleted from Firestore. This action is irreversible.`,
+    body: `We retain your data for as long as your account is active. If you delete your account via Settings → Delete Account, all your data (accounts, transactions, categories, budgets, debts, assistant conversations, activity logs, and profile) is permanently deleted from Firestore. This action is irreversible.`,
   },
   {
     title: "7. Your Rights (PDPA 2010)",
@@ -53,7 +53,7 @@ To exercise any of these rights, email us at mussyahmi31@gmail.com.`,
     body: `KiraPoket uses the following third-party services, each governed by their own privacy policies:
 
 • Google Firebase (Auth, Firestore, Hosting), data storage and authentication
-• Google Gemini API, AI-powered spending insights
+• Google Gemini API, the AI assistant
 • Google Sign-In, authentication`,
   },
   {
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-sm text-muted-foreground">
-          Effective date: 5 May 2026 &nbsp;·&nbsp; KiraPoket
+          Effective date: 29 October 2026 &nbsp;·&nbsp; KiraPoket
         </p>
       </div>
 

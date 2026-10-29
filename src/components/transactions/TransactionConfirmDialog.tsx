@@ -28,6 +28,10 @@ export type TxConfirmSummary = {
   categoryPath?: string;
   /** Income only: "Earned", "Borrowed", etc. */
   sourceLabel?: string;
+  /** Set when the source is kept out of the income total. */
+  sourceExcluded?: boolean;
+  /** A second record this save will create, named so it is never a surprise. */
+  alsoCreates?: string;
   fromAccount?: string;
   toAccount?: string;
   note?: string;
@@ -146,7 +150,14 @@ export function TransactionConfirmDialog({
                 <Row label="Category">{summary.categoryPath}</Row>
               )}
               {summary.sourceLabel && (
-                <Row label="Source">{summary.sourceLabel}</Row>
+                <Row label="Source">
+                  {summary.sourceLabel}
+                  {summary.sourceExcluded && (
+                    <span className="block text-xs text-muted-foreground">
+                      Not counted as income
+                    </span>
+                  )}
+                </Row>
               )}
               {summary.note && <Row label="Note">{summary.note}</Row>}
             </div>
@@ -272,6 +283,16 @@ export function TransactionConfirmDialog({
                   </div>
                 );
               })()}
+
+            {/* Saving this writes a second record. Saying so here is the only
+                chance to see it before it happens. */}
+            {summary.alsoCreates && (
+              <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+                <p className="text-xs text-muted-foreground">
+                  Also creates: {summary.alsoCreates}
+                </p>
+              </div>
+            )}
           </div>
         )}
 

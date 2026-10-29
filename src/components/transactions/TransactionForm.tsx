@@ -64,6 +64,7 @@ export function TransactionForm({
     transactions,
     createTransaction,
     editTransaction,
+    createDebt,
     userProfile,
     loadingProfile,
     loadingAccounts,
@@ -226,6 +227,42 @@ export function TransactionForm({
   }, [accounts, activeAccounts, accountId, toAccountId]);
 
   const selectedCategoryId = l3Id ?? l2Id ?? l1Id ?? null;
+
+  /**
+   * What this expense does to the chosen category's budget, in the same shape
+   * as the account balance hint above it: knowing the account can cover it
+   * says nothing about whether the budget can.
+   *
+   * Live here, frozen at confirm time, but the same `computeBudgetImpact`
+   * either way so the two can never disagree.
+   */
+  const budgetHint = useMemo(() => {
+    const amt = parseFloat(amount);
+    if (txType !== "expense" || forOthers || !selectedCategoryId) return null;
+    const salaryDay = userProfile?.salaryDay ?? 25;
+    const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
+      cycleStarts: userProfile?.cycleStarts,
+    });
+    return computeBudgetImpact({
+      categories,
+      transactions,
+      categoryId: selectedCategoryId,
+      amount: Number.isFinite(amt) && amt > 0 ? amt : 0,
+      cycleStartStr: format(start, "yyyy-MM-dd"),
+      cycleEndStr: format(end, "yyyy-MM-dd"),
+      excludeTransactionId: editId,
+    });
+  }, [
+    txType,
+    forOthers,
+    selectedCategoryId,
+    categories,
+    transactions,
+    amount,
+    selectedDate,
+    userProfile,
+    editId,
+  ]);
 
   // Picking an option reveals the step it unlocks: the form is taller than the
   // sheet, so the next question is usually just below the fold and easy to miss.
@@ -517,6 +554,13 @@ export function TransactionForm({
           : txType === "expense" && forOthers
             ? "Paid for others"
             : undefined,
+      sourceExcluded: txType === "income" && !sourceMeta.isIncome,
+      alsoCreates:
+        txType === "income" &&
+        alsoDebt &&
+        (incomeSource === "borrowed" || incomeSource === "withdrawn")
+          ? `a debt of ${formatMoney(amt)} to ${debtPerson.trim() || "Me"}`
+          : undefined,
       fromAccount: accountName(accountId),
       toAccount: txType === "transfer" ? accountName(toAccountId) : undefined,
       note: note.trim() || undefined,
@@ -527,6 +571,10 @@ export function TransactionForm({
     txType,
     sourceMeta,
     forOthers,
+    alsoDebt,
+    incomeSource,
+    debtPerson,
+    budgetHint,
     selectedDate,
     time,
     accountId,
@@ -648,7 +696,35 @@ export function TransactionForm({
         toast.success("Transaction updated.");
       } else {
         savedId = (await createTransaction(payload)).id;
-        toast.success("Transaction added.");
+        // Borrowed or withdrawn money the user said has to go back. Created
+        // after the transaction so a failed debt write can never leave the
+        // ledger missing the money that actually arrived.
+        if (
+          txType === "income" &&
+          alsoDebt &&
+          (incomeSource === "borrowed" || incomeSource === "withdrawn")
+        ) {
+          const person = debtPerson.trim() || "Me";
+          try {
+            await createDebt({
+              personName: person,
+              amount: parseFloat(amount),
+              originalAmount: parseFloat(amount),
+              direction: "i_owe",
+              date,
+              dueDate: debtDueDate || undefined,
+              note: note.trim() || undefined,
+              settled: false,
+            });
+            toast.success(`Transaction added. Debt to ${person} recorded.`);
+          } catch {
+            toast.warning(
+              "Transaction added, but the debt could not be saved. Add it on the Debts page.",
+            );
+          }
+        } else {
+          toast.success("Transaction added.");
+        }
       }
       setConfirmOpen(false);
       onDone(savedId);
@@ -772,6 +848,57 @@ export function TransactionForm({
               </button>
             ))}
           </div>
+          {/* Inside the Item block, not after it, so it sits the same 12px
+              from its pills that the balance hint sits from the accounts. */}
+          {budgetHint && (
+            <div
+              className={cn(
+                "mt-3 rounded-lg border px-3 py-3 text-sm",
+                budgetHint.projected > budgetHint.budget + 0.005
+                  ? "border-destructive/40 bg-destructive/5"
+                  : "border-border bg-muted/40",
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">
+                  {budgetHint.categoryName} budget
+                </span>
+                <span className="font-medium tabular-nums">
+                  {formatMoney(budgetHint.budget)}
+                </span>
+              </div>
+              <div
+                className={cn(
+                  "mt-2 flex items-center justify-between border-t pt-2",
+                  budgetHint.projected > budgetHint.budget + 0.005
+                    ? "border-destructive/30"
+                    : "border-border/60",
+                )}
+              >
+                <span className="text-muted-foreground">
+                  {budgetHint.projected > budgetHint.spent
+                    ? "After this expense"
+                    : "Spent this cycle"}
+                </span>
+                <span
+                  className={cn(
+                    "font-medium tabular-nums",
+                    budgetHint.projected > budgetHint.budget + 0.005
+                      ? "text-destructive"
+                      : "",
+                  )}
+                >
+                  {formatMoney(budgetHint.projected)}
+                </span>
+              </div>
+              {budgetHint.projected > budgetHint.budget + 0.005 && (
+                <p className="mt-2 text-xs text-destructive">
+                  Over budget by{" "}
+                  {formatMoney(budgetHint.projected - budgetHint.budget)}.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

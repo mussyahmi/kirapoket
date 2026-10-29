@@ -48,6 +48,7 @@ import {
 import { RowSkeleton, LoadError } from "@/components/common/Skeletons";
 import { cn } from "@/lib/utils";
 import { incomeSourceOf, incomeSourceMeta } from "@/lib/income";
+import type { IncomeSource } from "@/lib/types";
 import { l1Color } from "@/lib/palette";
 import type { Transaction } from "@/lib/types";
 
@@ -83,7 +84,8 @@ function TransactionsPage() {
     searchParams.get("account") !== null ||
     searchParams.get("category") !== null ||
     searchParams.get("from") !== null ||
-    searchParams.get("to") !== null;
+    searchParams.get("to") !== null ||
+    searchParams.get("source") !== null;
 
   // Read once and immediately clear — only relevant when returning from edit
   const editReturn = useMemo(() => {
@@ -109,6 +111,13 @@ function TransactionsPage() {
   const [filterCategory, setFilterCategory] = useState<string>(() => {
     if (hasUrlParams) return searchParams.get("category") ?? "all";
     return editReturn?.filterCategory ?? "all";
+  });
+  // Income source, arrived at by tapping a line on the home summary. Comma
+  // separated, because "borrowed or withdrawn" is reported as one figure
+  // there and has to come back as one list here.
+  const [filterSources, setFilterSources] = useState<string[]>(() => {
+    const raw = searchParams.get("source");
+    return raw ? raw.split(",").filter(Boolean) : [];
   });
   const [dateFrom, setDateFrom] = useState(() => {
     if (hasUrlParams) return searchParams.get("from") ?? "";
@@ -213,6 +222,7 @@ function TransactionsPage() {
     filterType !== "all" ||
     filterAccount !== "all" ||
     filterCategory !== "all" ||
+    filterSources.length > 0 ||
     !datesAtDefault;
 
   // The default view is "this cycle", which is empty for the first few days of
@@ -237,6 +247,7 @@ function TransactionsPage() {
     setFilterType("all");
     setFilterAccount("all");
     setFilterCategory("all");
+    setFilterSources([]);
     setDateFrom(defaultDates.from);
     setDateTo(defaultDates.to);
     resetVisible();
@@ -311,6 +322,10 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
+      if (filterSources.length > 0) {
+        if (t.type !== "income") return false;
+        if (!filterSources.includes(incomeSourceOf(t))) return false;
+      }
       if (
         filterAccount !== "all" &&
         t.accountId !== filterAccount &&
@@ -328,6 +343,7 @@ function TransactionsPage() {
   }, [
     transactions,
     filterType,
+    filterSources,
     filterAccount,
     matchingCategoryIds,
     dateFrom,
@@ -665,6 +681,27 @@ function TransactionsPage() {
               className="text-sm pointer-coarse:text-base bg-transparent outline-none w-full [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </label>
+        </div>
+      )}
+
+      {/* Source has no control of its own, so arriving from the home summary
+          would otherwise filter the list with nothing on screen to say why. */}
+      {filterSources.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {filterSources.map((src) => (
+            <button
+              key={src}
+              type="button"
+              onClick={() => {
+                setFilterSources((prev) => prev.filter((s) => s !== src));
+                resetVisible();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/20"
+            >
+              {incomeSourceMeta(src as IncomeSource).label}
+              <XIcon className="size-3" />
+            </button>
+          ))}
         </div>
       )}
 

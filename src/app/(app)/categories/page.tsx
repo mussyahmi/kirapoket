@@ -32,17 +32,18 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
-import { WeekdayPicker } from "@/components/budget/WeekdayPicker";
+import { CategoryDetailFields } from "@/components/categories/CategoryDetailFields";
+import { CategoryDetailRows } from "@/components/categories/CategoryDetailRows";
+import { isOwnExpense } from "@/lib/income";
+import { format } from "date-fns";
 import { useCurrentCycle } from "@/hooks/useCurrentCycle";
 import {
   effectiveCatBudget,
-  dailyBudgetDays,
   countWeekdays,
   initialWeekdays,
   type CycleRange,
 } from "@/lib/budget";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -103,6 +104,8 @@ const DEFAULT_FORM: CategoryFormData = {
 interface L3ItemProps {
   item: Category;
   l1Type: L1Type;
+  /** This cycle's spend, so the detail panel can show it beside the budget. */
+  spent?: number;
   openEdit: (cat: Category) => void;
   setDeleteTarget: (cat: Category) => void;
   readOnly?: boolean;
@@ -119,6 +122,7 @@ function fmtItemBudget(c: Category, cycle: CycleRange): string | null {
 function L3Item({
   item,
   l1Type,
+  spent,
   openEdit,
   setDeleteTarget,
   readOnly,
@@ -133,12 +137,6 @@ function L3Item({
     transition,
     isDragging,
   } = useSortable({ id: item.id });
-
-  const hasDetails =
-    item.budget !== undefined ||
-    item.dueDay !== undefined ||
-    item.note ||
-    (item.links && item.links.length > 0);
 
   return (
     <>
@@ -207,69 +205,7 @@ function L3Item({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            {!hasDetails && (
-              <p className="text-sm text-muted-foreground">
-                No details added yet.
-              </p>
-            )}
-            {item.budget !== undefined && (
-              <div className="flex items-center justify-between rounded-lg px-4 py-3 bg-muted/50">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Budget
-                </span>
-                <div className="text-right">
-                  <p className="text-lg font-bold tabular-nums">
-                    {fmtItemBudget(item, cycle)?.replace("· ", "")}
-                  </p>
-                  {item.budgetType === "daily" && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      RM {item.budget?.toFixed(2)}/day ×{" "}
-                      {dailyBudgetDays(item, cycle)} days this cycle
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            {item.dueDay !== undefined && (
-              <div className="flex items-center justify-between rounded-lg px-4 py-3 bg-muted/50">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Due
-                </span>
-                <p className="text-sm font-semibold tabular-nums">
-                  Day {item.dueDay} each month
-                </p>
-              </div>
-            )}
-            {item.note && (
-              <div className="rounded-lg bg-muted/50 px-4 py-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                  Note
-                </p>
-                <p className="text-sm whitespace-pre-wrap break-words">
-                  {item.note}
-                </p>
-              </div>
-            )}
-            {item.links && item.links.length > 0 && (
-              <div className="rounded-lg bg-muted/50 px-4 py-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                  Links
-                </p>
-                <div className="space-y-1">
-                  {item.links.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-sm text-primary truncate link-underline"
-                    >
-                      {link}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            <CategoryDetailRows category={item} cycle={cycle} spent={spent} />
             <div className="flex gap-2 pt-1">
               <Link
                 href={`/transactions?category=${item.id}`}
@@ -319,6 +255,7 @@ interface L2RowProps {
   cat: Category;
   l1Type: L1Type;
   l3: Category[];
+  spentOf: (id: string) => number;
   isOpen: boolean;
   subtotal: number;
   isProtected: boolean;
@@ -339,6 +276,7 @@ function L2Row({
   cat,
   l1Type,
   l3,
+  spentOf,
   isOpen,
   subtotal,
   isProtected,
@@ -464,6 +402,7 @@ function L2Row({
                   key={item.id}
                   item={item}
                   l1Type={l1Type}
+                  spent={spentOf(item.id)}
                   openEdit={openEdit}
                   setDeleteTarget={setDeleteTarget}
                   readOnly={readOnly}
@@ -529,6 +468,21 @@ export default function CategoriesPage() {
 
   const cycle = useCurrentCycle();
   const effectiveBudget = (c: Category): number => effectiveCatBudget(c, cycle);
+
+  // This cycle's spend per level-3 category, so a category's detail panel can
+  // show what has gone through it, the same as the Budget page does.
+  const spentByL3 = useMemo(() => {
+    const from = format(cycle.start, "yyyy-MM-dd");
+    const to = format(cycle.end, "yyyy-MM-dd");
+    const out: Record<string, number> = {};
+    for (const t of transactions) {
+      if (!isOwnExpense(t) || !t.categoryId) continue;
+      if (t.date < from || t.date > to) continue;
+      out[t.categoryId] = (out[t.categoryId] ?? 0) + t.amount;
+    }
+    return out;
+  }, [transactions, cycle]);
+  const spentOf = (id: string) => spentByL3[id] ?? 0;
 
   const l2Subtotal = (l2Id: string): number =>
     categories
@@ -852,6 +806,7 @@ export default function CategoriesPage() {
                               cat={cat}
                               l1Type={l1Type}
                               l3={childrenOf(cat.id, 3)}
+                              spentOf={spentOf}
                               isOpen={!!expanded[cat.id]}
                               subtotal={l2Subtotal(cat.id)}
                               isProtected={PROTECTED_L2_NAMES.includes(
@@ -940,120 +895,16 @@ export default function CategoriesPage() {
             )}
 
             {dialogContext?.level === 3 && (
-              <div className="space-y-3">
-                {/* Budget type toggle */}
-                <div className="space-y-2">
-                  <Label>Budget (optional)</Label>
-                  <div className="flex rounded-lg border border-border overflow-hidden">
-                    {(["cycle", "daily"] as const).map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setForm({ ...form, budgetType: t })}
-                        className={cn(
-                          "flex-1 py-2 text-sm font-medium transition-colors",
-                          form.budgetType === t
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background text-muted-foreground hover:bg-muted",
-                        )}
-                      >
-                        {t === "cycle" ? "Whole cycle" : "Per day"}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {form.budgetType === "cycle"
-                      ? "One amount for the whole cycle, like RM400 for groceries."
-                      : "An amount for each day you pick, like RM15 for lunch on workdays."}
-                  </p>
-                </div>
-
-                {form.budgetType === "cycle" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="cat-budget">Amount (MYR)</Label>
-                    <Input
-                      id="cat-budget"
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={form.budget}
-                      onChange={(e) =>
-                        setForm({ ...form, budget: e.target.value })
-                      }
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cat-budget-daily">
-                        Amount / day (MYR)
-                      </Label>
-                      <Input
-                        id="cat-budget-daily"
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        value={form.budget}
-                        onChange={(e) =>
-                          setForm({ ...form, budget: e.target.value })
-                        }
-                      />
-                    </div>
-                    <WeekdayPicker
-                      value={form.budgetWeekdays}
-                      onChange={(days) =>
-                        setForm({ ...form, budgetWeekdays: days })
-                      }
-                      amount={parseFloat(form.budget) || 0}
-                      cycle={cycle}
-                    />
-                  </div>
-                )}
-
-                {/* A bill, not an allowance. Sits with the budget because the
-                    two work together: the budget is the amount expected, and
-                    this is when it is expected by. */}
-                <div className="space-y-2">
-                  <Label htmlFor="cat-due-day">Due day (optional)</Label>
-                  <Input
-                    id="cat-due-day"
-                    type="number"
-                    inputMode="numeric"
-                    min="1"
-                    max="31"
-                    placeholder="e.g. 15"
-                    value={form.dueDay}
-                    onChange={(e) =>
-                      setForm({ ...form, dueDay: e.target.value })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    For bills that come round every month, like a loan or a
-                    utility. KiraPoket works out whether it has been paid from
-                    what you spend in this category
-                    {form.budget.trim() && form.budgetType === "cycle"
-                      ? ", counting it settled once the budget amount is reached."
-                      : ". Set a budget too and it can tell part paid from paid."}
-                  </p>
-                </div>
-              </div>
+              <CategoryDetailFields
+                form={form}
+                setForm={setForm}
+                cycle={cycle}
+                idPrefix="cat"
+              />
             )}
             {dialogContext?.level === 3 && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="cat-note">Note (optional)</Label>
-                  <Textarea
-                    id="cat-note"
-                    placeholder="Add a note..."
-                    rows={3}
-                    value={form.note}
-                    onChange={(e) => setForm({ ...form, note: e.target.value })}
-                  />
-                </div>
+
                 <div className="space-y-2">
                   <Label>Links (optional)</Label>
                   <div className="space-y-2">

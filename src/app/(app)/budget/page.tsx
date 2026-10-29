@@ -34,15 +34,14 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import {
   effectiveCatBudget,
-  dailyBudgetDays,
   countWeekdays,
   initialWeekdays,
 } from "@/lib/budget";
 import { useCurrentCycle } from "@/hooks/useCurrentCycle";
-import { WeekdayPicker } from "@/components/budget/WeekdayPicker";
+import { CategoryDetailFields } from "@/components/categories/CategoryDetailFields";
+import { CategoryDetailRows } from "@/components/categories/CategoryDetailRows";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,6 +63,7 @@ interface L3EditForm {
   budgetType: "cycle" | "daily";
   budget: string;
   budgetWeekdays: number[];
+  dueDay: string;
   note: string;
   links: string[];
 }
@@ -234,6 +234,7 @@ export default function BudgetPage() {
     budgetType: "cycle",
     budget: "",
     budgetWeekdays: [],
+    dueDay: "",
     note: "",
     links: [],
   });
@@ -257,6 +258,7 @@ export default function BudgetPage() {
       budgetType: cat.budgetType ?? "cycle",
       budget: cat.budget !== undefined ? String(cat.budget) : "",
       budgetWeekdays: initialWeekdays(cat),
+      dueDay: cat.dueDay !== undefined ? String(cat.dueDay) : "",
       note: cat.note ?? "",
       links: cat.links ?? [],
     });
@@ -289,6 +291,17 @@ export default function BudgetPage() {
     const budgetDays = budgetWeekdays
       ? countWeekdays(budgetWeekdays, cycle)
       : undefined;
+    const dueDay = l3EditForm.dueDay.trim()
+      ? parseInt(l3EditForm.dueDay, 10)
+      : undefined;
+    if (
+      l3EditForm.dueDay.trim() &&
+      (isNaN(dueDay!) || dueDay! < 1 || dueDay! > 31)
+    ) {
+      toast.error("Due day must be a day of the month, 1 to 31.");
+      return;
+    }
+
     setL3EditSaving(true);
     try {
       await editCategory(l3EditTarget.id, {
@@ -299,6 +312,7 @@ export default function BudgetPage() {
         budgetWeekdays,
         // Legacy picked dates are superseded by weekdays; clear them on save
         budgetSelectedDates: undefined,
+        dueDay,
         note: l3EditForm.note.trim() || undefined,
         links:
           l3EditForm.links.filter((l) => l.trim()).length > 0
@@ -1190,9 +1204,7 @@ export default function BudgetPage() {
       {(() => {
         const l3 = selectedL3;
         if (!l3) return null;
-        const l3budget = effectiveCatBudget(l3, cycle);
         const l3spent = l3SpendingMap[l3.id] ?? 0;
-        const l3over = l3budget > 0 && l3spent > l3budget;
         const l1 = categories.find((c) => {
           const l2 = categories.find((x) => x.id === l3.parentId);
           return l2 && c.id === l2.parentId;
@@ -1216,77 +1228,11 @@ export default function BudgetPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                {l3budget > 0 && (
-                  <div className="rounded-xl px-4 py-3 flex items-center justify-between bg-muted/50">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-                      Budget
-                    </p>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">
-                        {fmt(l3budget)}
-                      </p>
-                      {l3.budgetType === "daily" && l3.budget !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {fmt(l3.budget)}/day × {dailyBudgetDays(l3, cycle)}{" "}
-                          days this cycle
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {l3spent > 0 && (
-                  <div
-                    className={cn(
-                      "rounded-xl px-4 py-3 flex items-center justify-between",
-                      l3over ? "bg-danger-soft" : "bg-success-soft",
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        "text-xs font-semibold tracking-widest uppercase",
-                        l3over ? "text-danger" : "text-success",
-                      )}
-                    >
-                      Spent
-                    </p>
-                    <p
-                      className={cn(
-                        "text-lg font-bold",
-                        l3over ? "text-danger" : "text-success",
-                      )}
-                    >
-                      {fmt(l3spent)}
-                    </p>
-                  </div>
-                )}
-                {l3.note && (
-                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-1">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-                      Note
-                    </p>
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {l3.note}
-                    </p>
-                  </div>
-                )}
-                {l3.links && l3.links.length > 0 && (
-                  <div className="rounded-xl px-4 py-3 bg-muted/50 space-y-2">
-                    <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
-                      Links
-                    </p>
-                    {l3.links.map((link, i) => (
-                      <a
-                        key={i}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm text-primary link-underline truncate"
-                      >
-                        {link}
-                      </a>
-                    ))}
-                  </div>
-                )}
+                <CategoryDetailRows
+                  category={l3}
+                  cycle={cycle}
+                  spent={l3spent}
+                />
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     variant="outline"
@@ -1335,88 +1281,12 @@ export default function BudgetPage() {
                 required
               />
             </div>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>Budget (optional)</Label>
-                <div className="flex rounded-lg border border-border overflow-hidden">
-                  {(["cycle", "daily"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() =>
-                        setL3EditForm({ ...l3EditForm, budgetType: t })
-                      }
-                      className={cn(
-                        "flex-1 py-2 text-sm font-medium transition-colors",
-                        l3EditForm.budgetType === t
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      {t === "cycle" ? "Whole cycle" : "Per day"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {l3EditForm.budgetType === "cycle"
-                    ? "One amount for the whole cycle, like RM400 for groceries."
-                    : "An amount for each day you pick, like RM15 for lunch on workdays."}
-                </p>
-              </div>
-              {l3EditForm.budgetType === "cycle" ? (
-                <div className="space-y-2">
-                  <Label>Amount (MYR)</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={l3EditForm.budget}
-                    onChange={(e) =>
-                      setL3EditForm({ ...l3EditForm, budget: e.target.value })
-                    }
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Amount / day (MYR)</Label>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={l3EditForm.budget}
-                      onChange={(e) =>
-                        setL3EditForm({ ...l3EditForm, budget: e.target.value })
-                      }
-                    />
-                  </div>
-                  <WeekdayPicker
-                    value={l3EditForm.budgetWeekdays}
-                    onChange={(days) =>
-                      setL3EditForm({ ...l3EditForm, budgetWeekdays: days })
-                    }
-                    amount={parseFloat(l3EditForm.budget) || 0}
-                    cycle={cycle}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="l3-note">Note (optional)</Label>
-              <Textarea
-                id="l3-note"
-                placeholder="Add a note..."
-                rows={3}
-                value={l3EditForm.note}
-                onChange={(e) =>
-                  setL3EditForm({ ...l3EditForm, note: e.target.value })
-                }
-              />
-            </div>
+            <CategoryDetailFields
+              form={l3EditForm}
+              setForm={setL3EditForm}
+              cycle={cycle}
+              idPrefix="l3"
+            />
             <div className="space-y-2">
               <Label>Links (optional)</Label>
               <div className="space-y-2">

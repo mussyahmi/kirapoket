@@ -847,6 +847,9 @@ export async function deleteAllUserData(uid: string): Promise<void> {
     "debts",
     "insights",
     "activities",
+    // Assistant chats are the user's own words about their money. Leaving
+    // them behind would make "all your data is deleted" untrue.
+    "conversations",
   ] as const;
   for (const col of collections) {
     const q = query(collection(db, col), where("userId", "==", uid));
