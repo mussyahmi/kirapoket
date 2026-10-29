@@ -80,6 +80,10 @@ const releases: Release[] = [
         type: "fix",
         text: "The assistant no longer guesses how much you'll spend before payday in the first few days of a cycle, when your fixed bills have just landed and the daily rate is nowhere near typical",
       },
+      {
+        type: "fix",
+        text: "The assistant no longer works out its own totals, which is where its wrong numbers came from, and it now answers a question like \"should I cook or eat out\" with an actual answer before the figures",
+      },
     ],
   },
   {
