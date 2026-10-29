@@ -84,6 +84,10 @@ const releases: Release[] = [
         type: "fix",
         text: "The assistant no longer works out its own totals, which is where its wrong numbers came from, and it now answers a question like \"should I cook or eat out\" with an actual answer before the figures",
       },
+      {
+        type: "fix",
+        text: "Budgets now tell the assistant whether you are spending faster than the cycle is passing, not just how much is left, so its advice has a reason behind it instead of a healthy-looking balance that argues the other way",
+      },
     ],
   },
   {

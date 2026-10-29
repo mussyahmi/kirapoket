@@ -375,13 +375,32 @@ export function buildAssistantContext({
         : diff > 0
           ? `OVER by ${rm(diff)}`
           : `${rm(-diff)} left`;
+    // "RM418.30 left" reads as permission, and the model recommended cooking
+    // anyway with nothing in the snapshot to point at. Money left says where
+    // the cycle ends up; pace says whether it is being spent faster than the
+    // days are passing, which is the part that answers "should I". A bill is
+    // excluded: it lands whole on its due day and was never going to arrive
+    // evenly. Suppressed in the first days for the same reason projections
+    // are, since a pro-rata share of a cycle that has barely started makes
+    // any spending at all look fast.
+    const cycleDays = daysElapsed + daysLeft;
+    let pace = "";
+    if (!c.dueDay && daysElapsed >= MIN_PROJECTION_DAYS && cycleDays > 0) {
+      const evenByNow = c.budget * (daysElapsed / cycleDays);
+      pace =
+        spent > evenByNow * 1.15
+          ? `, running ahead of an even pace (${rm(evenByNow)} would be even by day ${daysElapsed})`
+          : spent < evenByNow * 0.85
+            ? ", comfortably behind an even pace"
+            : ", about on an even pace";
+    }
     // Written as the finished sentence rather than as facts to assemble. Given
     // a spend here and a budget there, the model re-derives the spend from
     // whatever else is on screen: asked about Restaurant it reported RM116.50
     // spent, which is Restaurant plus Snacks & Drinks plus CelcomDigi, while
     // quoting this line's own remainder. Pairing the two figures in one
     // phrase leaves nothing to assemble.
-    return `spent ${rm(spent)} of ${rm(c.budget)} budget this cycle, ${verdict}${count}`;
+    return `spent ${rm(spent)} of ${rm(c.budget)} budget this cycle, ${verdict}${pace}${count}`;
   };
 
   lines.push("SPENDING BY CATEGORY (this cycle):");
