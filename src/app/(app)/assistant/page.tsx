@@ -76,10 +76,12 @@ const SUGGESTIONS: { label: string; prefill?: boolean }[] = [
 ];
 
 export default function AssistantPage() {
-  // Admin-only while the assistant is still being finished; everyone else
-  // keeps seeing the coming-soon page.
+  // Gated while the assistant is still being finished; everyone else keeps
+  // seeing the coming-soon page.
   const { user } = useAuth();
-  if (user?.uid !== ADMIN_UID) return <ComingSoon />;
+  const { ownProfile } = useApp();
+  if (user?.uid !== ADMIN_UID && !ownProfile?.assistantAccess)
+    return <ComingSoon />;
   return <AssistantChat />;
 }
 

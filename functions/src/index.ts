@@ -19,6 +19,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
+// How many guest rations are held back from the admin's own ceiling. Who the
+// guests are is not listed here: access is a flag on each user's Firestore
+// record, so nobody's address or uid ends up in source or in the bundle.
+const RESERVED_GUEST_SEATS = 1;
 
 // Per user. Deliberately a fraction of PROJECT_DAILY_LIMIT so one person
 // can't drink the whole project's daily allowance in a single sitting.
@@ -27,6 +31,15 @@ const DAILY_LIMIT = 5;
 // whole project, not per user. Sitting under it leaves room for retries and
 // for anything else calling the same key.
 const PROJECT_DAILY_LIMIT = 18;
+// Every guest's ration is carved out of the admin's own ceiling rather than
+// added on top of it, because the project cap is the real constraint: handing
+// someone 5 messages without taking 5 away would just mean whoever asks first
+// wins and the other gets a quota error. Taking it from the admin means the
+// guest's share is actually there when they come to use it.
+const ADMIN_DAILY_LIMIT = Math.max(
+  1,
+  PROJECT_DAILY_LIMIT - RESERVED_GUEST_SEATS * DAILY_LIMIT,
+);
 const MAX_MESSAGES = 20; // most recent turns kept for context
 const MODEL = "gemini-2.5-flash-lite";
 // Caps the reply, not the prompt. Without it a long answer is unbounded, and
@@ -137,9 +150,10 @@ function summarise(data: UsageDoc | undefined, isAdmin = false): AiUsageSummary 
   const sameDay = data?.date === day;
   const count = sameDay ? data?.count ?? 0 : 0;
   // The per-user cap exists to stop one person draining the project's daily
-  // allowance. The admin still has to live inside PROJECT_DAILY_LIMIT, but
-  // testing the assistant shouldn't burn a normal user's ration.
-  const limit = isAdmin ? PROJECT_DAILY_LIMIT : DAILY_LIMIT;
+  // allowance. The admin gets what is left of the project's day once every
+  // guest's ration has been set aside, so testing the assistant can never eat
+  // into a guest's share.
+  const limit = isAdmin ? ADMIN_DAILY_LIMIT : DAILY_LIMIT;
   return {
     messagesLeft: Math.max(0, limit - count),
     dailyLimit: limit,
@@ -185,14 +199,16 @@ export const chat = onRequest(
       return;
     }
 
-    // Admin-only while the assistant is unfinished. The page hides it from
-    // everyone else, but the endpoint is public, so it has to check too.
-    if (uid !== ADMIN_UID) {
-      res.status(403).json({ error: "The assistant isn't available yet." });
-      return;
-    }
-
+    // Gated while the assistant is unfinished. The page hides it from everyone
+    // else, but the endpoint is public, so it has to check too.
     const isAdmin = uid === ADMIN_UID;
+    if (!isAdmin) {
+      const profile = await db().collection("users").doc(uid).get();
+      if (profile.data()?.assistantAccess !== true) {
+        res.status(403).json({ error: "The assistant isn't available yet." });
+        return;
+      }
+    }
     const usageRef = db().collection("aiUsage").doc(uid);
     // Shared across every user: mirrors the project-wide quota on the API key.
     const projectRef = db().collection("aiUsage").doc("_project");

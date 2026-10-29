@@ -68,6 +68,15 @@ export interface UserProfile {
    * invents things. Sent verbatim as grounding context.
    */
   assistantNotes?: string;
+  /**
+   * Lets this account into the AI assistant while it is still gated. Held on
+   * the user's own record rather than in a list in the source, because that
+   * list ships inside the public client bundle: hardcoding someone's address
+   * there publishes it to anyone who opens devtools. Set it from the admin
+   * panel or the Firestore console; admin already has write access to any
+   * user document, so no rule change is needed.
+   */
+  assistantAccess?: boolean;
 }
 
 export interface FeedbackPromptState {
