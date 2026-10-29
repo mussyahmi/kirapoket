@@ -115,7 +115,13 @@ export function buildAssistantContext({
       `- (and ${accounts.length - listed.length} more accounts, included in the total below)`,
     );
   }
-  lines.push(`Total across accounts: ${rm(totalBalance)}`);
+  // Labelled rather than left bare. Sitting at the end of the account list it
+  // is the most quotable number in the snapshot, and the model reached for it
+  // to answer what the user could spend, earmarked envelopes and all, while
+  // FREE TO SPEND sat two sections below.
+  lines.push(
+    `Total across accounts, INCLUDING earmarked money and NOT what is free to spend: ${rm(totalBalance)}. Never offer this figure as money available: use FREE TO SPEND below.`,
+  );
 
   // What is genuinely free, computed rather than asserted. An earlier version
   // of this said "spendable total" while ignoring earmarked envelopes, which
