@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp, ADMIN_UID } from "@/contexts/AppContext";
+import { GUEST_DAILY_LIMIT } from "@/lib/admin";
 import {
   getAllUsers,
   getUserActivities,
@@ -12,6 +13,7 @@ import {
   DEMO_UID,
   getRecentFeedback,
   getAllAiUsage,
+  updateUserProfile,
   type AiUsageDoc,
   type UserStats,
 } from "@/lib/firestore";
@@ -89,6 +91,8 @@ export default function AdminPage() {
   const [loadingActivity, setLoadingActivity] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  // uid currently being granted or revoked assistant access.
+  const [togglingAccess, setTogglingAccess] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loadingFeedback, setLoadingFeedback] = useState(true);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -206,6 +210,34 @@ export default function AdminPage() {
       toast.error("Seed failed, check console");
     } finally {
       setSeedingDemo(false);
+    }
+  };
+
+  /**
+   * Grants or revokes the assistant for one account. A toggle rather than a
+   * console edit because the flag is a single boolean on a user document:
+   * typed by hand, a wrong field name or a string "true" fails silently and
+   * reads as the gate being broken.
+   */
+  const toggleAssistantAccess = async (u: UserProfile) => {
+    const next = !u.assistantAccess;
+    setTogglingAccess(u.uid);
+    try {
+      await updateUserProfile(u.uid, { assistantAccess: next });
+      setUsers((prev) =>
+        prev.map((x) =>
+          x.uid === u.uid ? { ...x, assistantAccess: next } : x,
+        ),
+      );
+      toast.success(
+        next
+          ? `Assistant turned on for ${u.displayName ?? u.email ?? "this account"}`
+          : `Assistant turned off for ${u.displayName ?? u.email ?? "this account"}`,
+      );
+    } catch {
+      toast.error("Couldn't change assistant access.");
+    } finally {
+      setTogglingAccess(null);
     }
   };
 
@@ -672,6 +704,36 @@ export default function AdminPage() {
                         >
                           {u.uid}
                         </p>
+
+                        {/* Assistant access. The admin's own access comes
+                            from ADMIN_UID, so there is nothing to toggle. */}
+                        {u.uid !== ADMIN_UID && (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium">
+                                AI assistant
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {u.assistantAccess
+                                  ? `On. Uses ${GUEST_DAILY_LIMIT} messages a day out of the shared daily quota.`
+                                  : "Off. This account sees the coming-soon page."}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={u.assistantAccess ? "outline" : "default"}
+                              className="h-7 shrink-0 px-3 text-xs pointer-coarse:h-10"
+                              disabled={togglingAccess === u.uid}
+                              onClick={() => toggleAssistantAccess(u)}
+                            >
+                              {togglingAccess === u.uid
+                                ? "Saving…"
+                                : u.assistantAccess
+                                  ? "Turn off"
+                                  : "Turn on"}
+                            </Button>
+                          </div>
+                        )}
 
                         {/* Demo seed button */}
                         {u.uid === DEMO_UID && (
