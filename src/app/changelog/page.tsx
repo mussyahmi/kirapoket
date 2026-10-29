@@ -72,6 +72,10 @@ const releases: Release[] = [
         type: "fix",
         text: "The assistant now counts shop visits by day rather than by entry, so a receipt you split across several categories reads as one trip instead of several, and it adds up spending at a shop even when you wrote the shop name at the end of the note",
       },
+      {
+        type: "fix",
+        text: "Asking the assistant the same question twice now gets a fresh answer from your current figures, instead of it repeating what it told you earlier in the chat",
+      },
     ],
   },
   {
