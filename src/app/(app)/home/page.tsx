@@ -292,7 +292,17 @@ function DashboardPage() {
           b.state === "partial" && b.expected
             ? `${formatMoney(b.paid)} of ${formatMoney(b.expected)} paid`
             : null,
-        href: "/categories",
+        // A category bill is marked paid by spending in it: paid status is
+        // derived from this cycle's transactions, never stored. So logging
+        // the transaction IS settling the bill, and the form is the right
+        // destination. The outstanding amount, not the full budget, because
+        // a part-paid bill only wants the rest.
+        // A due day without a budget gives us no figure to prefill, so the
+        // category goes over on its own and the amount is left blank.
+        href:
+          b.outstanding !== undefined
+            ? `/transactions/new?category=${b.category.id}&amount=${b.outstanding.toFixed(2)}`
+            : `/transactions/new?category=${b.category.id}`,
       }));
 
     // Money owed to a person sits in Debts, not on a category, but it is due
@@ -312,6 +322,7 @@ function DashboardPage() {
         count: number;
         note?: string;
         date: Date;
+        ids: string[];
       }
     >();
     for (const d of debts) {
@@ -330,6 +341,7 @@ function DashboardPage() {
         seen.total += due;
         seen.balance += d.amount;
         seen.count += 1;
+        seen.ids.push(d.id);
       } else {
         owingByDue.set(key, {
           person: d.personName,
@@ -338,6 +350,7 @@ function DashboardPage() {
           count: 1,
           note: d.note,
           date: parseISO(d.dueDate),
+          ids: [d.id],
         });
       }
     }
@@ -363,7 +376,12 @@ function DashboardPage() {
             : v.balance > v.total + 0.005
               ? `${formatMoney(v.balance)} left in total`
               : null,
-        href: "/debts",
+        // Straight into the pay flow rather than the top of the Debts list.
+        // Never the transaction form: paying a debt also has to advance the
+        // due date and decrement what is left, which only the pay flow does.
+        // Logging it as a plain expense would leave the debt untouched and
+        // the money counted twice.
+        href: `/debts?pay=${v.ids.join(",")}`,
       };
     });
 

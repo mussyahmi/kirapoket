@@ -16,8 +16,19 @@ function NewTransactionPage() {
     return null;
   }
 
+  // Arriving from a due bill on the home screen: the category is the reason
+  // for the trip, so the form opens pointed at it with the outstanding amount
+  // already in the field.
+  const prefillCategoryId = searchParams.get("category") ?? undefined;
+  const amountParam = searchParams.get("amount");
+  const parsedAmount = amountParam ? Number(amountParam) : NaN;
+  const prefillAmount =
+    Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : undefined;
+
   return (
     <TransactionForm
+      prefillCategoryId={prefillCategoryId}
+      prefillAmount={prefillAmount}
       onCancel={() => router.back()}
       onDone={() =>
         router.push(

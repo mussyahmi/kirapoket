@@ -5,6 +5,7 @@ import { format, parseISO, startOfDay, subDays, isSameDay } from "date-fns";
 import { toast } from "sonner";
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   TriangleAlertIcon,
   CalendarIcon,
   ClockIcon,
@@ -26,7 +27,7 @@ import {
   DEFAULT_INCOME_SOURCE,
   incomeSourceMeta,
 } from "@/lib/income";
-import type { IncomeSource } from "@/lib/types";
+import type { Category, IncomeSource } from "@/lib/types";
 import {
   TransactionConfirmDialog,
   type AccountImpact,
@@ -41,15 +42,42 @@ type TxType = "expense" | "income" | "transfer";
  * Navigation is delegated to onDone/onCancel so the caller decides whether to
  * route away or just close a sheet.
  */
+/**
+ * Walks a category up to its level-1 root, giving the three ids the picker
+ * needs to show it expanded. Returns null for an id that no longer exists.
+ */
+function categoryPath(
+  categories: Category[],
+  id: string,
+): { l1: string | null; l2: string | null; l3: string | null } | null {
+  const cat = categories.find((c) => c.id === id);
+  if (!cat) return null;
+  if (cat.level === 1) return { l1: cat.id, l2: null, l3: null };
+  const parent = categories.find((c) => c.id === cat.parentId);
+  if (cat.level === 2)
+    return { l1: parent?.id ?? null, l2: cat.id, l3: null };
+  const grandparent = categories.find((c) => c.id === parent?.parentId);
+  return { l1: grandparent?.id ?? null, l2: parent?.id ?? null, l3: cat.id };
+}
+
 export function TransactionForm({
   embedded = false,
   editId,
+  prefillCategoryId,
+  prefillAmount,
   onDone,
   onCancel,
   onConfirmOpenChange,
 }: {
   embedded?: boolean;
   editId?: string;
+  // Add mode only: open the form already pointed at a category, with the
+  // drill-down expanded to it. Set when arriving from a due bill, where the
+  // category is the whole point of the trip.
+  prefillCategoryId?: string;
+  // The amount to start in the field. Still fully editable: a bill is often
+  // not paid at exactly the figure budgeted for it.
+  prefillAmount?: number;
   // Receives the saved transaction's id — the new one after an add, the edited
   // one after an edit — so a host can scroll the list to it.
   onDone: (savedId?: string) => void;
@@ -156,27 +184,35 @@ export function TransactionForm({
     setForOthers(editTx.forOthers ?? false);
     setNote(editTx.note ?? "");
     if (editTx.categoryId) {
-      const cat = categories.find((c) => c.id === editTx.categoryId);
-      if (cat) {
-        if (cat.level === 3) {
-          setL3Id(cat.id);
-          const l2 = categories.find((c) => c.id === cat.parentId);
-          if (l2) {
-            setL2Id(l2.id);
-            const l1 = categories.find((c) => c.id === l2.parentId);
-            if (l1) setL1Id(l1.id);
-          }
-        } else if (cat.level === 2) {
-          setL2Id(cat.id);
-          const l1 = categories.find((c) => c.id === cat.parentId);
-          if (l1) setL1Id(l1.id);
-        } else {
-          setL1Id(cat.id);
-        }
+      const path = categoryPath(categories, editTx.categoryId);
+      if (path) {
+        setL1Id(path.l1);
+        setL2Id(path.l2);
+        setL3Id(path.l3);
       }
     }
     setInitialised(true);
   }, [isEdit, editTx, categories, initialised]);
+
+  // Add mode: the same drill-down walk, driven by a category handed in from
+  // elsewhere. Guarded on `initialised` so it runs once and never fights the
+  // user's own picking afterwards.
+  useEffect(() => {
+    if (isEdit || initialised || !categories.length) return;
+    if (!prefillCategoryId && prefillAmount === undefined) return;
+    if (prefillCategoryId) {
+      const path = categoryPath(categories, prefillCategoryId);
+      if (path) {
+        setL1Id(path.l1);
+        setL2Id(path.l2);
+        setL3Id(path.l3);
+      }
+    }
+    if (prefillAmount !== undefined && prefillAmount > 0) {
+      setAmount(prefillAmount.toFixed(2));
+    }
+    setInitialised(true);
+  }, [isEdit, initialised, categories, prefillCategoryId, prefillAmount]);
 
   // Report confirm-dialog open state up so a sheet host can blur/lock its chrome
   useEffect(() => {
@@ -238,7 +274,13 @@ export function TransactionForm({
    */
   const budgetHint = useMemo(() => {
     const amt = parseFloat(amount);
-    if (txType !== "expense" || forOthers || !selectedCategoryId) return null;
+    // Only once an item is picked. selectedCategoryId falls back to the L2
+    // and then the L1, which is right for the transaction that gets saved but
+    // wrong here: validate() refuses to save an expense against an L2 that
+    // has items, so a hint drawn from a half-made choice previews a save the
+    // form will reject, and can raise a red over-budget alarm for a category
+    // the spend is not going to land in.
+    if (txType !== "expense" || forOthers || !l3Id) return null;
     const salaryDay = userProfile?.salaryDay ?? 25;
     const { start, end } = getSalaryCycleRange(salaryDay, selectedDate, {
       cycleStarts: userProfile?.cycleStarts,
@@ -246,7 +288,7 @@ export function TransactionForm({
     return computeBudgetImpact({
       categories,
       transactions,
-      categoryId: selectedCategoryId,
+      categoryId: l3Id,
       amount: Number.isFinite(amt) && amt > 0 ? amt : 0,
       cycleStartStr: format(start, "yyyy-MM-dd"),
       cycleEndStr: format(end, "yyyy-MM-dd"),
@@ -255,7 +297,7 @@ export function TransactionForm({
   }, [
     txType,
     forOthers,
-    selectedCategoryId,
+    l3Id,
     categories,
     transactions,
     amount,
@@ -850,55 +892,80 @@ export function TransactionForm({
           </div>
           {/* Inside the Item block, not after it, so it sits the same 12px
               from its pills that the balance hint sits from the accounts. */}
-          {budgetHint && (
-            <div
-              className={cn(
-                "mt-3 rounded-lg border px-3 py-3 text-sm",
-                budgetHint.projected > budgetHint.budget + 0.005
-                  ? "border-destructive/40 bg-destructive/5"
-                  : "border-border bg-muted/40",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  {budgetHint.categoryName} budget
-                </span>
-                <span className="font-medium tabular-nums">
-                  {formatMoney(budgetHint.budget)}
-                </span>
-              </div>
-              <div
-                className={cn(
-                  "mt-2 flex items-center justify-between border-t pt-2",
-                  budgetHint.projected > budgetHint.budget + 0.005
-                    ? "border-destructive/30"
-                    : "border-border/60",
-                )}
-              >
-                <span className="text-muted-foreground">
-                  {budgetHint.projected > budgetHint.spent
-                    ? "After this expense"
-                    : "Spent this cycle"}
-                </span>
-                <span
+          {/* Same shape as the confirm dialog's budget block, deliberately:
+              it is the very next screen, and showing the same figures two
+              different ways invites the reader to think they are two
+              different facts. Leads with what is left, because that is the
+              question being asked while a spend is typed. An earlier version
+              led with the budget total and put the projected spend under
+              "After this expense", which reads as the remainder and is the
+              opposite of what the number means. */}
+          {budgetHint &&
+            (() => {
+              const over = budgetHint.projected > budgetHint.budget + 0.005;
+              const remaining = budgetHint.budget - budgetHint.projected;
+              const pct =
+                budgetHint.budget > 0
+                  ? Math.min(
+                      100,
+                      Math.round(
+                        (budgetHint.projected / budgetHint.budget) * 100,
+                      ),
+                    )
+                  : 0;
+              return (
+                <div
                   className={cn(
-                    "font-medium tabular-nums",
-                    budgetHint.projected > budgetHint.budget + 0.005
-                      ? "text-destructive"
-                      : "",
+                    "mt-3 rounded-lg border px-3 py-3 text-sm",
+                    over
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-border bg-muted/40",
                   )}
                 >
-                  {formatMoney(budgetHint.projected)}
-                </span>
-              </div>
-              {budgetHint.projected > budgetHint.budget + 0.005 && (
-                <p className="mt-2 text-xs text-destructive">
-                  Over budget by{" "}
-                  {formatMoney(budgetHint.projected - budgetHint.budget)}.
-                </p>
-              )}
-            </div>
-          )}
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium truncate">
+                      {budgetHint.categoryName}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-xs font-medium tabular-nums shrink-0",
+                        over ? "text-destructive" : "text-muted-foreground",
+                      )}
+                    >
+                      {over
+                        ? `${formatMoney(Math.abs(remaining))} over`
+                        : `${formatMoney(remaining)} left`}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        over ? "bg-destructive" : "bg-primary",
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs tabular-nums text-muted-foreground">
+                    <span className="flex items-center gap-2">
+                      {formatMoney(budgetHint.spent)}
+                      <ArrowRightIcon className="size-3.5" />
+                      <span
+                        className={cn(
+                          "font-semibold text-foreground",
+                          over && "text-destructive",
+                        )}
+                      >
+                        {formatMoney(budgetHint.projected)}
+                      </span>
+                    </span>
+                    <span>of {formatMoney(budgetHint.budget)}</span>
+                  </div>
+                </div>
+              );
+            })()}
         </div>
       )}
     </div>

@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "29 October 2026";
+const LAST_UPDATED = "30 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -30,7 +30,7 @@ const releases: Release[] = [
     changes: [
       {
         type: "feat",
-        text: "Categories can now carry a due day for bills that come round every month, like a loan or a utility, and a new Due before payday card on your home screen lists everything still owing, with overdue items in red. KiraPoket works out whether each bill is paid, part paid or still owing from what you actually spend, so there is nothing to tick off",
+        text: "Categories can now carry a due day for bills that come round every month, like a loan or a utility, and a new Due before payday card on your home screen lists everything still owing, with overdue items in red. KiraPoket works out whether each bill is paid, part paid or still owing from what you actually spend, so there is nothing to tick off. Tap anything on the card to settle it: a bill opens a new transaction with the category and the amount owing filled in, money you owe someone opens the pay form for that debt",
       },
       {
         type: "feat",
@@ -46,7 +46,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Adding a transaction now shows what it does to that category's budget, both as you type and on the confirmation step, the same way it already showed your account balance",
+        text: "Adding a transaction now shows what it does to that category's budget, both as you type and on the confirmation step, the same way it already showed your account balance. It leads with how much is left rather than how much is spent, and waits until you have picked an item so it can no longer warn you about a category you are not filing the spend under",
       },
       {
         type: "fix",
@@ -58,7 +58,7 @@ const releases: Release[] = [
       },
       {
         type: "fix",
-        text: "Editing a category no longer fails when you leave the due day blank",
+        text: "Editing a category no longer fails when you leave the due day blank, and the row menu is gone from the smallest categories since tapping the row already offers the same things",
       },
     ],
   },

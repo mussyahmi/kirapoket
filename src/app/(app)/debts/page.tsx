@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { format, parseISO, addMonths } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -389,7 +390,7 @@ function DebtGroupCard({
   );
 }
 
-export default function DebtsPage() {
+function DebtsPage() {
   const {
     debts,
     loadingDebts,
@@ -406,6 +407,7 @@ export default function DebtsPage() {
     refreshDebts,
   } = useApp();
   const isReadOnly = isViewingPartner || isImpersonating;
+  const searchParams = useSearchParams();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Debt | null>(null);
@@ -763,6 +765,29 @@ export default function DebtsPage() {
     setPayAmount(String(amountDueNow(debt)));
     setPayAccountId(debt.accountId ?? "");
   };
+
+  /**
+   * ?pay=<id[,id...]> from the due-before-payday card: open the pay flow for
+   * exactly what that row stood for. One id opens Pay, several open Pay all,
+   * matching the row's own grouping. Ids that are gone or already settled are
+   * dropped, so a stale link lands on the list rather than a wrong dialog.
+   *
+   * Fires once per arrival. The ref, not a piece of state, because the aim is
+   * to not reopen a dialog the user has just closed.
+   */
+  const payParamHandled = useRef(false);
+  useEffect(() => {
+    if (payParamHandled.current || loadingDebts || isReadOnly) return;
+    const param = searchParams.get("pay");
+    if (!param) return;
+    payParamHandled.current = true;
+    const wanted = param.split(",").filter(Boolean);
+    const found = wanted
+      .map((id) => debts.find((d) => d.id === id))
+      .filter((d): d is Debt => !!d && !d.settled);
+    if (found.length === 1) openPay(found[0]);
+    else if (found.length > 1) openPayAll(found);
+  }, [searchParams, debts, loadingDebts, isReadOnly]);
 
   const handlePayOrCollect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1592,5 +1617,18 @@ export default function DebtsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * useSearchParams needs a Suspense boundary for this page to prerender.
+ * Reached with ?pay=<id[,id...]> from the home screen's due-before-payday
+ * card.
+ */
+export default function DebtsPageWrapper() {
+  return (
+    <Suspense>
+      <DebtsPage />
+    </Suspense>
   );
 }

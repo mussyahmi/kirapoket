@@ -173,25 +173,9 @@ function L3Item({
             </span>
           )}
         </button>
-        {!readOnly && (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center size-6 pointer-coarse:size-9 rounded-lg text-muted-foreground opacity-50 hover:opacity-100 hover:bg-accent transition-colors shrink-0">
-              <MoreHorizontalIcon className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => openEdit(item)}>
-                <PencilIcon className="size-3.5 mr-2" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setDeleteTarget(item)}
-              >
-                <TrashIcon className="size-3.5 mr-2" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        {/* No row menu here: tapping the row opens the preview, which already
+            offers Transactions, Edit and Delete. A second way in just added
+            clutter to every leaf row. */}
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
