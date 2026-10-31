@@ -10,7 +10,7 @@ interface Release {
 }
 
 // Bump this whenever the changelog is updated for a release.
-const LAST_UPDATED = "30 October 2026";
+const LAST_UPDATED = "31 October 2026";
 
 // Each entry covers a minor version line (0.1.x / 0.2.x / 0.3.x).
 // Patch is bumped on every commit — individual patches are not listed.
@@ -34,11 +34,7 @@ const releases: Release[] = [
       },
       {
         type: "feat",
-        text: "Debts repaid in fixed monthly amounts now show the instalment and how many payments are left, the due date moves on a month each time you pay, and the Pay button starts at the instalment rather than the whole balance",
-      },
-      {
-        type: "feat",
-        text: "Owe one person for several things? Pay all of them at once and it records a single transaction instead of one per entry",
+        text: "Debts repaid in fixed monthly amounts now show the instalment and how many payments are left, the due date moves on a month each time you pay, and the Pay button starts at the instalment rather than the whole balance. Owe one person for several things? Pay all of them at once and it records a single transaction instead of one per entry",
       },
       {
         type: "feat",
@@ -59,6 +55,10 @@ const releases: Release[] = [
       {
         type: "fix",
         text: "Editing a category no longer fails when you leave the due day blank, and the row menu is gone from the smallest categories since tapping the row already offers the same things",
+      },
+      {
+        type: "fix",
+        text: "The assistant now sees what you have already spent today, so it stops weighing up a meal you have already bought, and it no longer tells you the figures look fine when money already due comes to more than you have free. It also runs on a newer model and quotes your own budgets more carefully",
       },
     ],
   },

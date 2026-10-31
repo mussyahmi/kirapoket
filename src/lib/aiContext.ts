@@ -242,10 +242,37 @@ export function buildAssistantContext({
         `- WARNING: there is not enough to cover what is already due. Short by ${rm(Math.abs(free - committed))}.`,
       );
     }
+    // The verdict is computed here, not left to the model. The prompt used to
+    // ask it to judge whether what is committed was "large enough to matter"
+    // against free to spend, and that was the only one of the three reasons to
+    // advise spending less that was a judgement rather than a string to find.
+    // It is the one that failed: asked to pick cooking over eating out, the
+    // model said nothing in the figures argued against it and then quoted the
+    // shortfall that did, in the very next sentence. Half of what is free is
+    // the line for "tight" because it is a threshold someone can argue with,
+    // which a model's sense of "large" is not.
+    // Worded as a sentence a person would want to read, because the model is
+    // told to copy figures verbatim and copies the words around them too. The
+    // first version said "the figures DO argue against discretionary
+    // spending", which was written as an internal flag and came back out of
+    // the assistant word for word, capital DO and all. Both negative cases
+    // carry "not a good time for extra spending" and both positive ones carry
+    // "stands in the way of extra spending", so the prompt still has one
+    // stable phrase to match on without anyone having to read a flag.
+    lines.push(
+      free - committed < 0
+        ? `- SPENDING VERDICT: money already due comes to more than what is free, so this is not a good time for extra spending. Short by ${rm(Math.abs(free - committed))}.`
+        : committed >= free / 2
+          ? `- SPENDING VERDICT: money already due takes up more than half of what is free, leaving ${rm(free - committed)}, so this is not a good time for extra spending.`
+          : `- SPENDING VERDICT: nothing already due stands in the way of extra spending. ${rm(free - committed)} is free even after everything that is owed.`,
+    );
   } else {
     lines.push("- Nothing with a due date before payday.");
     lines.push(
       "- This means nothing is recorded, not that nothing is owed. Bills are only listed here if the user set a due day on the category or entered the debt.",
+    );
+    lines.push(
+      "- SPENDING VERDICT: nothing already due stands in the way of extra spending, because nothing is recorded as due.",
     );
   }
   lines.push("");
@@ -443,6 +470,41 @@ export function buildAssistantContext({
         `    - (${sortedL3.length - shownL3.length} smaller categories totalling ${rm(rest)})`,
       );
     }
+  }
+  lines.push("");
+
+  // ---- Spent today ----
+  // Nothing else in this context is scoped to today. Asked whether to cook or
+  // eat out for lunch, the model advised on the choice while a Food Delivery
+  // entry from that same morning sat in the ledger, invisible to it: a lunch
+  // that size reaches neither the top ten nor the repeat list. The advice was
+  // not wrong, it was just about a decision already made. Every row is listed
+  // rather than a total, because "RM42.82 today" does not tell you lunch is
+  // already bought and the note does.
+  const todayStr = format(today, "yyyy-MM-dd");
+  const todayTx = cycleTx.filter((t) => isOwnExpense(t) && t.date === todayStr);
+  lines.push("SPENT TODAY:");
+  if (todayTx.length) {
+    for (const t of [...todayTx].sort((a, b) => b.amount - a.amount)) {
+      const cat = t.categoryId
+        ? (catMap[t.categoryId]?.name ?? "Uncategorised")
+        : "Uncategorised";
+      const note = t.note?.replace(/\s+/g, " ").trim();
+      const short =
+        note && note.length > 60 ? `${note.slice(0, 60)}\u2026` : note;
+      lines.push(`- ${rm(t.amount)} | ${cat}${short ? ` | "${short}"` : ""}`);
+    }
+    lines.push(
+      `- Total logged today: ${rm(todayTx.reduce((sum, t) => sum + t.amount, 0))}`,
+    );
+    lines.push(
+      "- Before advising on a spend, check this list. If something here already covers what the user is asking about, say so instead of advising on the choice: it has been made.",
+    );
+  } else {
+    lines.push("- Nothing logged today.");
+    lines.push(
+      "- That means nothing has been entered, not that nothing has been spent. Cash can go unlogged.",
+    );
   }
   lines.push("");
 

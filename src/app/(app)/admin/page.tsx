@@ -715,7 +715,7 @@ export default function AdminPage() {
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {u.assistantAccess
-                                  ? `On. Uses ${GUEST_DAILY_LIMIT} messages a day out of the shared daily quota.`
+                                  ? `On. ${GUEST_DAILY_LIMIT} messages a day.`
                                   : "Off. This account sees the coming-soon page."}
                               </p>
                             </div>

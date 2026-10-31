@@ -19,29 +19,25 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
 const ADMIN_UID = "UG4u9m0jkUh5xqqloijX1zeprXi2";
-// How many guest rations are held back from the admin's own ceiling. Who the
-// guests are is not listed here: access is a flag on each user's Firestore
-// record, so nobody's address or uid ends up in source or in the bundle.
-const RESERVED_GUEST_SEATS = 1;
 
-// Per user. Deliberately a fraction of PROJECT_DAILY_LIMIT so one person
-// can't drink the whole project's daily allowance in a single sitting.
-const DAILY_LIMIT = 5;
-// The hard ceiling: Gemini's free tier allows 20 requests per DAY across the
-// whole project, not per user. Sitting under it leaves room for retries and
-// for anything else calling the same key.
-const PROJECT_DAILY_LIMIT = 18;
-// Every guest's ration is carved out of the admin's own ceiling rather than
-// added on top of it, because the project cap is the real constraint: handing
-// someone 5 messages without taking 5 away would just mean whoever asks first
-// wins and the other gets a quota error. Taking it from the admin means the
-// guest's share is actually there when they come to use it.
-const ADMIN_DAILY_LIMIT = Math.max(
-  1,
-  PROJECT_DAILY_LIMIT - RESERVED_GUEST_SEATS * DAILY_LIMIT,
-);
+// Per user. Still a fraction of PROJECT_DAILY_LIMIT so one person cannot
+// drink the whole project's daily allowance in a single sitting.
+const DAILY_LIMIT = 20;
+// The hard ceiling across the whole project, not per user. The free tier
+// allows 500 requests a day on this model; sitting well under it leaves room
+// for retries and for anything else calling the same key.
+//
+// This used to be 18, because 2.5 Flash-Lite allowed only 20 a day. At that
+// size a guest's ration had to be carved out of the admin's own ceiling, or
+// whoever asked first would win and the other would get a quota error. With
+// 500 a day that scarcity is gone, so the carving is gone with it and
+// everyone, admin included, gets the same allowance.
+const PROJECT_DAILY_LIMIT = 450;
 const MAX_MESSAGES = 20; // most recent turns kept for context
-const MODEL = "gemini-2.5-flash-lite";
+// 2.5 Flash-Lite is now served only to projects that already used it, and its
+// free tier was 20 requests a day against this model's 500. Requests per
+// minute (15) is the binding limit now, not requests per day.
+const MODEL = "gemini-3.5-flash-lite";
 // Caps the reply, not the prompt. Without it a long answer is unbounded, and
 // the context sent on every turn is already the larger half of the bill.
 const MAX_OUTPUT_TOKENS = 800;
@@ -87,10 +83,21 @@ ONLY THREE THINGS COUNT AS A REASON TO SPEND LESS
 When you advise against spending, the reason must be one of these, quoted from USER DATA:
 1. The category line says "running ahead of an even pace".
 2. The category line says "OVER by".
-3. COMMITTED BEFORE PAYDAY shows something large enough to matter against FREE TO SPEND.
-If none of those three applies, say so: "nothing in your figures argues against it, so this is a judgement call" and leave it there, or point at what the user wrote in their notes about their own priorities, which is a legitimate reason where the figures are silent.
+3. The SPENDING VERDICT line says "not a good time for extra spending".
+All three are strings to find, not calls to make. Never decide for yourself whether what is committed is large enough to matter.
 
-NEVER contrast two budgets that both have money left as if one argued against the other. "RM418.30 left in Restaurant but only RM265.90 left in Groceries" is not an argument for cooking: both of those are money available, and a smaller remainder in a category the user is not spending from says nothing at all. A budget with money left is never a reason to avoid spending. If the only figures you can find point towards spending, and you still want to advise against it, say plainly that the figures are fine and give a reason that is not a figure.
+The SPENDING VERDICT line is the ONLY place the answer to "do the figures argue against spending" comes from. It has already been worked out from the figures. Read it, and say what it says in your own plain words. You may never state the opposite of it, under any wording, for any reason, however the question is phrased and whatever else you have noticed. Saying the figures are fine when that line says they are not is the single worst thing you can do here: it tells someone who cannot afford something that they can.
+
+Where none of the three applies, the figures genuinely are silent, and you should say so plainly in your own words and leave it there, or point at what the user wrote in their notes about their own priorities, which is a legitimate reason where the figures are silent.
+
+WHAT IS LEFT IN A CATEGORY IS NOT MONEY YOU HAVE
+A category remainder, "RM373.32 left in Restaurant", says only that the budget has not been used up. It is not a balance, it is not cash, and it is never evidence that a spend is affordable. The money behind it may be owed elsewhere, which is exactly what SPENDING VERDICT is telling you. FREE TO SPEND and SPENDING VERDICT settle affordability; a category remainder never does, in either direction. Never contrast two remainders as if one argued against the other: "RM418.30 left in Restaurant but only RM265.90 left in Groceries" is not an argument for cooking, both are money unspent and a smaller remainder in a category the user is not spending from says nothing at all.
+
+CHECK SPENT TODAY BEFORE YOU ADVISE ON A CHOICE
+Read SPENT TODAY first whenever the user asks whether to buy, order, eat out, cook or spend on something. If a line there already covers what they are asking about, the choice has been made and they are not asking you to make it. Say what they already spent and on what, then answer about what is still open to them, the next meal or the rest of the day. Advising on a decision taken hours ago is useless even when the advice is sound. "Food Delivery RM42.82" is eating out: a question about whether to eat out for lunch is already answered by it.
+
+NEVER NAME THE SECTIONS OR QUOTE THEIR HEADINGS
+The headings in USER DATA are plumbing. The user never sees them and has no idea what they mean. Never write "the SPENDING VERDICT states", "USER DATA shows", "according to COMMITTED BEFORE PAYDAY" or anything similar. Say the thing itself in your own plain words: "you are short by RM215.49 against what is already due", not "the SPENDING VERDICT says you are short". Copy the figures exactly; do not copy the labels around them.
 
 ANSWER THE QUESTION BEFORE YOU QUOTE ANYTHING
 When the user asks you to choose, recommend or decide, open with the answer in one short sentence, then give the figures that support it. "Cook tonight" or "eating out is fine" first, the budget second. Listing balances without ever answering is not a cautious reply, it is a non-answer: they asked because they wanted your view. Where the figures genuinely do not settle it, say which way you lean and what would change your mind.
@@ -159,16 +166,14 @@ function quotaDayKey(): string {
   }).format(new Date());
 }
 
-function summarise(data: UsageDoc | undefined, isAdmin = false): AiUsageSummary {
+function summarise(data: UsageDoc | undefined): AiUsageSummary {
   const day = todayKey();
   const month = day.slice(0, 7);
   const sameDay = data?.date === day;
   const count = sameDay ? data?.count ?? 0 : 0;
-  // The per-user cap exists to stop one person draining the project's daily
-  // allowance. The admin gets what is left of the project's day once every
-  // guest's ration has been set aside, so testing the assistant can never eat
-  // into a guest's share.
-  const limit = isAdmin ? ADMIN_DAILY_LIMIT : DAILY_LIMIT;
+  // Everyone gets the same allowance, the admin included. The per-user cap
+  // exists only to stop one person draining the project's day.
+  const limit = DAILY_LIMIT;
   return {
     messagesLeft: Math.max(0, limit - count),
     dailyLimit: limit,
@@ -231,7 +236,7 @@ export const chat = onRequest(
     // ── Usage line, shown under the chat box before the first message ───────
     if (req.method === "GET") {
       const snap = await usageRef.get();
-      res.json({ usage: summarise(snap.data() as UsageDoc, isAdmin) });
+      res.json({ usage: summarise(snap.data() as UsageDoc) });
       return;
     }
 
@@ -269,7 +274,7 @@ export const chat = onRequest(
           tx.get(usageRef),
           tx.get(projectRef),
         ]);
-        const current = summarise(snap.data() as UsageDoc | undefined, isAdmin);
+        const current = summarise(snap.data() as UsageDoc | undefined);
         const pData = projectSnap.data() as
           | { quotaDay?: string; count?: number }
           | undefined;
